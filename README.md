@@ -1,3 +1,34 @@
+<!-- REPO-POLISH:START -->
+<p align="center">
+  <img src="docs/assets/social-preview.png" alt="Repo social preview" width="100%">
+</p>
+
+> Claude Token Saver is a TypeScript app/toolkit for practical developer workflows.
+
+## Quick Start
+
+```bash
+git clone git@github.com:Supersynergy/claude-token-saver.git
+cd claude-token-saver
+bun install
+```
+
+Expected result: the project runs locally or reports the next missing prerequisite directly in the terminal.
+
+## Developer Map
+
+| Need | Command |
+|---|---|
+| build | `bun run build` |
+| setup | `bun install` |
+| test | `uv run pytest` |
+| check | `uv run pytest` |
+
+Full verification path: `bun run build && bun install && uv run pytest`
+
+Agent instructions live in [AGENTS.md](AGENTS.md).
+<!-- REPO-POLISH:END -->
+
 # claude-token-saver v2.1.0
 
 **88–93% token reduction for Claude Code sessions. Real benchmarks. Zero guessing.**

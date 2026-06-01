@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#071013"/>
+  <circle cx="392" cy="112" r="116" fill="#1C7C54" opacity=".75"/>
+  <circle cx="122" cy="390" r="126" fill="#F2C14E" opacity=".75"/>
+  <text x="256" y="292" text-anchor="middle" fill="#E8F1F2" font-family="Inter, Arial, sans-serif" font-size="132" font-weight="800">CTS</text>
+</svg>
