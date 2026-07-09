@@ -7,6 +7,7 @@
 - Documented local verification: Skill Router 99.46% estimated token reduction on 416 scanned skills; `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 uv run python -m pytest` passing 14 tests; Headroom installed but not routed; context-mode storage/server healthy but Codex hooks missing.
 - Added `scripts/token_saver_benchmark.py` plus `data/benchmarks/token-saver-local-2026-07-09.{json,md}` for local no-provider benchmarks of RTK, Tilth, context-mode, hyperfetch threshold behavior, MCP schema slimming, and Headroom profile rendering.
 - Updated `README.md` to point at the July 2026 token-saver matrix and current local benchmark results.
+- Clarified Superweb default: available on demand via CLI (`search`, `research`, `mega`, `fetch`), not disabled and not loaded as default MCP context.
 
 Verification:
 

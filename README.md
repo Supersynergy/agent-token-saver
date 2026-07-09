@@ -24,9 +24,9 @@ Core layers, each attacking a different token problem:
 | MCP/tool schema bloat | MCP compressor / schema gateway | recommended for large catalogs | Verbose tool schemas every turn | 89.8% static local proxy |
 | Dynamic context | Headroom / sqz / CCR | Headroom installed, not routed | Tool outputs, logs, files, RAG chunks, history | 60–95% expected when routed |
 | Output verbosity | caveman + ponytail | recommended | Agent prose + unnecessary generated code | 65% typical output cut |
-| Web pre-filter | superweb/hyperfetch + trafilatura | installed; threshold required | HTML boilerplate/noisy pages | can backfire on tiny pages |
+| Web pre-filter | superweb CLI / hyperfetch / trafilatura | installed; CLI on-demand only, not MCP-default | HTML boilerplate/noisy pages | can backfire on tiny pages |
 
-> Current finding: do not make heavy web markdown/LLM summarization default for tiny pages. Threshold first.
+> Current finding: Superweb is not "off". It stays available on demand via CLI. Do not load it as default MCP context; call `superweb search|research|mega|fetch` only when Synapse/local/ghmax are insufficient.
 
 ---
 

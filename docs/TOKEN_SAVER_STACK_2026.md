@@ -18,7 +18,7 @@ Der beste Stack ist kein einzelner Compressor. Es ist eine Kette:
 SuperSynergy Default:
 
 ```text
-ask/Synapse -> Skill Router -> ghmax/superweb only when needed
+ask/Synapse -> Skill Router -> ghmax/superweb CLI only when needed
 -> MCP Dynamic Toolset / schema compression
 -> tool execution via RTK/batch/hyperfetch
 -> Headroom for large tool/RAG/log payloads
@@ -202,7 +202,17 @@ Für Web:
 ```text
 known URL -> hyperfetch <url> --markdown  # diese lokale hyperfetch-Version unterstützt kein --stage
 2–1000 URLs -> batchscraper
-unknown -> ask/Synapse -> superweb/ghmax
+unknown/current -> ask/Synapse -> ghmax -> superweb CLI on-demand
+```
+
+Superweb Policy:
+
+```text
+Superweb is available on demand, not disabled.
+Use CLI, not MCP-default context.
+Do not run a persistent `superweb mcp serve` unless a specific experiment requires it.
+Default commands: `superweb search`, `superweb research`, `superweb mega`, `superweb fetch`.
+Write large outputs to `data/research/...` or `/tmp/...`, then summarize before model context.
 ```
 
 ### 6. Memory und Langzeitkontext
@@ -244,7 +254,7 @@ Status: `adopt` = jetzt nutzen, `test` = Bench nötig, `watch` = beobachten, `av
 | 7 | Graphify | local install | Graph memory | 8 | adopt | Projektwissen graphen statt wiederholen |
 | 8 | CodeGraph | local: `/Users/master/.local/bin/codegraph` | Code retrieval | 9 | adopt | Symbol-/Graphsuche vor Datei-Dump |
 | 9 | ghmax | local: `ghmax --doctor` | Current code pattern mining | 8 | adopt | GitHub-Muster ohne Browser-Rauschen |
-| 10 | superweb | local: `superweb doctor` | Multi-engine web + extract | 8 | adopt | Nur nach Synapse/ghmax |
+| 10 | superweb CLI | local: `superweb doctor` | Multi-engine web + extract | 8 | adopt | On-demand via CLI nach Synapse/ghmax; nicht MCP-default |
 | 11 | hyperfetch | local stack | Known URL markdown extraction | 9 | adopt | URL → markdown, nicht HTML-Dump |
 | 12 | batchscraper | local stack | Parallel URL fetch | 8 | adopt | 2–1000 URLs, kein Loop-Fetch |
 | 13 | Dynamic Toolsets / Gram | https://www.speakeasy.com/blog/how-we-reduced-token-usage-by-100x-dynamic-toolsets-v2 | MCP schema discovery | 9 | test | Tool-search gateway statt 100 Tools laden |
@@ -296,6 +306,7 @@ File content? read_file window.
 Search? search_files / ghmax / Synapse first.
 Web URL? hyperfetch markdown.
 Bulk URLs? batchscraper.
+Fresh web/current facts? superweb CLI on-demand.
 MCP? lazy tool discovery; no full tool dump.
 ```
 
