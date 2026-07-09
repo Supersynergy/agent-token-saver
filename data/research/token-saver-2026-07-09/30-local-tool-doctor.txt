@@ -4,7 +4,7 @@ rtk 0.43.0
 /Users/master/.local/bin/headroom
 headroom, version 0.30.0
 /Users/master/.local/bin/context-mode
-┌   context-mode doctor 
+┌   context-mode doctor
 │
 ●  Platform: Codex CLI (high confidence — CODEX_THREAD_ID or CODEX_CI env var set)
 │

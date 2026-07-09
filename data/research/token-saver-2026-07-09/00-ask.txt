@@ -8,6 +8,6 @@
   • [0.04] ...output-compress=RTK(have)/headroom(installed)/tilth/context-mode(98%MCP)/Token-Savior/stacklit; prompt=LLMLingua-2(20
   • [0.04] ...Shows RTK gain   4. Shows decision matrix for which tool to use when - Updated `/sm tokens` — full 4-layer cheatsheet
   • [0.04] ...argument-hint: "[init | search <q> | load <name> | list [cat] | auto <intent> | vault <name> | unvault <name> | stats
-  • [0.04] ...Ran `mcp__context-mode__ctx_doctor` and `mcp__context-mode__ctx_stats` confirming context-mode is already active and 
+  • [0.04] ...Ran `mcp__context-mode__ctx_doctor` and `mcp__context-mode__ctx_stats` confirming context-mode is already active and
   • [0.04] ...RTK + Context-Mode = maximale Token-Ersparnis auf beiden Ebenen ```  ### Kein Konflikt - RTK matcher: `Bash` nur - Co
 

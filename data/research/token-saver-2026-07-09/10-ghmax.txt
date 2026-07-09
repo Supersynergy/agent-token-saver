@@ -260,7 +260,7 @@
   AgentsListResult,
   ModelCatalogEntry,
   export type AgentsPanel = "overview" | "files" | "tools" | "skills" | "channels" | "cron";
-  
+
   export type AgentsState = {
   client: GatewayBrowserClient | null;
 
@@ -416,7 +416,7 @@
   import { listAgentIds } from "../../../agents/agent-scope-config.js";
   import type { OpenClawConfig } from "../../../config/types.openclaw.js";
   import { normalizeAgentId, normalizeOptionalAgentId } from "../../../routing/session-key.js";
-  
+
   export type StaleSubagentAllowlistHit = {
   /** Config path containing the stale allowAgents entry. */
   pathLabel: string;
@@ -442,7 +442,7 @@
   normalizeAgentId,
   parseAgentSessionKey,
   } from "./session-key.ts";
-  
+
   type SessionAgentOptionsState = {
   agentsList?: {
 
@@ -462,10 +462,10 @@
   agentId: string;
   rest: string;
   };
-  
+
   export const DEFAULT_AGENT_ID = "main";
   export const DEFAULT_MAIN_KEY = "main";
-  
+
   export type UiSessionDefaultsHost = {
   assistantAgentId?: string | null;
 
@@ -565,7 +565,7 @@
   */
   import type { TSchema } from "typebox";
   import type { AgentTool } from "../runtime/index.js";
-  
+
   /** Runtime transport selected for one model attempt. */
   export type AgentRuntimeTransport = "sse" | "websocket" | "auto";
 
@@ -865,9 +865,9 @@
 # +variants: context engineering tools prompt compression l_l_m
 
 ## ⭐791 [gh] pikpikcu/airecon@9a21453 README.md [MIT] pushed=2026-06-20
-  
+
   Each phase has specific objectives, recommended tools, and automatic transition criteria. Phase enforcement is **soft** — the agent is guided but never blocked. Checkpoints run every 5 (phase eval), 10 (self-eval), and 15 (context compression) iterations.
-  
+
 
 ## ⭐62 [gh] johnxie/awesome-code-docs@b920b28 llms.txt [MIT] pushed=2026-07-06
   - Claude Flow Tutorial: Multi-Agent Orchestration, MCP Tooling, and V3 Module Architecture: https://github.com/johnxie/awesome-code-docs/tree/main/tutorials/claude-flow-tutorial
@@ -881,7 +881,7 @@
   🗜️ Prompt compression: remove irrelevant context
   💡 HyDE: generate a hypothetical answer to the input question and use it (with the query) to improve the search
   ✒️ Query rewrite and expansion to reformulate the user’s intent and remove ambiguity
-  
+
 
 ## ⭐641 [gh] hzysvilla/Academic_Smart_Contract_Papers@7644484 TLDR.md [GPL-3.0] pushed=2026-07-07
   ### SP24 | Large-Scale Study of Vulnerability Scanners for Ethereum Smart Contracts
@@ -894,9 +894,9 @@
   8. [Testing Strategy](#8-testing-strategy)
 
 ## ⭐709 [gh] SharpAI/SwiftLM@d5a9d11 README.md [MIT] pushed=2026-05-19
-  
+
   ### Key Engineering Findings
-  
+
 
 ## ⭐170 [gh] gopala-kr/summary@1d77b3a 24.md [MIT] pushed=2026-06-04
   - [5 ways AI can help crisis response around the world](https://cur.at/ZXp9zU0?m=web)
@@ -911,7 +911,7 @@
 ## ⭐1148 [gh] repowise-dev/claude-code-prompts@989fc0e README.md [MIT] pushed=2026-05-11
   | [Pattern analyses](#prompt-engineering-patterns) | 9 | Commentary on each pattern with reusable templates |
   | [Cursor skills](#cursor-skills) | 3 | Drop-in skills for coding standards, verification, and prompt design |
-  
+
 
 ## ⭐11983 [gh] dhamaniasad/awesome-postgres@ef88d7b README.md [CC0-1.0] pushed=2026-05-21
   * [Databasus](https://databasus.com) - tool for scheduled PostgreSQL backups via web UI with external storages (local, S3, FTP, Google Drive, etc.), notifications (webhook, Discord, Slack, etc.) and team management.
@@ -929,7 +929,7 @@
   - [2023/04] Generative agents: Interactive simulacra of human behavior. [[paper](https://arxiv.org/abs/2304.03442)]
 
 ## ⭐1476 [gh] pguso/rag-from-scratch@38e1a7a README.md [MIT] pushed=2026-03-11
-  
+
   **Prompt engineering for RAG:**
   - Context stuffing techniques
 
@@ -939,9 +939,9 @@
   | ExLlamaV2 | Presents a guide on quantizing a Mistral model using the EXL2 format and running it with the ExLlamaV2 library, touted as the fastest library for LLMs. | [🔗](https://mlabonne.github.io/blog/posts/ExLlamaV2_The_Fastest_Library_to_Run%C2%A0LLMs.html) |
 
 ## ⭐156 [gh] feelingai-team/CodeBrain@848dcd2 README.md [MIT] pushed=2026-04-07
-  
+
   Context compression: LLM-summarized history with early messages pinned so the agent doesn't lose track of what it was actually asked to do in long sessions. Without this, tasks that go 50+ turns fall apart.
-  
+
 
 ## ⭐62 [gh] fang503/antflow@78f8f39 README.md [MIT] pushed=2026-04-01
   | **Prompt Assembly** | getSystemPrompt() | Modular builder with static/dynamic cache boundary, ~88% cache hit |
@@ -954,7 +954,7 @@
   - **Mixture of Experts (MoE)**: Fine-tuning specific "experts" within a model (e.g., $N=16$ experts, $K=2$ active per token), reducing active parameter counts during inference:
 
 ## ⭐939 [gh] windmaple/awesome-AutoML@f83974c README.md [GPL-3.0] pushed=2026-03-24
-  
+
   ### Prompt search
   - [Large Language Models Are Human-Level Prompt Engineers](https://arxiv.org/abs/2211.01910) (Zhou et al. 2022)
 
@@ -974,9 +974,9 @@
   - IDE integration
 
 ## ⭐1009 [gh] zjunlp/Prompt4ReasoningPapers@bd2e561 README.md [MIT] pushed=2025-05-21
-  
+
   16. **Large Language Models Can Be Easily Distracted by Irrelevant Context.**
-  
+
 
 ## ⭐4919 [gh] cheatsnake/backend-cheats@493ead9 README.md [MIT] pushed=2025-02-02
       -   How it works
@@ -984,9 +984,9 @@
       -   Multitasking types
 
 ## ⭐49 [gh] KaiYan289/RLpapersnote@f92958a LLM.md pushed=2026-01-30
-  
+
   EASYTOOL: Enhancing LLM-based agents with concise tool instruction
-  
+
 
 ## ⭐88 [gh] magdalenakuhn17/awesome-cheap-llms@4112162 README.md pushed=2025-07-06
   ## 4) :blue_book: Reduce input/output tokens
@@ -994,13 +994,13 @@
   **Input tokens:**
 
 ## ⭐349 [gh] NiuTrans/ABigSurveyOfLLMs@2c4092a README.md [CC0-1.0] pushed=2025-02-19
-  
+
   - **Igniting Language Intelligence: The Hitchhiker's Guide From Chain-of-Thought Reasoning to Language Agents**, arXiv 2023.11 [[Paper](https://arxiv.org/abs/2311.11797)] [[GitHub](https://github.com/Zoeyyao27/CoT-Igniting-Agent)]
-  
+
   ###### Prompt Engineering<a id="section7"></a>
-  
+
   - **Prompting Frameworks for Large Language Models: A Survey**, arXiv 2023.11 [[Paper](https://arxiv.org/abs/2311.12785)] [[GitHub](https://github.com/lxx0628/Prompting-Framework-Survey)]
-  
+
 
 ## ⭐3 [gh] MuhammadMuneeb007/kbs-lectures@12e9bcd LLM.md pushed=2025-07-28
   | **CS224N: NLP with Deep Learning** | Stanford              | https://web.stanford.edu/class/cs224n/                       | Free                 | Academic depth, research-level content            |
@@ -1008,17 +1008,17 @@
   | **Fast.AI Practical Deep Learning** | Fast.AI              | https://www.fast.ai/                                        | Free                 | Practical, code-first approach to deep learning   |
 
 ## ⭐1 [gh] GeorgeCodes19/ai-course@e27f487 llm.md [Apache-2.0] pushed=2025-01-23
-  
-  - **Model Compression** (pruning, quantization),  
-  - **Efficiency Gains** in hardware (Tensor Cores, TF32, etc.),  
+
+  - **Model Compression** (pruning, quantization),
+  - **Efficiency Gains** in hardware (Tensor Cores, TF32, etc.),
 
 ## [gh] Manuhd/Generative-AI-Learning-Roadmap@a770a3d LLM.md pushed=2026-01-01
-  
+
   “LLMs are AI models trained on massive text datasets to predict and generate language. They work using tokenization and transformer neural networks to understand context and generate responses. Their major limitations include hallucinations, no real-time knowledge, prompt sensitivity, limited memory, bias, and high cost.”
-  
+
 
 ## [gh] AllenAJ/studymi@ada35ee llm.txt pushed=2026-02-07
-  
+
   * **Context Managers** - New context managers for span and trace creation
   * **Bedrock Integration** - Enhanced Bedrock integration with invoke\_model support
 
@@ -1027,9 +1027,9 @@
 # +variants: Headroom context optimization l_l_m
 
 ## ⭐580 [gh] tsinghua-fib-lab/AutoSOTA@cf446de docs/README.md [MIT] pushed=2026-07-09
-  
+
   **[→ paper-43-VHM/OPTIMIZATION.md](./paper-43-VHM/OPTIMIZATION.md)**
-  
+
 
 ## ⭐42 [gh] eBay/evo-web@8670741 .claude/README.md [NOASSERTION] pushed=2026-07-09
   - **Current:** ~1,180 tokens (~875 words, ~4,700 characters, ~117 lines)
@@ -1037,14 +1037,14 @@
   - **Goal:** 90%+ cache hit rate
 
 ## ⭐253 [gh] val1813/kaiwu@e4ed413 README.md [MIT] pushed=2026-05-06
-  
+
   **Auto-tuned local LLM serving: Kaiwu probes your hardware, model, KV cache, and context window so you get the fastest OpenAI-compatible endpoint your machine can actually sustain.**
-  
+
 
 ## ⭐395 [gh] quantumaikr/quant.cpp@9eed2dc .claude/state.md [Apache-2.0] pushed=2026-04-26
   Viable pivot: demonstrate KV compression + long-ctx on Llama-3.2-3B
   (where coherence holds) at realistic context within the cliff.
-  
+
 
 ## ⭐1892 [gh] vonzosten/awesome-LangGraph@5908ce7 README.md [CC0-1.0] pushed=2026-05-20
   | [YaVendio/olive](https://github.com/YaVendio/olive) | Transforms plain Python functions into remote tools accessible by AI agents, simplifying tool-server creation for LangGraph and other agent frameworks | ![GitHub stars](https://img.shields.io/github/stars/YaVendio/olive?style=social)<br>![Last commit](https://img.shields.io/github/last-commit/YaVendio/olive) |
@@ -1052,7 +1052,7 @@
   | [Sean-V-Dev/HMLR-Agentic-AI-Memory-System](https://github.com/Sean-V-Dev/HMLR-Agentic-AI-Memory-System) | Persistent living-memory layer for AI agents — stores and retrieves context across sessions to support long-running agentic workflows | ![GitHub stars](https://img.shields.io/github/stars/Sean-V-Dev/HMLR-Agentic-AI-Memory-System?style=social)<br>![Last commit](https://img.shields.io/github/last-commit/Sean-V-Dev/HMLR-Agentic-AI-Memory-System) |
   | [chopratejas/headroom](https://github.com/chopratejas/headroom) | Context-optimization proxy layer for LLM applications — compresses token usage, manages context windows, and provides an OpenAI-compatible API for LangChain, MCP, and FastAPI stacks | ![GitHub stars](https://img.shields.io/github/stars/chopratejas/headroom?style=social)<br>![Last commit](https://img.shields.io/github/last-commit/chopratejas/headroom) |
   | [tb8412/qae-langgraph-example](https://github.com/tb8412/qae-langgraph-example) | Deterministic pre-execution safety certification for LangGraph agents with auditable certificates and constraint-based routing | ![GitHub stars](https://img.shields.io/github/stars/tb8412/qae-langgraph-example?style=social)<br>![Last commit](https://img.shields.io/github/last-commit/tb8412/qae-langgraph-example) |
-  
+
   <div align="center">
 
 ## ⭐114 [gh] noonghunna/qwen36-27b-single-3090@8e0c2db README.md [Apache-2.0] pushed=2026-04-28
@@ -1072,7 +1072,7 @@
 ## ⭐657 [gh] t8/hypura@7fb2479 README.md pushed=2026-04-08
   Hypura reads the GGUF file, profiles your hardware (GPU working set, RAM, NVMe bandwidth),
   and solves a placement optimization that assigns every tensor to a tier:
-  
+
 
 ## ⭐2 [gh] adamvangrover/adam@c341125 llms-full.txt [MIT] pushed=2026-07-05
   2.  **Tool Use:** Agents should prefer using Tools (Python functions) over doing math in their head.
@@ -1096,12 +1096,12 @@
 
 ## ⭐39 [gh] itzharshitmavi/awsome-LLM-model-apps-for-daily-uses@5c088e0 README.md pushed=2026-02-01
   ### 🎯 LLM Optimization Tools
-  
+
   *   [🎯 Toonify Token Optimization](advanced_llm_apps/llm_optimization_tools/toonify_token_optimization/) - Reduce LLM API costs by 30-60% using TOON format
   *   [🧠 Headroom Context Optimization](advanced_llm_apps/llm_optimization_tools/headroom_context_optimization/) - Reduce LLM API costs by 50-90% through intelligent context compression for AI agents (includes persistent memory & MCP support)
-  
+
   ### 🔧 LLM Fine-tuning Tutorials
-  
+
 
 ## ⭐1 [gh] jellydn/tiny-local-ai@87e5d94 OPTIMIZATION.md [MIT] pushed=2026-06-17
   | `--n-gpu-layers -1`    | All layers on Metal GPU      | ✓ Enabled                  |
@@ -1130,7 +1130,7 @@
 ## ⭐1 [gh] bdougie/locallama@0c96be7 local-llm-blog.md pushed=2025-08-03
   ### 1. **Dedicated GPU Power**
   The RTX 4070 Super with 12GB VRAM handles the Qwen 2.5 Coder 7B model effortlessly. What would make my MacBook wheeze runs smoothly with plenty of headroom for larger models.
-  
+
 
 ## [gh] 1shuimo/context_management_tool@13a46d8 notes/headroom.md pushed=2026-03-08
     - [`research/headroom/headroom/transforms/pipeline.py`](https://github.com/chopratejas/headroom/blob/3945c02aa5a1dcbb25bc5b3b39d3684ef38d0d49/headroom/transforms/pipeline.py)
@@ -1142,9 +1142,9 @@
     - [`research/headroom/headroom/memory/core.py`](https://github.com/chopratejas/headroom/blob/3945c02aa5a1dcbb25bc5b3b39d3684ef38d0d49/headroom/memory/core.py)
 
 ## [gh] Sniffr/clore-search@a859bd0 context pushed=2026-05-19
-  
+
   **Project: Self-hosted LLM inference on Clore.AI GPU marketplace**
-  
+
 
 ## [gh] AAkil98/context-lens@a36a5de SEED_CONTEXT.md [MIT] pushed=2026-05-02
   - One provider per instance. Registration at construction or via `setEmbeddingProvider`. Null removes provider (trigram downgrade). Same-name = no-op.
@@ -1162,24 +1162,24 @@
           return await self.generate(
 
 ## [gh] EffortlessMetrics/flow-studio@f1cc7ab docs/CONTEXT_BUDGETS.md [Apache-2.0] pushed=2026-05-04
-  
+
   LLMs can drift or lose focus with unbounded context. Budgets ensure:
-  
+
 
 ## [gh] loke-jad/minimax-agent@af2a99f OPTIMIZATION.md pushed=2026-04-25
   - Slot 0: Permanently holds the system prompt KV cache (never evicted)
   - Slot 1: Handles the conversation (shorter context, references slot 0's cache)
-  
+
 
 ## [gh] DinSpikeAI/spike-agents-engine@d762ea3 spike-context.md pushed=2026-05-30
-  
+
   **(D) Inventory schema hotfix (separate commit, discovered during 1.12 smoke).** When testing the race fix in production, clicking "הרץ עכשיו" returned a 400 from Anthropic: `output_config.format.schema: For 'integer' type, property 'minimum' is not supported`. The inventory schema (`src/lib/agents/inventory/schema.ts` line 67 in the old version) had `priority: { type: "integer", minimum: 1, ... }` — but Anthropic structured outputs do NOT support `minimum`/`maximum` on integers. Grep across `src/lib/agents/**/schema.ts` revealed: the OTHER 4 schemas (manager, reviews, sales, social) explicitly documented this restriction in their header comments. Inventory was the only outlier — written before the rule was discovered, and never had the warning header added back. The agent had been **silently failing 100% in production** since Stage 1, undetected because no one was running it on real data. Fix: removed `minimum: 1`; added the same "IMPORTANT — Anthropic Structured Outputs restrictions" header comment that the other 4 schemas have, plus an in-place `// DO NOT add minimum: 1 here` comment at the priority field. The description (`"1 = הכי דחוף, critical תמיד 1, low תמיד 2"`) already guides the LLM reliably. Verified post-deploy: agent ran cleanly on a 15-row test CSV, classified correctly (1 critical, 1 low, 8 ok, 4 overstocked, 1 no_movement) with Hebrew insights per product.
-  
+
 
 ## [gh] Tilak1452/Full-Stack-Client-Dashboard@a833033 Context.md pushed=2026-06-11
-  
+
   This gives the system enough headroom even on the busiest market days.
-  
+
 
 ## [gh] aitechroberts/semantic-space@99adf1e docs/VLLM_API.md [MIT] pushed=2026-04-21
   | SAM 2.1 Base | ~0.8 GB | Loaded in pipeline |
@@ -1187,7 +1187,7 @@
   | VLM Vision Encoder (optional) | ~0.3 GB | Only when `EXTRACT_ENCODER=true` |
   | PyTorch overhead | ~0.5 GB | CUDA context, etc. |
   | **Total** | **~8.6 GB** | Leaves headroom for larger KV caches |
-  
+
   To adjust the vLLM server's GPU memory share:
 
 ## [gh] sardorsob/math-qa-llm@45f684b context/STATUS.md pushed=2026-06-12

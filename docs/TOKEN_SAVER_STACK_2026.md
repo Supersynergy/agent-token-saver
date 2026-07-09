@@ -1,6 +1,6 @@
 # Token Saver Stack 2026 — SuperSynergy Default
 
-Stand: 2026-07-09  
+Stand: 2026-07-09
 Ziel: 80–99% weniger Kontext-/Ausgabe-Tokens bei gleicher oder besserer Trefferquote.
 
 ## Antwort in 60 Sekunden
@@ -230,7 +230,7 @@ context-mode doctor
 
 ## Top-50 Context-/Token-Saving Tools und Methoden
 
-Score: 0–10 für SuperSynergy-Nutzen.  
+Score: 0–10 für SuperSynergy-Nutzen.
 Status: `adopt` = jetzt nutzen, `test` = Bench nötig, `watch` = beobachten, `avoid` = nur Referenz.
 
 | # | Tool/Methode | Link | Haupthebel | Score | Status | SuperSynergy Default |
