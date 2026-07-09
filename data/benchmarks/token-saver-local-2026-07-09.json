@@ -1,0 +1,72 @@
+{
+  "date": "2026-07-09 19:26:35 CEST",
+  "repo": "/Users/master/BASE/projects/claude-token-saver",
+  "cases": [
+    {
+      "name": "RTK shell-output filter: ps aux",
+      "baseline_tokens": 45459,
+      "optimized_tokens": 1408,
+      "baseline_ms": 45,
+      "optimized_ms": 58,
+      "ok": true,
+      "detail": "Compares raw process table against rtk-filtered output.",
+      "saved_pct": 96.9,
+      "factor": 32.29
+    },
+    {
+      "name": "Tilth smart file read: README outline",
+      "baseline_tokens": 5172,
+      "optimized_tokens": 683,
+      "baseline_ms": 0,
+      "optimized_ms": 4,
+      "ok": true,
+      "detail": "Compares full README.md with Tilth budgeted structural view.",
+      "saved_pct": 86.8,
+      "factor": 7.57
+    },
+    {
+      "name": "context-mode FTS retrieval: search not full-file",
+      "baseline_tokens": 5172,
+      "optimized_tokens": 474,
+      "baseline_ms": 0,
+      "optimized_ms": 56,
+      "ok": true,
+      "detail": "Indexes README once, then retrieves only the three relevant chunks.",
+      "saved_pct": 90.8,
+      "factor": 10.91
+    },
+    {
+      "name": "Web prefilter: curl HTML vs hyperfetch markdown",
+      "baseline_tokens": 139,
+      "optimized_tokens": 207,
+      "baseline_ms": 126,
+      "optimized_ms": 2191,
+      "ok": true,
+      "detail": "Compares raw HTML fetch with markdown/extracted fetch path.",
+      "saved_pct": -48.9,
+      "factor": 0.67
+    },
+    {
+      "name": "MCP schema slimming: verbose tools vs on-demand refs",
+      "baseline_tokens": 5649,
+      "optimized_tokens": 577,
+      "baseline_ms": 0,
+      "optimized_ms": 0,
+      "ok": true,
+      "detail": "Static deterministic proxy for StackOne/Atlassian-style tool schema compaction.",
+      "saved_pct": 89.8,
+      "factor": 9.79
+    },
+    {
+      "name": "Headroom availability: agent-90 profile render",
+      "baseline_tokens": 121,
+      "optimized_tokens": 121,
+      "baseline_ms": 0,
+      "optimized_ms": 141,
+      "ok": true,
+      "detail": "Local config check only; real token savings require proxy-routed Claude/Codex traffic.",
+      "saved_pct": 0.0,
+      "factor": 1.0
+    }
+  ]
+}

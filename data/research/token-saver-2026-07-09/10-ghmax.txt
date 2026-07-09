@@ -1,0 +1,1196 @@
+
+# QUERY: LLMLingua prompt compression agent context
+# 0 hits (0ms, returned 0) gh=0 grep=0 sg=0
+# +variants: l_l_m_lingua prompt compression agent context
+
+# QUERY: MCP server tool schema token overhead context saving
+# 0 hits (0ms, returned 0) gh=0 grep=0 sg=0
+# +variants: m_c_p server tool schema token overhead context saving
+
+# QUERY: agent skill router token saver lazy load skills
+# 4350000 hits (546ms, returned 80) grep=80 gh=0 sg=0
+# +variants: agent
+
+## ⭐382326 [grep] openclaw/openclaw@main ui/src/pages/agents/agents-page.ts [NOASSERTION] pushed=2026-07-09
+  import type {
+  AgentIdentityResult,
+  AgentsFilesListResult,
+  AgentsListResult,
+  ModelCatalogEntry,
+  resolveAgentConfig,
+  resolveEffectiveModelFallbacks,
+  resolveModelPrimary,
+  } from "../../lib/agents/display.ts";
+
+## ⭐382326 [grep] openclaw/openclaw@main src/gateway/server-methods/sessions.ts [NOASSERTION] pushed=2026-07-09
+  import { resolveModelAgentRuntimeMetadata } from "../../agents/agent-runtime-metadata.js";
+  import {
+  listAgentIds,
+  resolveAgentWorkspaceDir,
+  resolveDefaultAgentId,
+  } from "../../agents/agent-scope.js";
+  import {
+  abortEmbeddedAgentRun,
+  isEmbeddedAgentRunActive,
+  waitForEmbeddedAgentRunEnd,
+
+## ⭐382326 [grep] openclaw/openclaw@main src/agents/subagent-registry.ts [NOASSERTION] pushed=2026-07-09
+  * Subagent registry coordinator.
+  import type { ResolveContextEngineOptions } from "../context-engine/registry.js";
+  import type { ContextEngine, SubagentEndReason } from "../context-engine/types.js";
+  import { callGateway } from "../gateway/call.js";
+  import { getAgentRunContext, onAgentEvent } from "../infra/agent-events.js";
+  import { createSubsystemLogger } from "../logging/subsystem.js";
+  import { formatBlockedLivenessError, isBlockedLivenessState } from "../shared/agent-liveness.js";
+  import { createLazyImportLoader, createLazyPromiseLoader } from "../shared/lazy-promise.js";
+
+## ⭐382326 [grep] openclaw/openclaw@main src/commands/doctor/shared/codex-route-warnings.ts [NOASSERTION] pushed=2026-07-09
+  import { AGENT_MODEL_CONFIG_KEYS } from "@openclaw/model-catalog-core/configured-model-refs";
+  import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+  import { asOptionalRecord as asMutableRecord } from "@openclaw/normalization-core/record-coerce";
+  import { normalizeOptionalLowercaseString as normalizeString } from "@openclaw/normalization-core/string-coerce";
+  import { normalizeOptionalAgentRuntimeId } from "../../../agents/agent-runtime-id.js";
+  import { resolveConfiguredProviderFallback } from "../../../agents/configured-provider-fallback.js";
+
+## ⭐382326 [grep] openclaw/openclaw@main src/gateway/server-methods/agent.ts [NOASSERTION] pushed=2026-07-09
+  // Gateway agent methods implement agent.run, agent.wait, agent.reset, identity,
+  // and related session-aware RPC handlers used by UI and operator clients.
+  validateAgentIdentityParams,
+  validateAgentParams,
+  validateAgentWaitParams,
+  } from "../../../packages/gateway-protocol/src/index.js";
+  import { readAcpSessionMeta } from "../../acp/runtime/session-meta.js";
+  import { listAgentIds, resolveDefaultAgentId } from "../../agents/agent-scope.js";
+  import { resolveTrustedGroupId } from "../../agents/agent-tools.policy.js";
+
+## ⭐382326 [grep] openclaw/openclaw@main src/agents/subagent-spawn.ts [NOASSERTION] pushed=2026-07-09
+  * Subagent spawn executor.
+  import type { OpenClawConfig } from "../config/types.openclaw.js";
+  import type { SubagentSpawnPreparation } from "../context-engine/types.js";
+  import { stringifyRouteThreadId } from "../plugin-sdk/channel-route.js";
+  import { listRegisteredPluginAgentPromptGuidance } from "../plugins/command-registry-state.js";
+  import type { SubagentLifecycleHookRunner } from "../plugins/hooks.js";
+  import { isValidAgentId, normalizeAgentId, parseAgentSessionKey } from "../routing/session-key.js";
+  import { resolveUserPath } from "../utils.js";
+
+## ⭐382326 [grep] openclaw/openclaw@main src/agents/acp-spawn.ts [NOASSERTION] pushed=2026-07-09
+  /** Implements ACP subagent/session spawning, binding, limits, and parent-stream setup. */
+  import crypto from "node:crypto";
+  } from "../acp/control-plane/spawn.js";
+  import { isAcpEnabledByPolicy, resolveAcpAgentPolicyError } from "../acp/policy.js";
+  import { readAcpSessionMeta } from "../acp/runtime/session-meta.js";
+  DEFAULT_SUBAGENT_MAX_CHILDREN_PER_AGENT,
+  DEFAULT_SUBAGENT_MAX_SPAWN_DEPTH,
+  } from "../config/agent-limits.js";
+
+## ⭐382326 [grep] openclaw/openclaw@main src/gateway/session-utils.ts [NOASSERTION] pushed=2026-07-09
+  import { resolveModelAgentRuntimeMetadata } from "../agents/agent-runtime-metadata.js";
+  import {
+  listAgentIds,
+  resolveAgentConfig,
+  resolveAgentEffectiveModelPrimary,
+  resolveAgentModelFallbacksOverride,
+  resolveAgentWorkspaceDir,
+  resolveDefaultAgentId,
+  } from "../agents/agent-scope.js";
+  import { lookupContextTokens, resolveContextTokensForModel } from "../agents/context.js";
+
+## ⭐382326 [grep] openclaw/openclaw@main src/commands/doctor/shared/legacy-config-migrations.runtime.agents.ts [NOASSERTION] pushed=2026-07-09
+  // Legacy runtime agent config migrations for memory, heartbeat, sandbox, and runtime policy keys.
+  import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+  import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+  import {
+  isCanonicalToolProviderPolicyKey,
+  normalizeToolProviderPolicyKey,
+  } from "../../../agents/provider-tool-policy.js";
+  import { isKnownCoreToolId } from "../../../agents/tool-catalog.js";
+  import { isToolAllowedByPolicyName } from "../../../agents/tool-policy-match.js";
+
+## ⭐382326 [grep] openclaw/openclaw@main src/config/schema.labels.ts [NOASSERTION] pushed=2026-07-09
+  "agents.list.*.identity.avatar": "Identity Avatar",
+  "agents.list.*.skills": "Agent Skill Filter",
+  "agents.list[].runtime": "Agent Runtime",
+  "agents.list[].runtime.type": "Agent Runtime Type",
+  "agents.list[].runtime.acp": "Agent ACP Runtime",
+  "agents.list[].runtime.acp.agent": "Agent ACP Harness Agent",
+  "agents.list[].runtime.acp.backend": "Agent ACP Backend",
+  "agents.list[].runtime.acp.mode": "Agent ACP Mode",
+  "agents.list[].runtime.acp.cwd": "Agent ACP Working Directory",
+  "agents.list[].thinkingDefault": "Agent Thinking Default",
+
+## ⭐382326 [grep] openclaw/openclaw@main src/gateway/server-methods/chat.ts [NOASSERTION] pushed=2026-07-09
+  // Chat gateway methods implement chat.send/history/abort/inject/metadata and
+  // bridge UI RPCs to agent dispatch, transcripts, media, and streaming state.
+  import { createHash, randomUUID } from "node:crypto";
+  listAgentIds,
+  resolveDefaultAgentId,
+  resolveAgentWorkspaceDir,
+  resolveSessionAgentId,
+  } from "../../agents/agent-scope.js";
+  import { rewriteTranscriptEntriesInRuntimeTranscript } from "../../agents/embedded-agent-runner/transcript-rewrite.js";
+
+## ⭐382326 [grep] openclaw/openclaw@main src/agents/agent-scope.ts [NOASSERTION] pushed=2026-07-09
+  /** Higher-level agent scope helpers for model selection, fallbacks, skills, and workspaces. */
+  import fs from "node:fs";
+  import path from "node:path";
+  import { resolveAgentModelFallbackValues } from "../config/model-input.js";
+  import { hasSessionAutoModelFallbackProvenance } from "../config/sessions/model-override-provenance.js";
+  import type { AgentDefaultsConfig } from "../config/types.agent-defaults.js";
+  import type { AgentModelConfig } from "../config/types.agents-shared.js";
+  import type { AgentConfig } from "../config/types.agents.js";
+
+## ⭐382326 [grep] openclaw/openclaw@main src/config/sessions/targets.ts [NOASSERTION] pushed=2026-07-09
+  // Session store target discovery maps configured and on-disk agent stores to canonical targets.
+  import fsSync from "node:fs";
+  import path from "node:path";
+  import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+  import { listAgentIds, resolveDefaultAgentId } from "../../agents/agent-scope.js";
+  import { resolveAgentSessionDirsFromAgentsDirSync } from "../../agents/session-dirs.js";
+  import { DEFAULT_AGENT_ID, normalizeAgentId } from "../../routing/session-key.js";
+  import { resolveStateDir } from "../paths.js";
+  import { resolveAgentsDirFromSessionStorePath, resolveStorePath } from "./paths.js";
+
+## ⭐382326 [grep] openclaw/openclaw@main src/infra/heartbeat-runner.ts [NOASSERTION] pushed=2026-07-09
+  // Runs heartbeat checks and emits status updates for configured agents.
+  import { createHash } from "node:crypto";
+  import { normalizeOptionalAgentRuntimeId } from "../agents/agent-runtime-id.js";
+  import {
+  listAgentIds,
+  resolveAgentConfig,
+  resolveAgentWorkspaceDir,
+  resolveDefaultAgentId,
+  } from "../agents/agent-scope.js";
+
+## ⭐382326 [grep] openclaw/openclaw@main src/commands/agent-via-gateway.ts [NOASSERTION] pushed=2026-07-09
+  // Gateway-first agent CLI implementation with embedded fallback for local/runtime failures.
+  import { randomUUID } from "node:crypto";
+  } from "../../packages/gateway-protocol/src/client-info.js";
+  import { listAgentIds, resolveDefaultAgentId } from "../agents/agent-scope-config.js";
+  import { formatCliCommand } from "../cli/command-format.js";
+  normalizeAgentId,
+  resolveAgentIdFromSessionKey,
+  scopeLegacySessionKeyToAgent,
+
+## ⭐382326 [grep] openclaw/openclaw@main src/gateway/server-methods/agents.ts [NOASSERTION] pushed=2026-07-09
+  // Agents gateway methods expose agent listing, config mutation, workspace file
+  // reads/writes, identity merging, and safe deletion for operator clients.
+  validateAgentsCreateParams,
+  validateAgentsDeleteParams,
+  validateAgentsFilesGetParams,
+  validateAgentsFilesListParams,
+  validateAgentsFilesSetParams,
+  validateAgentsListParams,
+  validateAgentsUpdateParams,
+
+## ⭐382326 [grep] openclaw/openclaw@main src/plugin-sdk/agent-harness-runtime.ts [NOASSERTION] pushed=2026-07-09
+  // Lightweight runtime surface for plugin-owned agent harnesses.
+  // Keep heavyweight tool construction out of this module so harness imports can
+  } from "../agents/codex-mcp-config.types.js";
+  import type { EmbeddedRunAttemptResult } from "../agents/embedded-agent-runner/run/types.js";
+  import {
+  abortAndDrainEmbeddedAgentRun,
+  abortEmbeddedAgentRun,
+  clearActiveEmbeddedRun,
+  queueEmbeddedAgentMessageWithOutcome,
+
+## ⭐382326 [grep] openclaw/openclaw@main src/gateway/server-chat.ts [NOASSERTION] pushed=2026-07-09
+  // Gateway chat runtime projects agent events into chat/session subscriber
+  // streams, lifecycle persistence, heartbeat visibility, and live UI updates.
+  import { performance } from "node:perf_hooks";
+  import { resolveDefaultAgentId } from "../agents/agent-scope.js";
+  import { resolveToolSearchCodeDisplayTarget } from "../agents/tool-display-common.js";
+  import { DEFAULT_HEARTBEAT_ACK_MAX_CHARS, stripHeartbeatToken } from "../auto-reply/heartbeat.js";
+  import { getRuntimeConfig } from "../config/io.js";
+  import { type AgentEventPayload, getAgentRunContext } from "../infra/agent-events.js";
+
+## ⭐382326 [grep] openclaw/openclaw@main src/agents/agent-command.ts [NOASSERTION] pushed=2026-07-09
+  /** Main agent command orchestration for sessions, model selection, delivery, and attempts. */
+  import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+  import { sanitizeForLog } from "../../packages/terminal-core/src/ansi.js";
+  import { resolveInlineAgentImageAttachments } from "../auto-reply/reply/agent-turn-attachments.js";
+  import { sanitizePendingFinalDeliveryText } from "../auto-reply/reply/pending-final-delivery.js";
+  assertAgentRunLifecycleGenerationCurrent,
+  captureAgentRunLifecycleGeneration,
+  clearAgentRunContext,
+  emitAgentEvent,
+
+## ⭐382326 [grep] openclaw/openclaw@main apps/shared/OpenClawKit/Sources/OpenClawProtocol/GatewayModels.swift [NOASSERTION] pushed=2026-07-09
+  case notPaired = "NOT_PAIRED"
+  case agentTimeout = "AGENT_TIMEOUT"
+  case invalidRequest = "INVALID_REQUEST"
+  public let locale: String?
+  public let useragent: String?
+  locale: String?,
+  useragent: String?)
+
+## ⭐382326 [grep] openclaw/openclaw@main src/cron/isolated-agent/run.ts [NOASSERTION] pushed=2026-07-09
+  /** Orchestrates isolated cron agent turn setup, execution, delivery, and cleanup. */
+  import { isDeepStrictEqual } from "node:util";
+  import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+  import { retireSessionMcpRuntime } from "../../agents/agent-bundle-mcp-tools.js";
+  import { hasAnyAuthProfileStoreSource } from "../../agents/auth-profiles/source-check.js";
+  import { resolveAgentHarnessPolicy } from "../../agents/harness/policy.js";
+  import { findModelInCatalog } from "../../agents/model-catalog-lookup.js";
+
+## ⭐382326 [grep] openclaw/openclaw@main ui/src/pages/agents/view.ts [NOASSERTION] pushed=2026-07-09
+  // Control UI view renders agents screen content.
+  import { html, nothing } from "lit";
+  import { keyed } from "lit/directives/keyed.js";
+  import type {
+  AgentIdentityResult,
+  AgentsFilesListResult,
+  AgentsListResult,
+  ChannelsStatusSnapshot,
+  agentBadgeText,
+
+## ⭐382326 [grep] openclaw/openclaw@main src/commands/agents.commands.add.ts [NOASSERTION] pushed=2026-07-09
+  // Implements `openclaw agents add`, including config mutation, workspace setup, auth copy, and route binding setup.
+  import fs from "node:fs/promises";
+  import {
+  resolveAgentDir,
+  resolveAgentWorkspaceDir,
+  resolveDefaultAgentId,
+  } from "../agents/agent-scope.js";
+  import {
+  buildPortableAuthProfileSecretsStoreForAgentCopy,
+
+## ⭐382326 [grep] openclaw/openclaw@main ui/src/lib/agents/index.ts [NOASSERTION] pushed=2026-07-09
+  import type {
+  AgentsFilesListResult,
+  AgentsListResult,
+  ModelCatalogEntry,
+  export type AgentsPanel = "overview" | "files" | "tools" | "skills" | "channels" | "cron";
+  
+  export type AgentsState = {
+  client: GatewayBrowserClient | null;
+
+## ⭐382326 [grep] openclaw/openclaw@main src/agents/subagent-control.ts [NOASSERTION] pushed=2026-07-09
+  * Implements subagent control operations: list, kill, steer, and send-message.
+  * The module enforces controller ownership before mutating child sessions or
+  * routing internal follow-up messages.
+  */
+  import crypto from "node:crypto";
+  import type { ClearSessionQueueResult } from "../auto-reply/reply/queue.js";
+  import { resolveSubagentLabel, sortSubagentRuns } from "../auto-reply/reply/subagents-utils.js";
+  import { resolveStorePath } from "../config/sessions/paths.js";
+  import { isSubagentSessionKey, parseAgentSessionKey } from "../routing/session-key.js";
+
+## ⭐382326 [grep] openclaw/openclaw@main src/agents/agent-scope-config.ts [NOASSERTION] pushed=2026-07-09
+  /** Resolves configured agent ids, directories, workspaces, and merged agent defaults. */
+  import path from "node:path";
+  import { readStringValue } from "@openclaw/normalization-core/string-coerce";
+  import { resolveStateDir } from "../config/paths.js";
+  import type {
+  AgentContextLimitsConfig,
+  AgentDefaultsConfig,
+  } from "../config/types.agent-defaults.js";
+  import type { OpenClawConfig } from "../config/types.js";
+  import { DEFAULT_AGENT_ID, normalizeAgentId } from "../routing/session-key.js";
+
+## ⭐382326 [grep] openclaw/openclaw@main src/agents/openclaw-tools.ts [NOASSERTION] pushed=2026-07-09
+  import type { GatewayMessageChannel } from "../utils/message-channel.js";
+  import { resolveAgentWorkspaceDir, resolveSessionAgentIds } from "./agent-scope.js";
+  import {
+  type HookContext,
+  isToolWrappedWithBeforeToolCallHook,
+  wrapToolWithBeforeToolCallHook,
+  } from "./agent-tools.before-tool-call.js";
+  import type { AuthProfileStore } from "./auth-profiles/types.js";
+  import { createAgentsListTool } from "./tools/agents-list-tool.js";
+
+## ⭐382326 [grep] openclaw/openclaw@main src/agents/subagent-announce-delivery.ts [NOASSERTION] pushed=2026-07-09
+  * Subagent completion announcement delivery.
+  import {
+  isAgentMediatedCompletionSourceTool,
+  shouldPreserveUserFacingSessionStateForInputProvenance,
+  } from "../sessions/input-provenance.js";
+  import { deriveSessionChatTypeFromKey } from "../sessions/session-chat-type-shared.js";
+  import { isCronRunSessionKey, isCronSessionKey } from "../sessions/session-key-utils.js";
+  import { isNonTerminalAgentRunStatus } from "../shared/agent-run-status.js";
+  import { mergeDeliveryContext, normalizeDeliveryContext } from "../utils/delivery-context.js";
+
+## ⭐382326 [grep] openclaw/openclaw@main src/commands/agents.commands.bind.ts [NOASSERTION] pushed=2026-07-09
+  // Implements agent route binding list/add/remove subcommands.
+  import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
+  import { listAgentEntries, resolveDefaultAgentId } from "../agents/agent-scope.js";
+  import { formatCliCommand } from "../cli/command-format.js";
+  import { isRouteBinding, listRouteBindings } from "../config/bindings.js";
+  import { replaceConfigFile } from "../config/config.js";
+  import { logConfigUpdated } from "../config/logging.js";
+  import type { AgentRouteBinding } from "../config/types.js";
+
+## ⭐382326 [grep] openclaw/openclaw@main src/agents/embedded-agent-runner/compact.ts [NOASSERTION] pushed=2026-07-09
+  * Implements embedded-agent transcript compaction and runtime handoff.
+  */
+  import fs from "node:fs/promises";
+  import os from "node:os";
+  import { isAcpRuntimeSpawnAvailable } from "../../acp/runtime/availability.js";
+  import type { ThinkLevel } from "../../auto-reply/thinking.js";
+  import { resolveAgentModelFallbackValues } from "../../config/model-input.js";
+  import type { OpenClawConfig } from "../../config/types.openclaw.js";
+  import { listRegisteredPluginAgentPromptGuidance } from "../../plugins/command-registry-state.js";
+
+## ⭐382326 [grep] openclaw/openclaw@main src/agents/embedded-agent-runner/run/attempt.ts [NOASSERTION] pushed=2026-07-09
+  * Orchestrates one embedded-agent attempt from prompt setup through stream result.
+  import { resolveHeartbeatSummaryForAgent } from "../../../infra/heartbeat-summary.js";
+  import { getMachineDisplayName } from "../../../infra/machine-name.js";
+  import { resolveRuntimeOsLabel } from "../../../infra/os-summary.js";
+  import { createCodexNativeWebSearchWrapper } from "../../../llm/providers/stream-wrappers/openai.js";
+  import type { AssistantMessage } from "../../../llm/types.js";
+  import { listRegisteredPluginAgentPromptGuidance } from "../../../plugins/command-registry-state.js";
+
+## ⭐382326 [grep] openclaw/openclaw@main src/cli/program/register.agent.ts [NOASSERTION] pushed=2026-07-09
+  // Agent and agents command registration with lazy command-module loading for startup speed.
+  import type { Command } from "commander";
+  type AgentsAddModule = typeof import("../../commands/agents.commands.add.js");
+  type AgentsBindModule = typeof import("../../commands/agents.commands.bind.js");
+  type AgentsDeleteModule = typeof import("../../commands/agents.commands.delete.js");
+  type AgentsIdentityModule = typeof import("../../commands/agents.commands.identity.js");
+  type AgentsListModule = typeof import("../../commands/agents.commands.list.js");
+
+## ⭐382326 [grep] openclaw/openclaw@main src/infra/state-migrations.ts [NOASSERTION] pushed=2026-07-09
+  import { writeAcpSessionMetaForMigration } from "../acp/runtime/session-meta.js";
+  import { resolveDefaultAgentId } from "../agents/agent-scope.js";
+  import {
+  import {
+  listConfiguredSessionStoreAgentIds,
+  resolveAllAgentSessionStoreTargetsSync,
+  } from "../config/sessions/targets.js";
+  listPluginDoctorSessionStoreAgentIds,
+
+## ⭐382326 [grep] openclaw/openclaw@main src/daemon/launchd.ts [NOASSERTION] pushed=2026-07-09
+  /** macOS LaunchAgent installer, runtime inspection, and lifecycle controls. */
+  import fs from "node:fs/promises";
+  import {
+  GATEWAY_LAUNCH_AGENT_LABEL,
+  GATEWAY_SERVICE_KIND,
+  GATEWAY_SERVICE_MARKER,
+  resolveGatewayServiceDescription,
+  resolveGatewayLaunchAgentLabel,
+  resolveLegacyGatewayLaunchAgentLabels,
+
+## ⭐382326 [grep] openclaw/openclaw@main extensions/policy/src/policy-state.ts [NOASSERTION] pushed=2026-07-09
+  import { normalizeProviderId } from "openclaw/plugin-sdk/provider-model-shared";
+  import { normalizeAgentId } from "openclaw/plugin-sdk/routing";
+  import { coerceSecretRef } from "openclaw/plugin-sdk/secret-input";
+  const DEFAULT_POLICY_SANDBOX_BROWSER_NETWORK = "openclaw-sandbox-browser";
+  const DEFAULT_EXEC_APPROVAL_AGENT_ID = "main";
+  const ALLOWLIST_DEFAULT_INGRESS_GROUP_POLICY_CHANNELS = new Set([
+  readonly gatewayExposure?: readonly PolicyGatewayExposureEvidence[];
+  readonly agentWorkspace?: readonly PolicyAgentWorkspaceEvidence[];
+
+## ⭐382326 [grep] openclaw/openclaw@main src/gateway/server-methods/agent-job.ts [NOASSERTION] pushed=2026-07-09
+  // Agent job tracking caches terminal run snapshots so `agent.wait` can observe
+  // recent run outcomes even after the live event stream has moved on.
+  import {
+  buildAgentRunTerminalOutcome,
+  mergeAgentRunTerminalOutcome,
+  type AgentRunTerminalOutcome,
+  } from "../../agents/agent-run-terminal-outcome.js";
+  import { onAgentEvent } from "../../infra/agent-events.js";
+  import { setSafeTimeout } from "../../utils/timer-delay.js";
+  import type { AgentWaitTerminalSnapshot } from "./agent-wait-dedupe.js";
+
+## ⭐382326 [grep] openclaw/openclaw@main src/state/openclaw-agent-db.ts [NOASSERTION] pushed=2026-07-09
+  // OpenClaw agent database stores agent-scoped persisted runtime state.
+  import { chmodSync, existsSync, mkdirSync, statSync } from "node:fs";
+  } from "../infra/sqlite-wal.js";
+  import { normalizeAgentId } from "../routing/session-key.js";
+  import type { DB as OpenClawAgentKyselyDatabase } from "./openclaw-agent-db.generated.js";
+  import { resolveOpenClawAgentSqlitePath } from "./openclaw-agent-db.paths.js";
+  import { OPENCLAW_AGENT_SCHEMA_SQL } from "./openclaw-agent-schema.generated.js";
+  import type { DB as OpenClawStateKyselyDatabase } from "./openclaw-state-db.generated.js";
+
+## ⭐382326 [grep] openclaw/openclaw@main extensions/policy/src/doctor/register.ts [NOASSERTION] pushed=2026-07-09
+  import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
+  import { normalizeAgentId } from "openclaw/plugin-sdk/routing";
+  import { isRecord, uniqueStrings } from "openclaw/plugin-sdk/string-coerce-runtime";
+  type PolicyAuthProfileEvidence,
+  type PolicyAgentWorkspaceEvidence,
+  type PolicyDataHandlingEvidence,
+  "auth",
+  "agents",
+
+## ⭐382326 [grep] openclaw/openclaw@main src/commands/doctor/shared/stale-subagent-allowlist.ts [NOASSERTION] pushed=2026-07-09
+  // Doctor scanner and repair for subagent allowlists that reference missing agents.
+  import { listAgentIds } from "../../../agents/agent-scope-config.js";
+  import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+  import { normalizeAgentId, normalizeOptionalAgentId } from "../../../routing/session-key.js";
+  
+  export type StaleSubagentAllowlistHit = {
+  /** Config path containing the stale allowAgents entry. */
+  pathLabel: string;
+  /** Original configured agent id. */
+  agentId: string;
+
+## ⭐382326 [grep] openclaw/openclaw@main src/commands/agents.config.ts [NOASSERTION] pushed=2026-07-09
+  // Agent config mutation and summary builders used by `openclaw agents` commands.
+  import {
+  listAgentEntries,
+  resolveAgentDir,
+  resolveAgentWorkspaceDir,
+  resolveDefaultAgentId,
+  } from "../agents/agent-scope.js";
+  import type { AgentIdentityFile } from "../agents/identity-file.js";
+  import { identityHasValues, loadAgentIdentityFromWorkspace } from "../agents/identity-file.js";
+
+## ⭐382326 [grep] openclaw/openclaw@main ui/src/lib/sessions/session-options.ts [NOASSERTION] pushed=2026-07-09
+  import {
+  buildAgentMainSessionKey,
+  isSessionKeyTiedToAgent,
+  isSubagentSessionKey,
+  normalizeAgentId,
+  parseAgentSessionKey,
+  } from "./session-key.ts";
+  
+  type SessionAgentOptionsState = {
+  agentsList?: {
+
+## ⭐382326 [grep] openclaw/openclaw@main ui/src/pages/agents/panels-tools-skills.ts [NOASSERTION] pushed=2026-07-09
+  // Control UI view renders agents panels tools skills screen content.
+  import { html, nothing } from "lit";
+  import { normalizeToolName } from "../../../../src/agents/tool-policy-shared.js";
+  import type {
+  type AgentToolEntry,
+  type AgentToolSection,
+  isAllowedByPolicy,
+  matchesList,
+  resolveAgentConfig,
+
+## ⭐382326 [grep] openclaw/openclaw@main ui/src/lib/sessions/session-key.ts [NOASSERTION] pushed=2026-07-09
+  export type ParsedAgentSessionKey = {
+  agentId: string;
+  rest: string;
+  };
+  
+  export const DEFAULT_AGENT_ID = "main";
+  export const DEFAULT_MAIN_KEY = "main";
+  
+  export type UiSessionDefaultsHost = {
+  assistantAgentId?: string | null;
+
+## ⭐382326 [grep] openclaw/openclaw@main src/gateway/server-cron.ts [NOASSERTION] pushed=2026-07-09
+  // Gateway cron runtime service runs scheduled agent turns, heartbeat wakeups,
+  // plugin hooks, notifications, and cron lifecycle cleanup.
+  import { retireSessionMcpRuntime } from "../agents/agent-bundle-mcp-tools.js";
+  import { resolveDefaultAgentId } from "../agents/agent-scope.js";
+  import { abortAndDrainEmbeddedAgentRun } from "../agents/embedded-agent.js";
+  import { isSilentReplyText, SILENT_REPLY_TOKEN } from "../auto-reply/tokens.js";
+  canonicalizeMainSessionAlias,
+  resolveAgentIdFromSessionKey,
+  resolveAgentMainSessionKey,
+
+## ⭐382326 [grep] openclaw/openclaw@main src/plugins/hook-types.ts [NOASSERTION] pushed=2026-07-09
+  import type { AgentMessage } from "../agents/runtime/index.js";
+  import type { SourceReplyDeliveryMode } from "../auto-reply/get-reply-options.types.js";
+  PluginHookBeforeAgentStartEvent,
+  PluginHookBeforeAgentStartResult,
+  PluginHookBeforeModelResolveEvent,
+  PluginHookBeforeModelResolveResult,
+  PluginHookBeforePromptBuildEvent,
+  PluginHookBeforePromptBuildResult,
+  } from "./hook-before-agent-start.types.js";
+
+## ⭐382326 [grep] openclaw/openclaw@main extensions/codex/src/conversation-binding.ts [NOASSERTION] pushed=2026-07-09
+  resolveSandboxContext,
+  } from "openclaw/plugin-sdk/agent-harness-runtime";
+  import { resolveSessionAgentIds } from "openclaw/plugin-sdk/agent-runtime";
+  import { loadExecApprovals } from "openclaw/plugin-sdk/exec-approvals-runtime";
+  import { resolveCodexAppServerForModelProvider } from "./app-server/app-server-policy.js";
+  import { resolveCodexAppServerAuthProfileIdForAgent } from "./app-server/auth-bridge.js";
+  import { CODEX_CONTROL_METHODS } from "./app-server/capabilities.js";
+  const DEFAULT_AGENT_ID = "main";
+
+## ⭐382326 [grep] openclaw/openclaw@main ui/src/lib/sessions/navigation.ts [NOASSERTION] pushed=2026-07-09
+  isUiGlobalSessionKey,
+  isSessionKeyTiedToAgent,
+  isSubagentSessionKey,
+  normalizeAgentId,
+  parseAgentSessionKey,
+  resolveUiDefaultAgentId,
+  resolveUiGlobalAliasAgentId,
+  resolveUiKnownSelectedGlobalAgentId,
+  resolveUiSelectedGlobalAgentId,
+  uiSessionRowMatchesSelectedChat,
+
+## ⭐382326 [grep] openclaw/openclaw@main src/plugins/hooks.ts [NOASSERTION] pushed=2026-07-09
+  PluginHookAfterToolCallEvent,
+  PluginHookAgentContext,
+  PluginHookAgentEndEvent,
+  PluginHookBeforeAgentFinalizeEvent,
+  PluginHookBeforeAgentFinalizeResult,
+  PluginHookBeforeAgentReplyEvent,
+  PluginHookBeforeAgentReplyResult,
+  PluginHookBeforeAgentStartEvent,
+  PluginHookBeforeAgentStartResult,
+  PluginHookBeforeDispatchContext,
+
+## ⭐382326 [grep] openclaw/openclaw@main src/gateway/server-methods/cron.ts [NOASSERTION] pushed=2026-07-09
+  import {
+  DEFAULT_AGENT_ID,
+  isSubagentSessionKey,
+  normalizeAgentId,
+  } from "../../routing/session-key.js";
+  import { parseAgentSessionKey } from "../../sessions/session-key-utils.js";
+  import {
+  kind: "agentTool";
+  agentId: string;
+
+## ⭐382326 [grep] openclaw/openclaw@main src/gateway/server-methods/usage.ts [NOASSERTION] pushed=2026-07-09
+  } from "../../../packages/gateway-protocol/src/index.js";
+  import { resolveDefaultAgentId } from "../../agents/agent-scope.js";
+  import {
+  } from "../../infra/session-cost-usage.js";
+  import { normalizeAgentId, parseAgentSessionKey } from "../../routing/session-key.js";
+  import { resolvePreferredSessionKeyForSessionIdMatches } from "../../sessions/session-id-resolution.js";
+  resolveSessionStoreAgentId,
+  resolveStoredSessionKeyForAgentStore,
+
+## ⭐382326 [grep] openclaw/openclaw@main extensions/codex/src/app-server/native-subagent-monitor.ts [NOASSERTION] pushed=2026-07-09
+  * Monitors Codex native subagent threads and mirrors their lifecycle/completion
+  * into OpenClaw task runtime records for parent sessions.
+  */
+  import { createHash } from "node:crypto";
+  import fs from "node:fs/promises";
+  import path from "node:path";
+  import { embeddedAgentLog, formatErrorMessage } from "openclaw/plugin-sdk/agent-harness-runtime";
+  import {
+  createAgentHarnessTaskRuntime,
+  deliverAgentHarnessTaskCompletion,
+
+## ⭐382326 [grep] openclaw/openclaw@main src/agents/runtime-plan/types.ts [NOASSERTION] pushed=2026-07-09
+  * Public type contract for prepared agent runtime plans. These types describe
+  * provider auth, prompt, tool, transcript, delivery, outcome, transport, and
+  * observability decisions shared across embedded-agent hot paths.
+  */
+  import type { TSchema } from "typebox";
+  import type { AgentTool } from "../runtime/index.js";
+  
+  /** Runtime transport selected for one model attempt. */
+  export type AgentRuntimeTransport = "sse" | "websocket" | "auto";
+
+## ⭐382326 [grep] openclaw/openclaw@main src/agents/agent-tools.ts [NOASSERTION] pushed=2026-07-09
+  * Builds the effective OpenClaw agent tool surface.
+  * Assembles core, shell, channel, OpenClaw, plugin, and Tool Search tools, then
+  * applies sandbox, profile, provider, sender, group, and sub-agent policy.
+  import { resolveGatewayMessageChannel } from "../utils/message-channel.js";
+  import { resolveAgentConfig } from "./agent-scope.js";
+  import { wrapToolWithAbortSignal } from "./agent-tools.abort.js";
+  import {
+  } from "./agent-tools.before-tool-call.js";
+
+## ⭐382326 [grep] openclaw/openclaw@main src/config/sessions/paths.ts [NOASSERTION] pushed=2026-07-09
+  // Session path helpers keep stores and transcripts inside agent-owned session directories.
+  import fs from "node:fs";
+  import os from "node:os";
+  import path from "node:path";
+  import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+  import { expandHomePrefix, resolveRequiredHomeDir } from "../../infra/home-dir.js";
+  import { DEFAULT_AGENT_ID, normalizeAgentId } from "../../routing/session-key.js";
+  import { resolveStateDir } from "../paths.js";
+  function resolveAgentSessionsDir(
+
+## ⭐382326 [grep] openclaw/openclaw@main src/agents/tools/cron-tool.ts [NOASSERTION] pushed=2026-07-09
+  import { GatewayClientRequestError } from "../../gateway/client.js";
+  import { normalizeAgentId } from "../../routing/session-key.js";
+  import { parseAgentSessionKey } from "../../sessions/session-key-utils.js";
+  import { extractTextFromChatContent } from "../../shared/chat-content.js";
+  import { isRecord, truncateUtf16Safe } from "../../utils.js";
+  import type { DeliveryContext } from "../../utils/delivery-context.shared.js";
+  import { resolveSessionAgentId } from "../agent-scope.js";
+  import {
+  type AnyAgentTool,
+
+## ⭐382326 [grep] openclaw/openclaw@main src/agents/subagent-announce.ts [NOASSERTION] pushed=2026-07-09
+  * Subagent completion announcement coordinator.
+  import { formatAgentInternalEventsForPrompt, type AgentInternalEvent } from "./internal-events.js";
+  import {
+  deliverSubagentAnnouncement,
+  loadRequesterSessionEntry,
+  loadSessionEntryByKey,
+  runAnnounceDeliveryWithRetry,
+  resolveSubagentAnnounceTimeoutMs,
+  resolveSubagentCompletionOrigin,
+
+## ⭐382326 [grep] openclaw/openclaw@main src/agents/subagent-registry-run-manager.ts [NOASSERTION] pushed=2026-07-09
+  * Subagent run manager.
+  import type { DeliveryContext } from "../utils/delivery-context.types.js";
+  import { buildAgentRunTerminalOutcomeFromWaitResult } from "./agent-run-terminal-outcome.js";
+  import { removeInternalSessionEffectsTranscript } from "./internal-session-effects.js";
+  import { isRecoverableAgentWaitError, waitForAgentRun } from "./run-wait.js";
+  import type { ensureRuntimePluginsLoaded as ensureRuntimePluginsLoadedFn } from "./runtime-plugins.js";
+  import { type SubagentRunOutcome, withSubagentOutcomeTiming } from "./subagent-announce-output.js";
+  import {
+
+## ⭐382326 [grep] openclaw/openclaw@main src/agents/sandbox/config.ts [NOASSERTION] pushed=2026-07-09
+  * Merges global and agent settings into normalized Docker, SSH, browser, prune, scope, and tool-policy config.
+  import { normalizeSecretInputString } from "../../config/types.secrets.js";
+  import { resolveAgentConfig } from "../agent-scope.js";
+  import {
+  } from "./constants.js";
+  import { resolveSandboxToolPolicyForAgent } from "./tool-policy.js";
+  import type {
+
+## ⭐382326 [grep] openclaw/openclaw@main extensions/feishu/src/bot.ts [NOASSERTION] pushed=2026-07-09
+  } from "openclaw/plugin-sdk/channel-inbound";
+  import { resolveAgentOutboundIdentity } from "openclaw/plugin-sdk/channel-outbound";
+  import { createChannelPairingController } from "openclaw/plugin-sdk/channel-pairing";
+  evaluateSupplementalContextVisibility,
+  normalizeAgentId,
+  resolveChannelContextVisibilityMode,
+  import { resolveFeishuMessageDedupeKey } from "./dedupe-key.js";
+  import { maybeCreateDynamicAgent } from "./dynamic-agent.js";
+
+## ⭐382326 [grep] openclaw/openclaw@main ui/src/pages/chat/chat-history.ts [NOASSERTION] pushed=2026-07-09
+  import type {
+  AgentsListResult,
+  GatewaySessionRow,
+  import {
+  scopedAgentParamsForSession,
+  unsubscribeSessionMessages,
+  normalizeAgentId,
+  parseAgentSessionKey,
+
+## ⭐382326 [grep] openclaw/openclaw@main src/infra/agent-events.ts [NOASSERTION] pushed=2026-07-09
+  // Stores and broadcasts agent lifecycle and streaming events.
+  import { AsyncLocalStorage } from "node:async_hooks";
+  /** Stream name for agent events delivered to gateway listeners and plugin host hooks. */
+  export type AgentEventStream =
+  | "lifecycle"
+  /** Lifecycle phase for a visible item in the agent activity feed. */
+  export type AgentItemEventPhase = "start" | "update" | "end";
+  /** Status rendered for an item-level agent activity event. */
+
+## ⭐382326 [grep] openclaw/openclaw@main src/agents/tools/sessions-send-tool.ts [NOASSERTION] pushed=2026-07-09
+  import {
+  isSubagentSessionKey,
+  normalizeAgentId,
+  resolveAgentIdFromSessionKey,
+  toAgentStoreSessionKey,
+  } from "../../routing/session-key.js";
+  import { annotateInterSessionPromptText } from "../../sessions/input-provenance.js";
+  import { isCronRunSessionKey, parseAgentSessionKey } from "../../sessions/session-key-utils.js";
+  import { SESSION_LABEL_MAX_LENGTH } from "../../sessions/session-label.js";
+
+## ⭐382326 [grep] openclaw/openclaw@main src/agents/embedded-agent-runner/run.ts [NOASSERTION] pushed=2026-07-09
+  * Top-level embedded-agent run orchestration entrypoint.
+  assertAgentRunLifecycleGenerationCurrent,
+  captureAgentRunLifecycleGeneration,
+  claimAgentRunContext,
+  emitAgentItemEvent,
+  getAgentEventLifecycleGeneration,
+  getAgentRunContext,
+  registerAgentRunContext,
+  withAgentRunLifecycleGeneration,
+
+## ⭐382326 [grep] openclaw/openclaw@main src/talk/agent-consult-runtime.ts [NOASSERTION] pushed=2026-07-09
+  // Agent consult runtime starts agent consultation flows from talk sessions.
+  import { randomUUID } from "node:crypto";
+  import type { RunEmbeddedAgentParams } from "../agents/embedded-agent-runner/run/params.js";
+  import { forkSessionEntryFromParent } from "../auto-reply/reply/session-fork.js";
+  import type { RuntimeLogger, PluginRuntimeCore } from "../plugins/runtime/types-core.js";
+  import { parseAgentSessionKey } from "../routing/session-key.js";
+  import { beginSessionWorkAdmission } from "../sessions/session-lifecycle-admission.js";
+  buildRealtimeVoiceAgentConsultPrompt,
+
+## ⭐382326 [grep] openclaw/openclaw@main packages/agent-core/src/agent-loop.ts [NOASSERTION] pushed=2026-07-09
+  // Keep the runtime class on the package specifier so built agent-core shares
+  // constructor identity with @openclaw/llm-core; source types keep SDK d.ts bundled.
+  import { resolveAgentReasoningOption } from "./reasoning.js";
+  import { type AgentCoreStreamRuntimeDeps, resolveAgentCoreStreamFn } from "./runtime-deps.js";
+  import type {
+  AgentContext,
+  AgentEvent,
+  AgentLoopConfig,
+  AgentMessage,
+
+## ⭐382326 [grep] openclaw/openclaw@main ui/src/pages/agents/panels-status-files.ts [NOASSERTION] pushed=2026-07-09
+  // Control UI view renders agents panels status files screen content.
+  import { applyPreviewTheme } from "@create-markdown/preview";
+  import type {
+  AgentsFilesListResult,
+  ChannelAccountSnapshot,
+  import { t } from "../../i18n/index.ts";
+  import { formatBytes, type AgentContext } from "../../lib/agents/display.ts";
+  import type { AgentsPanel } from "../../lib/agents/index.ts";
+
+## ⭐382326 [grep] openclaw/openclaw@main src/cron/isolated-agent/run-executor.ts [NOASSERTION] pushed=2026-07-09
+  import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+  import type { BootstrapContextMode } from "../../agents/bootstrap-files.js";
+  import type { FastModeAutoProgressState } from "../../agents/fast-mode.js";
+  import { runAgentHarnessBeforeMessageWriteHook } from "../../agents/harness/hook-helpers.js";
+  import { resolveCliRuntimeExecutionProvider } from "../../agents/model-runtime-aliases.js";
+  import { wrapUntrustedPromptDataBlock } from "../../agents/sanitize-for-prompt.js";
+  import { normalizeToolName } from "../../agents/tool-policy.js";
+  import type { AgentDefaultsConfig } from "../../config/types.agent-defaults.js";
+
+## ⭐382326 [grep] openclaw/openclaw@main src/tui/embedded-backend.ts [NOASSERTION] pushed=2026-07-09
+  import type { SessionsPatchResult } from "../../packages/gateway-protocol/src/index.js";
+  import { agentCommandFromIngress } from "../agents/agent-command.js";
+  import {
+  resolveAgentDir,
+  resolveAgentWorkspaceDir,
+  resolveDefaultAgentId,
+  resolveSessionAgentId,
+  } from "../agents/agent-scope.js";
+  import { ensureContextWindowCacheLoaded } from "../agents/context.js";
+  import { DEFAULT_PROVIDER } from "../agents/defaults.js";
+
+## ⭐382326 [grep] openclaw/openclaw@main apps/ios/Sources/Design/AgentProTab+Overview.swift [NOASSERTION] pushed=2026-07-09
+  extension AgentProTab {
+  var rosterHeader: some View {
+  VStack(alignment: .leading, spacing: 10) {
+  OpenClawAdaptiveHeaderRow(
+  title: self.headerTitle,
+  subtitle: "\(self.sortedAgents.count) total",
+  titleFont: OpenClawType.title2SemiBold,
+  systemName: "magnifyingglass",
+  label: "Search agents",
+
+## ⭐382326 [grep] openclaw/openclaw@main packages/agent-core/src/harness/agent-harness.ts [NOASSERTION] pushed=2026-07-09
+  // Agent Core module implements agent harness behavior.
+  import type {
+  import { runAgentLoop } from "../agent-loop.js";
+  import { resolveAgentReasoningOption } from "../reasoning.js";
+  import { type AgentCoreRuntimeDeps, resolveAgentCoreStreamFn } from "../runtime-deps.js";
+  import type {
+  AgentContext,
+  AgentEvent,
+  AgentLoopConfig,
+
+## ⭐382326 [grep] openclaw/openclaw@main src/agents/cli-runner.ts [NOASSERTION] pushed=2026-07-09
+  * Top-level CLI-backed agent runner orchestration.
+  assertAgentRunLifecycleGenerationCurrent,
+  captureAgentRunLifecycleGeneration,
+  withAgentRunLifecycleGeneration,
+  } from "../infra/agent-events.js";
+  import { formatErrorMessage } from "../infra/errors.js";
+  import { createSubsystemLogger } from "../logging/subsystem.js";
+  import {
+  buildAgentHookContextChannelFields,
+
+## ⭐382326 [grep] openclaw/openclaw@main src/auto-reply/reply/agent-runner-execution.ts [NOASSERTION] pushed=2026-07-09
+  /** Agent-runner execution loop, fallback handling, and user-facing failure mapping. */
+  import crypto from "node:crypto";
+  resolveAutoFallbackPrimaryProbe,
+  } from "../../agents/agent-scope.js";
+  import { formatAuthProfileFailureMessage } from "../../agents/auth-profiles/failure-copy.js";
+  import {
+  } from "../../agents/auth-profiles/oauth-refresh-failure.js";
+  import { resolveBootstrapWarningSignaturesSeen } from "../../agents/bootstrap-budget.js";
+
+## ⭐382326 [grep] openclaw/openclaw@main ui/src/pages/workboard/view.ts [NOASSERTION] pushed=2026-07-09
+  import type { GatewayBrowserClient } from "../../api/gateway.ts";
+  import type { AgentsListResult, GatewaySessionRow } from "../../api/types.ts";
+  import { icons } from "../../components/icons.ts";
+  type WorkboardAgentRow = AgentsListResult["agents"][number];
+  type WorkboardConfiguredAgentOption = {
+  id: string;
+  type WorkboardAgentFilterOption = {
+  id: WorkboardUiState["agentFilter"];
+
+## ⭐382326 [grep] openclaw/openclaw@main src/config/schema.help.ts [NOASSERTION] pushed=2026-07-09
+  "gateway.mode":
+  'Gateway operation mode: "local" runs channels and agent runtime on this host, while "remote" connects through remote transport. Keep "local" unless you intentionally run a split remote gateway topology.',
+  "gateway.bind":
+  "gateway.terminal":
+  "Operator terminal served to Control UI and mobile clients: a PTY-backed shell on the gateway host, restricted to admin-scope operator sessions. It starts in the target agent's workspace and is refused for fully-sandboxed agents (sandbox.mode 'all') rather than handing back an unconfined host shell.",
+
+## ⭐382326 [grep] openclaw/openclaw@main extensions/discord/src/voice/realtime.ts [NOASSERTION] pushed=2026-07-09
+  import {
+  buildRealtimeVoiceAgentConsultChatMessage,
+  buildRealtimeVoiceAgentConsultPolicyInstructions,
+  classifySkippableRealtimeVoiceConsultTranscript,
+  controlRealtimeVoiceAgentRun,
+  createRealtimeVoiceAgentTalkbackQueue,
+  createRealtimeVoiceBridgeSession,
+  REALTIME_VOICE_AGENT_CONSULT_TOOL_NAME,
+  REALTIME_VOICE_AGENT_CONTROL_TOOL,
+
+## ⭐382326 [grep] openclaw/openclaw@main src/cron/isolated-agent/delivery-dispatch.ts [NOASSERTION] pushed=2026-07-09
+  canonicalizeMainSessionAlias,
+  resolveAgentMainSessionKey,
+  resolveMainSessionKey,
+  parseThreadSessionSuffix,
+  resolveAgentIdFromSessionKey,
+  } from "../../routing/session-key.js";
+  import { resolveCronLifecycleRevisionIdentity } from "./run-session-state.js";
+  import type { RunCronAgentTurnResult } from "./run.types.js";
+
+## ⭐382326 [grep] openclaw/openclaw@main src/infra/exec-approvals.ts [NOASSERTION] pushed=2026-07-09
+  } from "@openclaw/normalization-core/string-coerce";
+  import { DEFAULT_AGENT_ID } from "../routing/session-key.js";
+  import type { CommandExplanationSummary } from "./command-analysis/explain.js";
+  cwd: string | null;
+  agentId: string | null;
+  sessionKey: string | null;
+  commandPreview?: string | null;
+  agentId: string | null;
+
+## ⭐382326 [grep] openclaw/openclaw@main src/commands/doctor/shared/preview-warnings.ts [NOASSERTION] pushed=2026-07-09
+  import { isRecord as hasRecord } from "@openclaw/normalization-core/record-coerce";
+  import { resolveAgentConfig } from "../../../agents/agent-scope-config.js";
+  import {
+  normalizeToolProviderPolicyKey,
+  resolveProviderToolPolicy,
+  resolveProviderToolPolicyEntry,
+  } from "../../../agents/provider-tool-policy.js";
+  import { pickSandboxToolPolicy } from "../../../agents/sandbox-tool-policy.js";
+  import {
+
+## ⭐382326 [grep] openclaw/openclaw@main src/agents/harness/selection.ts [NOASSERTION] pushed=2026-07-09
+  * Selects and invokes native agent harnesses for embedded run attempts.
+  import { resolveProviderRefOwnership } from "../../plugins/providers.js";
+  import { isDefaultAgentRuntimeId, normalizeOptionalAgentRuntimeId } from "../agent-runtime-id.js";
+  import { resolveGroupToolPolicy } from "../agent-tools.policy.js";
+  import { resolveConversationCapabilityProfile } from "../conversation-capability-profile.js";
+  import type {
+  EmbeddedRunAttemptParams,
+  EmbeddedRunAttemptResult,
+  } from "../embedded-agent-runner/run/types.js";
+
+## ⭐382326 [grep] openclaw/openclaw@main src/agents/tools/sessions-spawn-tool.ts [NOASSERTION] pushed=2026-07-09
+  * Starts subagent or ACP-backed sessions with inherited tool policy and delivery context.
+  import { resolveAcpSessionsSpawnImageAttachments } from "../subagent-attachments.js";
+  import { registerSubagentRun } from "../subagent-registry.js";
+  import { resolveSubagentSpawnOwnership } from "../subagent-spawn-ownership.js";
+  import {
+  SUBAGENT_SPAWN_CONTEXT_MODES,
+  SUBAGENT_SPAWN_MODES,
+  spawnSubagentDirect,
+  } from "../subagent-spawn.js";
+
+# QUERY: context engineering tools prompt compression LLM
+# 131072 hits (0ms, returned 30) grep=0 gh=58 sg=0
+# +variants: context engineering tools prompt compression l_l_m
+
+## ⭐791 [gh] pikpikcu/airecon@9a21453 README.md [MIT] pushed=2026-06-20
+  
+  Each phase has specific objectives, recommended tools, and automatic transition criteria. Phase enforcement is **soft** — the agent is guided but never blocked. Checkpoints run every 5 (phase eval), 10 (self-eval), and 15 (context compression) iterations.
+  
+
+## ⭐62 [gh] johnxie/awesome-code-docs@b920b28 llms.txt [MIT] pushed=2026-07-06
+  - Claude Flow Tutorial: Multi-Agent Orchestration, MCP Tooling, and V3 Module Architecture: https://github.com/johnxie/awesome-code-docs/tree/main/tutorials/claude-flow-tutorial
+  - Claude-Mem Tutorial: Persistent Memory Compression for Claude Code: https://github.com/johnxie/awesome-code-docs/tree/main/tutorials/claude-mem-tutorial
+  - Claude Plugins Official Tutorial: Anthropic's Managed Plugin Directory: https://github.com/johnxie/awesome-code-docs/tree/main/tutorials/claude-plugins-official-tutorial
+
+## ⭐64 [gh] yogeshhk/Sarvadnya@f018aa2 Notes.md [MIT] pushed=2026-07-02
+  ↔️ Align the input query with the documents by indexing the chunks of data by the questions they answer
+  🔍 Mixed retrieval: combine different search techniques like keyword-based and semantic search
+  🔄 ReRank: sort the retrieved documents to maximize diversity and optimize the similarity with a « template answer »
+  🗜️ Prompt compression: remove irrelevant context
+  💡 HyDE: generate a hypothetical answer to the input question and use it (with the query) to improve the search
+  ✒️ Query rewrite and expansion to reformulate the user’s intent and remove ambiguity
+  
+
+## ⭐641 [gh] hzysvilla/Academic_Smart_Contract_Papers@7644484 TLDR.md [GPL-3.0] pushed=2026-07-07
+  ### SP24 | Large-Scale Study of Vulnerability Scanners for Ethereum Smart Contracts
+  * Motivation: The author wonders to evaluate the detection capability of contract vulnerability tools.
+  * Approach: The author measures 18 vulnerability detectors with four categories (symbolic analysis, static analysis, machine learning, and fuzz), in 8 types of flaws.
+
+## ⭐840 [gh] tonl-dev/tonl@dae15f2 TONL.md [MIT] pushed=2026-05-23
+  6. [Advanced Features](#6-advanced-features)
+  7. [Security Engineering](#7-security-engineering)
+  8. [Testing Strategy](#8-testing-strategy)
+
+## ⭐709 [gh] SharpAI/SwiftLM@d5a9d11 README.md [MIT] pushed=2026-05-19
+  
+  ### Key Engineering Findings
+  
+
+## ⭐170 [gh] gopala-kr/summary@1d77b3a 24.md [MIT] pushed=2026-06-04
+  - [5 ways AI can help crisis response around the world](https://cur.at/ZXp9zU0?m=web)
+  - [Amazon Bedrock gains new AI models, tools, and features](https://cur.at/Ug7jIqu?m=web)
+  - [Kate Bush joins campaign against AI using artists’ work without permission](https://cur.at/p7ihOF0?m=webhttps://cur.at/p7ihOF0?m=web)
+
+## ⭐170 [gh] gopala-kr/summary@1d77b3a 23.md [MIT] pushed=2026-06-04
+  - [Harnessing the Power of LLMs in Practice: A Survey on ChatGPT and Beyond](https://arxiv.org/pdf/2304.13712.pdf)
+  - [Software Engineering for AI-Based Systems: A Survey](https://arxiv.org/pdf/2105.01984.pdf)
+  - [A Large Language Model Approach to Educational Survey Feedback Analysis](https://arxiv.org/pdf/2309.17447.pdf)
+
+## ⭐1148 [gh] repowise-dev/claude-code-prompts@989fc0e README.md [MIT] pushed=2026-05-11
+  | [Pattern analyses](#prompt-engineering-patterns) | 9 | Commentary on each pattern with reusable templates |
+  | [Cursor skills](#cursor-skills) | 3 | Drop-in skills for coding standards, verification, and prompt design |
+  
+
+## ⭐11983 [gh] dhamaniasad/awesome-postgres@ef88d7b README.md [CC0-1.0] pushed=2026-05-21
+  * [Databasus](https://databasus.com) - tool for scheduled PostgreSQL backups via web UI with external storages (local, S3, FTP, Google Drive, etc.), notifications (webhook, Discord, Slack, etc.) and team management.
+  * [OmniPITR](https://github.com/omniti-labs/omnipitr) - Advanced WAL File Management Tools for PostgreSQL.
+  * [pg\_probackup](https://github.com/postgrespro/pg_probackup) – A fork of pg\_arman, improved by @PostgresPro, supports incremental backups, backups from replica, multithreaded backup and restore, and anonymous backup without archive command.
+
+## ⭐412 [gh] ltjed/multiagent-coaching@963bfd1 README.md [MIT] pushed=2026-04-20
+  | `advantage_estimator` | reinforce_plus_plus | REINFORCE++ algorithm |
+  | `n_samples_per_prompt` | 2 | Samples per prompt |
+  | `rollout_batch_size` | 16 | Prompts per batch |
+
+## ⭐2226 [gh] Shichun-Liu/Agent-Memory-Paper-List@4b45128 README.md [MIT] pushed=2026-03-04
+  - [2023/05] Memorybank: Enhancing large language models with long-term memory. [[paper](https://arxiv.org/abs/2305.10250)]
+  - [2023/05] RET-LLM: Towards a general read-write memory for large language models. [[paper](https://arxiv.org/abs/2305.14322)]
+  - [2023/04] Generative agents: Interactive simulacra of human behavior. [[paper](https://arxiv.org/abs/2304.03442)]
+
+## ⭐1476 [gh] pguso/rag-from-scratch@38e1a7a README.md [MIT] pushed=2026-03-11
+  
+  **Prompt engineering for RAG:**
+  - Context stuffing techniques
+
+## ⭐729 [gh] ghimiresunil/LLM-PowerHouse-A-Curated-Guide-for-Large-Language-Models-with-Custom-Training-and-Inferencing@d8c4e00 README.md [MIT] pushed=2026-03-13
+  | Quantize Llama models with llama.cpp | Provides a tutorial on quantizing a Llama 2 model using llama.cpp and the GGUF format. | [🔗](https://mlabonne.github.io/blog/posts/Quantize_Llama_2_models_using_ggml.html) |
+  | 4-bit LLM Quantization with GPTQ | Offers a tutorial on quantizing an LLM using the GPTQ algorithm with AutoGPTQ. | [🔗](https://mlabonne.github.io/blog/posts/4_bit_Quantization_with_GPTQ.html) |
+  | ExLlamaV2 | Presents a guide on quantizing a Mistral model using the EXL2 format and running it with the ExLlamaV2 library, touted as the fastest library for LLMs. | [🔗](https://mlabonne.github.io/blog/posts/ExLlamaV2_The_Fastest_Library_to_Run%C2%A0LLMs.html) |
+
+## ⭐156 [gh] feelingai-team/CodeBrain@848dcd2 README.md [MIT] pushed=2026-04-07
+  
+  Context compression: LLM-summarized history with early messages pinned so the agent doesn't lose track of what it was actually asked to do in long sessions. Without this, tasks that go 50+ turns fall apart.
+  
+
+## ⭐62 [gh] fang503/antflow@78f8f39 README.md [MIT] pushed=2026-04-01
+  | **Prompt Assembly** | getSystemPrompt() | Modular builder with static/dynamic cache boundary, ~88% cache hit |
+  | **Context Compaction** | compact.rs | Zero-LLM-cost deterministic compression for long conversations |
+  | **Plugin System** | plugin.json manifests | Declarative plugins contributing tools, hooks, and permissions |
+
+## ⭐1019 [gh] Devinterview-io/llms-interview-questions@88a1551 README.md pushed=2026-02-17
+  - **In-Context Learning (ICL)**: Leveraging the model's emergent ability to learn from examples in the prompt without weight updates.
+  - **DSPy (Programming over Prompting)**: Replacing manual prompt engineering with algorithmic optimization of prompt pipelines.
+  - **Mixture of Experts (MoE)**: Fine-tuning specific "experts" within a model (e.g., $N=16$ experts, $K=2$ active per token), reducing active parameter counts during inference:
+
+## ⭐939 [gh] windmaple/awesome-AutoML@f83974c README.md [GPL-3.0] pushed=2026-03-24
+  
+  ### Prompt search
+  - [Large Language Models Are Human-Level Prompt Engineers](https://arxiv.org/abs/2211.01910) (Zhou et al. 2022)
+
+## ⭐1458 [gh] elicit/machine-learning-list@e505c96 README.md pushed=2025-11-27
+  - [Improving Code Generation by Training with Natural Language Feedback](http://arxiv.org/abs/2303.16749)
+  - [Language Modeling Is Compression](https://arxiv.org/abs/2309.10668v1)
+  - [LIMA: Less Is More for Alignment](http://arxiv.org/abs/2305.11206)
+
+## ⭐876 [gh] dmarx/anthology-of-modern-ml@34f4366 README.md [MIT] pushed=2025-08-31
+  * knowledge distillation
+    * 2005 - ["Model Compression"](http://www.cs.cornell.edu/~caruana/compression.kdd06.pdf) - Cristian Bucila, Rich Caruana, Alexandru Niculescu-Mizil
+    * 2015 - ["Distilling the Knowledge in a Neural Network"](https://arxiv.org/pdf/1503.02531.pdf) - Geoffrey Hinton, Oriol Vinyals, Jeff Dean
+
+## ⭐2397 [gh] Yuyz0112/claude-code-reverse@c0d99ea README.md pushed=2025-08-26
+  - Core Agent workflow
+  - Context compaction
+  - IDE integration
+
+## ⭐1009 [gh] zjunlp/Prompt4ReasoningPapers@bd2e561 README.md [MIT] pushed=2025-05-21
+  
+  16. **Large Language Models Can Be Easily Distracted by Irrelevant Context.**
+  
+
+## ⭐4919 [gh] cheatsnake/backend-cheats@493ead9 README.md [MIT] pushed=2025-02-02
+      -   How it works
+          > Multitasking refers to the concurrent execution of multiple [threads](#processes-and-threads) of control within a single program. A thread is a lightweight process that runs within the context of a [process](#processes-and-threads), and has its own stack, program counter, and register set. Multiple threads can share the resources of a single process, such as memory, files, and I/O devices. Each thread executes independently and can perform a different task or part of a task.
+      -   Multitasking types
+
+## ⭐49 [gh] KaiYan289/RLpapersnote@f92958a LLM.md pushed=2026-01-30
+  
+  EASYTOOL: Enhancing LLM-based agents with concise tool instruction
+  
+
+## ⭐88 [gh] magdalenakuhn17/awesome-cheap-llms@4112162 README.md pushed=2025-07-06
+  ## 4) :blue_book: Reduce input/output tokens
+  A key cost driver is the amount of input tokens (user prompt + context) and output tokens, that you allow for your LLM. Different techniques to reduce the amount of tokens help in saving costs. <br>
+  **Input tokens:**
+
+## ⭐349 [gh] NiuTrans/ABigSurveyOfLLMs@2c4092a README.md [CC0-1.0] pushed=2025-02-19
+  
+  - **Igniting Language Intelligence: The Hitchhiker's Guide From Chain-of-Thought Reasoning to Language Agents**, arXiv 2023.11 [[Paper](https://arxiv.org/abs/2311.11797)] [[GitHub](https://github.com/Zoeyyao27/CoT-Igniting-Agent)]
+  
+  ###### Prompt Engineering<a id="section7"></a>
+  
+  - **Prompting Frameworks for Large Language Models: A Survey**, arXiv 2023.11 [[Paper](https://arxiv.org/abs/2311.12785)] [[GitHub](https://github.com/lxx0628/Prompting-Framework-Survey)]
+  
+
+## ⭐3 [gh] MuhammadMuneeb007/kbs-lectures@12e9bcd LLM.md pushed=2025-07-28
+  | **CS224N: NLP with Deep Learning** | Stanford              | https://web.stanford.edu/class/cs224n/                       | Free                 | Academic depth, research-level content            |
+  | **MIT 6.034 Artificial Intelligence** | MIT OpenCourseWare | https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-034-artificial-intelligence-fall-2010/ | Free | AI fundamentals from MIT |
+  | **Fast.AI Practical Deep Learning** | Fast.AI              | https://www.fast.ai/                                        | Free                 | Practical, code-first approach to deep learning   |
+
+## ⭐1 [gh] GeorgeCodes19/ai-course@e27f487 llm.md [Apache-2.0] pushed=2025-01-23
+  
+  - **Model Compression** (pruning, quantization),  
+  - **Efficiency Gains** in hardware (Tensor Cores, TF32, etc.),  
+
+## [gh] Manuhd/Generative-AI-Learning-Roadmap@a770a3d LLM.md pushed=2026-01-01
+  
+  “LLMs are AI models trained on massive text datasets to predict and generate language. They work using tokenization and transformer neural networks to understand context and generate responses. Their major limitations include hallucinations, no real-time knowledge, prompt sensitivity, limited memory, bias, and high cost.”
+  
+
+## [gh] AllenAJ/studymi@ada35ee llm.txt pushed=2026-02-07
+  
+  * **Context Managers** - New context managers for span and trace creation
+  * **Bedrock Integration** - Enhanced Bedrock integration with invoke\_model support
+
+# QUERY: Headroom context optimization LLM
+# 38208 hits (0ms, returned 29) grep=0 gh=54 sg=0
+# +variants: Headroom context optimization l_l_m
+
+## ⭐580 [gh] tsinghua-fib-lab/AutoSOTA@cf446de docs/README.md [MIT] pushed=2026-07-09
+  
+  **[→ paper-43-VHM/OPTIMIZATION.md](./paper-43-VHM/OPTIMIZATION.md)**
+  
+
+## ⭐42 [gh] eBay/evo-web@8670741 .claude/README.md [NOASSERTION] pushed=2026-07-09
+  - **Current:** ~1,180 tokens (~875 words, ~4,700 characters, ~117 lines)
+  - **Headroom:** 41% under cache threshold
+  - **Goal:** 90%+ cache hit rate
+
+## ⭐253 [gh] val1813/kaiwu@e4ed413 README.md [MIT] pushed=2026-05-06
+  
+  **Auto-tuned local LLM serving: Kaiwu probes your hardware, model, KV cache, and context window so you get the fastest OpenAI-compatible endpoint your machine can actually sustain.**
+  
+
+## ⭐395 [gh] quantumaikr/quant.cpp@9eed2dc .claude/state.md [Apache-2.0] pushed=2026-04-26
+  Viable pivot: demonstrate KV compression + long-ctx on Llama-3.2-3B
+  (where coherence holds) at realistic context within the cliff.
+  
+
+## ⭐1892 [gh] vonzosten/awesome-LangGraph@5908ce7 README.md [CC0-1.0] pushed=2026-05-20
+  | [YaVendio/olive](https://github.com/YaVendio/olive) | Transforms plain Python functions into remote tools accessible by AI agents, simplifying tool-server creation for LangGraph and other agent frameworks | ![GitHub stars](https://img.shields.io/github/stars/YaVendio/olive?style=social)<br>![Last commit](https://img.shields.io/github/last-commit/YaVendio/olive) |
+  | [sardanaaman/langgraph-compass](https://github.com/sardanaaman/langgraph-compass) | Intelligent follow-up question generation module for conversational LangGraph agents — improves dialogue continuity and user intent resolution | ![GitHub stars](https://img.shields.io/github/stars/sardanaaman/langgraph-compass?style=social)<br>![Last commit](https://img.shields.io/github/last-commit/sardanaaman/langgraph-compass) |
+  | [Sean-V-Dev/HMLR-Agentic-AI-Memory-System](https://github.com/Sean-V-Dev/HMLR-Agentic-AI-Memory-System) | Persistent living-memory layer for AI agents — stores and retrieves context across sessions to support long-running agentic workflows | ![GitHub stars](https://img.shields.io/github/stars/Sean-V-Dev/HMLR-Agentic-AI-Memory-System?style=social)<br>![Last commit](https://img.shields.io/github/last-commit/Sean-V-Dev/HMLR-Agentic-AI-Memory-System) |
+  | [chopratejas/headroom](https://github.com/chopratejas/headroom) | Context-optimization proxy layer for LLM applications — compresses token usage, manages context windows, and provides an OpenAI-compatible API for LangChain, MCP, and FastAPI stacks | ![GitHub stars](https://img.shields.io/github/stars/chopratejas/headroom?style=social)<br>![Last commit](https://img.shields.io/github/last-commit/chopratejas/headroom) |
+  | [tb8412/qae-langgraph-example](https://github.com/tb8412/qae-langgraph-example) | Deterministic pre-execution safety certification for LangGraph agents with auditable certificates and constraint-based routing | ![GitHub stars](https://img.shields.io/github/stars/tb8412/qae-langgraph-example?style=social)<br>![Last commit](https://img.shields.io/github/last-commit/tb8412/qae-langgraph-example) |
+  
+  <div align="center">
+
+## ⭐114 [gh] noonghunna/qwen36-27b-single-3090@8e0c2db README.md [Apache-2.0] pushed=2026-04-28
+  | **TurboQuant** | A 3-bit KV cache compression scheme. Lets us fit 192K+ context where fp8 KV would only fit 32K. |
+  | **GDN / DeltaNet** | Gated DeltaNet — a linear-attention layer type. Qwen3-Next interleaves these with full attention layers (3 GDN per 1 attention). Has memory quirks at long context. |
+  | **Genesis patches** | Sandermage's monkey-patch tree for vLLM that fixes several Qwen3-Next bugs at runtime. We mount them; vLLM applies them at boot. |
+  | **Cudagraph** | A CUDA optimization that records GPU operation sequences and replays them. Faster than dispatching each op individually, but trickier to debug. |
+  | **OpenAI API** | The HTTP API spec (`/v1/chat/completions`, `/v1/models`, etc.) used by ChatGPT, Claude (via proxy), and dozens of OSS chat tools. We serve this on `localhost:8020`. |
+  | **Tool calling** | The model emits structured calls to external functions (e.g., `get_weather("San Francisco")`); your code runs them and feeds the result back. |
+  | **Vision** | The model can accept images alongside text (multimodal). Powered by an integrated vision tower, no separate model needed. |
+
+## ⭐244 [gh] iSEngLab/AwesomeLLM4APR@3b761f9 update.md pushed=2026-05-01
+  | [Fine-grained Approaches for Confidence Calibration of LLMs in Automated Code Revision](https://arxiv.org/abs/2604.06723) | 2026-04-08 | arXiv |
+  | [QiMeng-PRepair: Precise Code Repair via Edit-Aware Reward Optimization](https://arxiv.org/abs/2604.05963) | 2026-04-07 | ACL 2026 |
+  | [An End-to-End Approach for Fixing Concurrency Bugs via SHB-Based Context Extractor](https://arxiv.org/abs/2604.05753) | 2026-04-07 | arXiv |
+
+## ⭐657 [gh] t8/hypura@7fb2479 README.md pushed=2026-04-08
+  Hypura reads the GGUF file, profiles your hardware (GPU working set, RAM, NVMe bandwidth),
+  and solves a placement optimization that assigns every tensor to a tier:
+  
+
+## ⭐2 [gh] adamvangrover/adam@c341125 llms-full.txt [MIT] pushed=2026-07-05
+  2.  **Tool Use:** Agents should prefer using Tools (Python functions) over doing math in their head.
+      *   *Bad:* LLM tries to calculate `EBITDA / Interest`.
+      *   *Good:* LLM calls `calculate_ratio(ebitda, interest)`.
+
+## ⭐18 [gh] johnzfitch/claude-wiki@7b8bacb 99-Other/llms.txt [NOASSERTION] pushed=2026-06-21
+  - Files:
+    - `/home/zack/claude-binary/mcp/mcp-docs-archive-community-seps-932-model-context-protocol-governance-eb8202fc6a.md` (semantic score: 0.79)
+    - `/home/zack/claude-binary/mcp/mcp-ext-932-model-context-protocol-governance-24360b3e60.md` (semantic score: 0.79)
+
+## ⭐7497 [gh] trungdq88/Awesome-Black-Friday-Cyber-Monday@715b4e6 README.md pushed=2025-11-30
+  | 🛠️ | [SQLPro Studio](https://www.sqlprostudio.com/blackfriday.html?utm_source=trungdq88) | A native, lightweight database client for macOS that supports MySQL, Postgres, SQL Server, SQLite, and more. | **50%** off with promo code **BFHALFOFF** |
+  | ⚡ | [CodexUse](https://codexuse.com) | Stop logging out and logging back in—save Codex CLI logins as profiles, see live rate-limit headroom, and auto-roll to a fresher account. | **50% OFF** lifetime license with code **BLACKFRIDAY2025** |
+  | 🛠️ | [CodeSwissKnife Bar Dev Tools](https://apps.apple.com/us/app/codeswissknife-bar-dev-tools/id6749501609?mt=12) | CodeSwissKnife Bar is a fast, privacy-first developer toolkit that lives in your Mac’s menu bar. | **20% OFF** Lifetime Package from Nov.21 to Dec.2 |
+
+## ⭐537 [gh] kevinamiri/Instructgpt-prompts@d23290f draft.md [MIT] pushed=2025-11-13
+  	•	Refinement without Training: A key point is that approaches like Self-Refine do not require additional fine-tuning or human labels; they work at inference time with clever prompting[32]. This makes them very appealing for deployment: one can wrap a raw model in a self-refinement loop to boost reliability without changing the model’s weights. Many practical prompt chains now include a step like “Before finalizing, double-check the answer above and correct any errors.”
+  	•	According to Self-Refine’s authors, even state-of-the-art aligned models have headroom for improvement with this method – “even GPT-4 can be further improved at test-time using our simple approach”[33]. This suggests that LLMs sometimes know more (or can reason more carefully) than their first answer shows; a reflective prompt can draw out that latent reliability.
+  Tool-Augmented Prompting (ReAct, RAG)
+
+## ⭐39 [gh] itzharshitmavi/awsome-LLM-model-apps-for-daily-uses@5c088e0 README.md pushed=2026-02-01
+  ### 🎯 LLM Optimization Tools
+  
+  *   [🎯 Toonify Token Optimization](advanced_llm_apps/llm_optimization_tools/toonify_token_optimization/) - Reduce LLM API costs by 30-60% using TOON format
+  *   [🧠 Headroom Context Optimization](advanced_llm_apps/llm_optimization_tools/headroom_context_optimization/) - Reduce LLM API costs by 50-90% through intelligent context compression for AI agents (includes persistent memory & MCP support)
+  
+  ### 🔧 LLM Fine-tuning Tutorials
+  
+
+## ⭐1 [gh] jellydn/tiny-local-ai@87e5d94 OPTIMIZATION.md [MIT] pushed=2026-06-17
+  | `--n-gpu-layers -1`    | All layers on Metal GPU      | ✓ Enabled                  |
+  | `--ctx-size 32768`     | Full context window          | ✓ Enabled                  |
+  | `--repeat-penalty 1.0` | Bug fix from Jan 2026        | ✓ Implemented              |
+
+## ⭐1359 [gh] 0xricksanchez/paper_collection@30d42dd README.md pushed=2025-02-21
+  - [2022 - Removing Uninteresting Bytes in Software Fuzzing](https://ieeexplore.ieee.org/abstract/document/9787966) ✓
+    - **Tags:** seed optimization, seed minimization, diar, coverage-guided
+  - [2021 - An Empirical Study of OSS-Fuzz Bugs](https://arxiv.org/pdf/2103.11518.pdf) ✓
+
+## ⭐17848 [gh] dexteryy/spellbook-of-modern-webdev@e750d93 README.md pushed=2023-12-18
+      * [React Sticky](https://www.npmjs.com/package/react-sticky)
+      * [React Headroom](https://www.npmjs.com/package/react-headroom) / [Headroom.js](https://www.npmjs.com/package/headroom.js)
+      * [React Infinite Scroller](https://www.npmjs.com/package/react-infinite-scroller) / [React Infinite](https://www.npmjs.com/package/react-infinite)
+
+## ⭐1 [gh] ozkikr/knowledge-base@dcae17e tags/LLM.md pushed=2026-03-09
+  - [[notes/github/gpt-oss-120b|GPT-OSS-120B]]
+  - [[notes/github/graphrag|GraphRAG]]
+  - [[notes/github/harbor|Harbor]]
+  - [[notes/github/headroom|Headroom - The Context Optimization Layer for LLM Applications]]
+  - [[notes/articles/how-llm-inference-works|How LLM Inference Works]]
+  - [[notes/articles/how-to-fix-your-context|How to Fix Your Context]]
+  - [[notes/articles/ollama-schematron-model-card|Inference/Schematron]]
+
+## ⭐1 [gh] bdougie/locallama@0c96be7 local-llm-blog.md pushed=2025-08-03
+  ### 1. **Dedicated GPU Power**
+  The RTX 4070 Super with 12GB VRAM handles the Qwen 2.5 Coder 7B model effortlessly. What would make my MacBook wheeze runs smoothly with plenty of headroom for larger models.
+  
+
+## [gh] 1shuimo/context_management_tool@13a46d8 notes/headroom.md pushed=2026-03-08
+    - [`research/headroom/headroom/transforms/pipeline.py`](https://github.com/chopratejas/headroom/blob/3945c02aa5a1dcbb25bc5b3b39d3684ef38d0d49/headroom/transforms/pipeline.py)
+      - 决定 transform 执行顺序，串起 `CacheAligner`、`ContentRouter`、`IntelligentContext` 等步骤。
+  - CCR response handler：
+    - [`research/headroom/headroom/ccr/response_handler.py`](https://github.com/chopratejas/headroom/blob/3945c02aa5a1dcbb25bc5b3b39d3684ef38d0d49/headroom/ccr/response_handler.py)
+      - 检测模型返回的 `headroom_retrieve` 工具调用，执行检索并自动续跑后续轮次直到拿到最终响应。
+  - hierarchical memory：
+    - [`research/headroom/headroom/memory/core.py`](https://github.com/chopratejas/headroom/blob/3945c02aa5a1dcbb25bc5b3b39d3684ef38d0d49/headroom/memory/core.py)
+
+## [gh] Sniffr/clore-search@a859bd0 context pushed=2026-05-19
+  
+  **Project: Self-hosted LLM inference on Clore.AI GPU marketplace**
+  
+
+## [gh] AAkil98/context-lens@a36a5de SEED_CONTEXT.md [MIT] pushed=2026-05-02
+  - One provider per instance. Registration at construction or via `setEmbeddingProvider`. Null removes provider (trigram downgrade). Same-name = no-op.
+  - Embedding lifecycle: segment content + task description embedded; keywords/metadata not embedded. Embedding completed within triggering lifecycle operation. Batch optimization for seed. Cache-aware batching.
+  - Embedding cache: keyed on (contentHash, providerName), LRU-bounded (default 4096), separate from similarity cache. No time-based expiration.
+
+## [gh] Belal0066/ResilienceMesh@622503a context.md pushed=2026-05-18
+  | `coordinator/` | Peer Network Layer — mesh discovery, cluster formation, capability graph | ✅ Epic 2 done |
+  | `agents/` | Swarm reasoning, cross-LLM delegation, shared context, task orchestration | ✅ Epic 3 done |
+  | `rag/` | Offline Knowledge Pack — chunking, embedding, retrieval, mesh-memory propagation | ✅ Epic 4 done |
+
+## [gh] pri-sauce/test_contract_agent@017bc0d core/llm.py pushed=2026-03-07
+      async def triage(self, prompt: str, system: Optional[str] = None) -> str:
+          """Ultra-fast triage call - tiny context, tiny output."""
+          return await self.generate(
+
+## [gh] EffortlessMetrics/flow-studio@f1cc7ab docs/CONTEXT_BUDGETS.md [Apache-2.0] pushed=2026-05-04
+  
+  LLMs can drift or lose focus with unbounded context. Budgets ensure:
+  
+
+## [gh] loke-jad/minimax-agent@af2a99f OPTIMIZATION.md pushed=2026-04-25
+  - Slot 0: Permanently holds the system prompt KV cache (never evicted)
+  - Slot 1: Handles the conversation (shorter context, references slot 0's cache)
+  
+
+## [gh] DinSpikeAI/spike-agents-engine@d762ea3 spike-context.md pushed=2026-05-30
+  
+  **(D) Inventory schema hotfix (separate commit, discovered during 1.12 smoke).** When testing the race fix in production, clicking "הרץ עכשיו" returned a 400 from Anthropic: `output_config.format.schema: For 'integer' type, property 'minimum' is not supported`. The inventory schema (`src/lib/agents/inventory/schema.ts` line 67 in the old version) had `priority: { type: "integer", minimum: 1, ... }` — but Anthropic structured outputs do NOT support `minimum`/`maximum` on integers. Grep across `src/lib/agents/**/schema.ts` revealed: the OTHER 4 schemas (manager, reviews, sales, social) explicitly documented this restriction in their header comments. Inventory was the only outlier — written before the rule was discovered, and never had the warning header added back. The agent had been **silently failing 100% in production** since Stage 1, undetected because no one was running it on real data. Fix: removed `minimum: 1`; added the same "IMPORTANT — Anthropic Structured Outputs restrictions" header comment that the other 4 schemas have, plus an in-place `// DO NOT add minimum: 1 here` comment at the priority field. The description (`"1 = הכי דחוף, critical תמיד 1, low תמיד 2"`) already guides the LLM reliably. Verified post-deploy: agent ran cleanly on a 15-row test CSV, classified correctly (1 critical, 1 low, 8 ok, 4 overstocked, 1 no_movement) with Hebrew insights per product.
+  
+
+## [gh] Tilak1452/Full-Stack-Client-Dashboard@a833033 Context.md pushed=2026-06-11
+  
+  This gives the system enough headroom even on the busiest market days.
+  
+
+## [gh] aitechroberts/semantic-space@99adf1e docs/VLLM_API.md [MIT] pushed=2026-04-21
+  | SAM 2.1 Base | ~0.8 GB | Loaded in pipeline |
+  | TinyCLIP ViT-8M | ~0.1 GB | Tiny model |
+  | VLM Vision Encoder (optional) | ~0.3 GB | Only when `EXTRACT_ENCODER=true` |
+  | PyTorch overhead | ~0.5 GB | CUDA context, etc. |
+  | **Total** | **~8.6 GB** | Leaves headroom for larger KV caches |
+  
+  To adjust the vLLM server's GPU memory share:
+
+## [gh] sardorsob/math-qa-llm@45f684b context/STATUS.md pushed=2026-06-12
+    - **`N_QUESTIONS = None`** = full file for eventual production runs
+    - Transformers path: **`tokenizer.padding_side = "left"`**, **`enable_thinking=True`** in `apply_chat_template`, **`MAX_TOKENS = 8192`** (headroom for Qwen3-Thinking before `\boxed{}`), **`min_p=0.0`**, **`pad_token_id=tokenizer.eos_token_id`**
+    - **Sequential generation** with `tqdm` (one question at a time): visible progress; interrupt leaves partial **`responses`** list

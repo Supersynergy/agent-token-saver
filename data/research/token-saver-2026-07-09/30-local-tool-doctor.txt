@@ -1,0 +1,133 @@
+# tool versions
+rtk
+rtk 0.43.0
+/Users/master/.local/bin/headroom
+headroom, version 0.30.0
+/Users/master/.local/bin/context-mode
+┌   context-mode doctor 
+│
+●  Platform: Codex CLI (high confidence — CODEX_THREAD_ID or CODEX_CI env var set)
+│
+◇  Storage paths ──────────────────────────────────────────────────────────╮
+│                                                                          │
+│  sessions: /Users/master/.codex/context-mode/sessions (adapter default)  │
+│  content:  /Users/master/.codex/context-mode/content (adapter default)   │
+│  stats:    /Users/master/.codex/context-mode/sessions (adapter default)  │
+│                                                                          │
+├──────────────────────────────────────────────────────────────────────────╯
+│
+◆  Storage session: PASS — /Users/master/.codex/context-mode/sessions (adapter default)
+│
+◆  Storage content: PASS — /Users/master/.codex/context-mode/content (adapter default)
+│
+◆  Storage stats: PASS — /Users/master/.codex/context-mode/sessions (adapter default)
+[?25l│
+◇  Diagnostics complete
+[?25h│
+◇  Runtimes ────────────────────────────────────────────────────────────────╮
+│                                                                           │
+│    JavaScript: /Users/master/.bun/bin/bun (1.3.13) ⚡                     │
+│    TypeScript: /Users/master/.bun/bin/bun (1.3.13)                        │
+│    Python:     python3 (Python 3.14.4)                                    │
+│    Shell:      /bin/zsh (zsh 5.9 (arm64-apple-darwin24.0))                │
+│    Ruby:       ruby (ruby 2.6.10p210 (2022-04-12 revision 67958)          │
+│  [universal.arm64e-darwin24])                                             │
+│    Go:         go (go version go1.26.4 darwin/arm64)                      │
+│    Rust:       rustc (rustc 1.96.1 (31fca3adb 2026-06-26))                │
+│    PHP:        php (PHP 8.5.7 (cli) (built: Jun  2 2026 20:59:56) (NTS))  │
+│    Perl:       perl (This is perl 5, version 34, subversion 1 (v5.34.1)   │
+│  built for darwin-thread-multi-2level)                                    │
+│    Elixir:     elixir (unknown)                                           │
+│                                                                           │
+├───────────────────────────────────────────────────────────────────────────╯
+│
+◆  Performance: FAST — Bun detected for JS/TS execution
+│
+●  Language coverage: 10/11 (91%) — javascript, shell, typescript, python, ruby, go, rust, php, perl, elixir
+│
+◇  Testing server initialization...
+│
+◆  Server test: PASS
+│
+◇  Checking Codex CLI hooks configuration...
+│
+◆  Codex CLI binary: PASS — codex --version resolved to codex-cli 0.143.0-alpha.14
+│
+◆  Codex hooks feature flag: PASS — [features].hooks enabled in /Users/master/.codex/config.toml
+│
+■  PreToolUse hook: FAIL — PreToolUse hook missing or not pointing to context-mode
+│    Run: Update /Users/master/.codex/hooks.json to match configs/codex/hooks.json
+│
+■  PostToolUse hook: FAIL — PostToolUse hook missing or not pointing to context-mode
+│    Run: Update /Users/master/.codex/hooks.json to match configs/codex/hooks.json
+│
+■  SessionStart hook: FAIL — SessionStart hook missing or not pointing to context-mode
+│    Run: Update /Users/master/.codex/hooks.json to match configs/codex/hooks.json
+│
+▲  PreCompact hook: WARN — PreCompact hook missing or not pointing to context-mode; compaction snapshots require a Codex build that emits PreCompact
+│    Run: Update /Users/master/.codex/hooks.json to match configs/codex/hooks.json
+│
+■  UserPromptSubmit hook: FAIL — UserPromptSubmit hook missing or not pointing to context-mode
+│    Run: Update /Users/master/.codex/hooks.json to match configs/codex/hooks.json
+│
+■  Stop hook: FAIL — Stop hook missing or not pointing to context-mode
+│    Run: Update /Users/master/.codex/hooks.json to match configs/codex/hooks.json
+│
+◇  Checking hook scripts...
+│
+◆  Hook scripts: PASS — no direct .mjs script paths to verify
+│
+◇  Checking Codex CLI plugin registration...
+│
+▲  Plugin enabled: WARN — [mcp_servers] section exists but context-mode not found
+│
+◇  Checking team-shared hook configs in your workspace...
+│
+●  Hook config: SKIP — no team-shared hook configs found in this workspace
+│
+◇  Checking for leftover .mcp.json files from older versions...
+│
+◆  Leftover .mcp.json check: PASS — no old .mcp.json files in the plugin cache
+│
+◇  Checking FTS5 / SQLite...
+│
+◆  FTS5 / SQLite: PASS — native module works
+│
+◇  Checking versions...
+│
+◆  npm (MCP): PASS — v1.0.169
+│
+●  Codex CLI: standalone MCP mode — no platform plugin version to compare
+│
+└  Diagnostics complete!
+
+/Users/master/.local/bin/ghmax
+COMPONENT                   STATUS                                                CATEGORY       OK
+--------------------------------------------------------------------------------------------------------
+python3                     3.14.4                                                core           ✓
+grep.app reachable          OK via curl_cffi (0 hits)                             core           ✓
+gh CLI                      installed                                             source:gh      ✓
+gh auth                     logged in                                             source:gh      ✓
+Sourcegraph reachable       HTTP 200                                              source:sg      ✓
+ast-grep                    installed                                             feature:ast    ✓
+rerank backend              lexical (model-free, cold)                            feature:rerank ✓
+ollama (opt-in LLM)         HTTP 200                                              optional       ✓
+fanout/summary              LLM-free (deterministic variants + facet digest)      feature        ✓
+batch-md-rs                 found                                                 optional       ✓
+synapse                     found                                                 optional       ✓
+ghmax_plus                  loaded (sibling ghmax_plus.py) ⚠ embed stale (run ... plus           ✓
+vec backend                 sqlite-vec                                            plus           ✓
+curl_cffi sessions          yes                                                   plus           ✓
+extra sources               codeberg,debian,npm,crates,pypi,brew,gitlab,aur,ru... plus           ✓
+gitstars harvest            yes (--gitstars N)                                    plus           ✓
+bandit db                   /Users/master/.cache/ghmax/bandit.db                  plus           ✓
+
+17/17 OK · core ready
+/Users/master/.local/bin/superweb
+=== superweb doctor ===
+[OK ] Chrome:  /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
+[OK ] Ollama:  reachable at http://127.0.0.1:11434
+[OK ] Cache DB: /Users/master/Library/Caches/superweb/cache.db
+[OK ] Learn DB: /Users/master/Library/Caches/superweb/learn.db
+
+Status: HEALTHY

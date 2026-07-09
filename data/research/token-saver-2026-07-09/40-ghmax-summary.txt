@@ -1,0 +1,88 @@
+[rtk] WARNING: .rtk/filters.toml changed since trusted.
+[rtk] Filters NOT applied. Run `rtk trust` to re-review.
+
+# QUERY: token-compression context-compression llm-token-compression MCP token optimization
+# 11103488 hits (69ms, returned 20) grep=50 gh=93 sg=110 superweb=10
+# +variants: tokenCompression context-compression llm-tokenCompression MCP token optimization | token-compression contextCompression llm-token-compression MCP token optimization | token-compression context-compression llmTokenCompression MCP token optimization | token-compression context-compression llm-token-compression m_c_p token optimization | token-compression context-compression llm-token-compression m-c-p token optimization | token | compression | context | llm-token-compression context-compression token-compression | llm-token-compression
+
+## TL;DR
+top repos: jesseduffield/lazygit(10), duckduckgo(2), duckduckgo,yahoo(2), yahoo(2), bing(2) · langs: Go(10), Python(1), TypeScript(1) · common idents: compression, LLM, token, context, Token, Context, quantization, llm, optimization, costs
+
+
+## [superweb] duckduckgo@main https://www.sitepoint.com/optimizing-token-usage-context-compression-techniques/ rrf=0.063
+  Context Compression Techniques: Reduce LLM Costs by 50% - SitePoint
+  Master token optimization with context compression techniques. Reduce LLM API costs by 50% using extraction vs selection methods and practical RAG optimization strategies.
+
+## [gh] huayinl/model_efficiency_evolution@8a1cee6 data/cleaned_dataset.csv pushed=2026-04-30 rrf=0.062
+  2271,477,Python,False,"['batch-normalization-fuse', 'bnn', 'convolutional-networks', 'dorefa', 'group-convolution', 'integer-arithmetic-only', 'model-compression', 'network-in-network', 'network-slimming', 'neuromorphic-computing', 'onnx', 'post-training-quantization', 'pruning', 'pytorch', 'quantization', 'quantization-aware-training', 'tensorrt', 'tensorrt-int8-python', 'twn', 'xnor-net']",7007,93,True,False,2019-12-04 15:56:29+00:00,2025-05-06T16:33:33Z,2019,False,micronet,"micronet, a model compression and deploy lib. compression: 1、quantization: quantization-aware-training(QAT), High-Bit(>2b)(DoReFa/Quantization and Training of Neural Networks for Efficient Integer-Arithmetic-Only Inference)、Low-Bit(≤2b)/Ternary and Binary(TWN/BNN/XNOR-Net); post-training-quantization(PTQ), 8-bit(tensorrt); 2、 pruning: normal、regular and group convolutional channel pruning; 3、 group convolution structure; 4、batch-normalization fuse for quantization. deploy: tensorrt, fp32/fp16/int8(ptq-calibration)、op-adapt(upsample)、dynamic_shape"
+  2223,205,Python,False,"['ai-agent-tools', 'ai-infrastructure', 'ast-code-analysis', 'claw-compactor', 'context-compression', 'context-pruning', 'context-window-optimization', 'developer-tools', 'fusion-pipeline', 'llm-compression', 'llm-context-compression', 'llm-cost-reduction', 'llm-token-compression', 'llm-tools', 'openclaw', 'prompt-compression', 'python', 'reversible-compression', 'token-compression', 'tree-sitter']",2325,8,True,True,2026-02-10 00:27:08+00:00,2026-04-01T08:31:20Z,2026,True,claw-compactor,"14-stage Fusion Pipeline for LLM token compression — reversible compression, AST-aware code analysis, intelligent content routing. Zero LLM inference cost. MIT licensed."
+  2188,254,Jupyter Notebook,False,"['fine-tuning', 'finetuning', 'finetuning-llms', 'inference', 'large-language-models', 'llm', 'python', 'quantization']",115687,7,True,True,2023-10-05 07:04:25+00:00,2026-02-27T19:08:42Z,2023,False,AI-Engineering.academy,"Mastering Applied AI, One Concept at a Time "
+
+## [superweb] duckduckgo,yahoo@main https://www.tokenoptimize.dev/guides/llm-token-optimization-strategies rrf=0.061
+  LLM Token Optimization Strategies: The Complete Guide for 2026
+  Jun 14, 2026 ·   A comprehensive guide to LLM token optimization. Learn the strategies that actually reduce costs — from context engineering to model routing to prompt caching.
+
+## [superweb] duckduckgo@main https://github.com/npow/kompact rrf=0.060
+  GitHub - npow/kompact: LLM context compression proxy — 40-70% token ...
+  Context compression proxy for LLM agents. Sits between your agent and the LLM provider, compresses context on the fly, and cuts your token bill 40-70% — with zero code changes.
+
+## ⭐80199 [sg] jesseduffield/lazygit@main pkg/gui/types/context.go [MIT] pushed=2026-07-09 rrf=0.060
+  type Context interface {
+
+## [superweb] yahoo@main https://headroomlabs.ai/ rrf=0.059
+  Headroom — Context Optimization for LLM Agents
+  Compress LLM context before it reaches the provider. Zero code changes. Up to 80% token savings. Open-source, runs locally.
+
+## ⭐80199 [sg] jesseduffield/lazygit@main pkg/gui/types/context.go [MIT] pushed=2026-07-09 rrf=0.059
+  	IBaseContext
+
+## [superweb] yahoo@main https://medium.com/@anicomanesh/token-efficiency-and-compression-techniques-in-large-language-models-navigating-context-length-05a61283412b rrf=0.058
+  Token Efficiency and Compression Techniques in Large ... - Medium
+  Oct 7, 2024 ·   In this article, we’ll dive deep into the state-of-the-art techniques used to optimize token utilization and explore how these innovations are reshaping the way we approach long-context...
+
+## ⭐382326 [grep] openclaw/openclaw@main src/gateway/server/ws-connection/auth-context.ts [NOASSERTION] pushed=2026-07-09 rrf=0.058
+  import {
+  AUTH_RATE_LIMIT_SCOPE_BOOTSTRAP_TOKEN,
+  AUTH_RATE_LIMIT_SCOPE_DEVICE_TOKEN,
+  AUTH_RATE_LIMIT_SCOPE_SHARED_SECRET,
+  token?: string;
+  bootstrapToken?: string;
+  deviceToken?: string;
+  password?: string;
+  approvalRuntimeToken?: string;
+
+## ⭐80199 [sg] jesseduffield/lazygit@main pkg/gui/types/context.go [MIT] pushed=2026-07-09 rrf=0.058
+  	Context() Context
+
+## [superweb] duckduckgo,yahoo@main https://github.com/pleasedodisturb/awesome-llm-token-optimization rrf=0.058
+  pleasedodisturb/awesome-llm-token-optimization - GitHub
+  Apr 15, 2026 ·   A curated list of strategies, tools, papers, and resources for reducing LLM token costs and improving efficiency in production. Building with LLMs is expensive. An agent processing 10 reasoning steps can consume 50K-100K tokens per task. This list collects everything you need to cut costs by 80-99% without sacrificing quality.
+
+## ⭐80199 [sg] jesseduffield/lazygit@main pkg/gui/types/context.go [MIT] pushed=2026-07-09 rrf=0.057
+  	ParentContexter
+
+## ⭐80199 [sg] jesseduffield/lazygit@main pkg/gui/types/context.go [MIT] pushed=2026-07-09 rrf=0.056
+  	GetKind() ContextKind
+
+## ⭐80199 [sg] jesseduffield/lazygit@main pkg/gui/types/context.go [MIT] pushed=2026-07-09 rrf=0.056
+  	Context
+
+## ⭐80199 [sg] jesseduffield/lazygit@main pkg/gui/types/context.go [MIT] pushed=2026-07-09 rrf=0.055
+  	Context
+
+## ⭐80199 [sg] jesseduffield/lazygit@main pkg/gui/types/context.go [MIT] pushed=2026-07-09 rrf=0.054
+  	ISearchHistoryContext
+
+## ⭐80199 [sg] jesseduffield/lazygit@main pkg/gui/types/context.go [MIT] pushed=2026-07-09 rrf=0.053
+  	Context
+
+## ⭐80199 [sg] jesseduffield/lazygit@main pkg/gui/types/context.go [MIT] pushed=2026-07-09 rrf=0.052
+  type IBaseContext interface {
+
+## [superweb] bing@main https://de.wikipedia.org/wiki/Token rrf=0.051
+  Token – Wikipedia
+  Wiktionary: Token – Bedeutungserklärungen, Wortherkunft, Synonyme, Übersetzungen
+
+## [superweb] bing@main https://www.buchhaltung-einfach-sicher.de/finanzen/token rrf=0.050
+  Token einfach erklärt | Definition, Arten und Funktion
+  Token lassen sich in verschiedene Arten unterteilen: Es gibt Utility Token, Equity Token, Digitale Währung sowie Asset- und Security Token. Token sind über „Initial Coin Offering“ Unternehmen käuflich und …

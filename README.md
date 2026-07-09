@@ -10,18 +10,23 @@ bash <(curl -fsSL https://raw.githubusercontent.com/Supersynergy/claude-token-sa
 
 ---
 
-## The Stack (verified versions May 2026)
+## The Stack (updated 2026-07-09)
 
-Four layers, each attacking a different token problem:
+Current full matrix, top-50 tools, wiring rules, formula, and local benchmarks:
+[docs/TOKEN_SAVER_STACK_2026.md](docs/TOKEN_SAVER_STACK_2026.md).
 
-| Layer | Tool | Version | What it saves | Savings |
-|-------|------|--------:|--------------|---------|
-| Output verbosity | caveman | 0.1.0 | Agent responses — drops articles/filler/hedging | 65% avg |
-| Tool input flooding | context-mode | **1.0.105** | MCP sandbox — keeps raw tool output out of context | 98% |
-| CLI bash noise | RTK | **0.37.2** | Raw bash/cargo/docker output before LLM sees it | 62–99% per cmd |
-| HTML pre-filter | gemma-gate (MLX) | phi4-mini-4bit | trafilatura → Phi-4-mini-instruct → Ollama fallback | 53–90% |
+Core layers, each attacking a different token problem:
 
-> Run `/reload-plugins` after `cd ~/.claude/plugins/marketplaces/context-mode && rtk git pull` to bump context-mode without restart.
+| Layer | Tool | Current status | What it saves | Local / expected savings |
+|-------|------|--------------|--------------|---------|
+| Shell output | RTK | active | Raw bash/git/build/process output before LLM sees it | 96.9% local, 96.3% global history |
+| Code/file reads | Tilth + context-mode | installed; context-mode Codex hooks need upgrade | Full-file dumps; retrieves outlines/chunks | 86.8–90.8% local |
+| MCP/tool schema bloat | MCP compressor / schema gateway | recommended for large catalogs | Verbose tool schemas every turn | 89.8% static local proxy |
+| Dynamic context | Headroom / sqz / CCR | Headroom installed, not routed | Tool outputs, logs, files, RAG chunks, history | 60–95% expected when routed |
+| Output verbosity | caveman + ponytail | recommended | Agent prose + unnecessary generated code | 65% typical output cut |
+| Web pre-filter | superweb/hyperfetch + trafilatura | installed; threshold required | HTML boilerplate/noisy pages | can backfire on tiny pages |
+
+> Current finding: do not make heavy web markdown/LLM summarization default for tiny pages. Threshold first.
 
 ---
 

@@ -1,0 +1,13 @@
+# local-kb
+
+❯ ask "Top current tools and methods for reducing LLM agent context tokens RTK Headroom context-mode MCP schema slimming skill routing compression benchmarks"
+
+[synapse] top_score=0.040 — using Synapse (set ASK_FORCE_QDRANT=1 to fan out)
+
+  • [0.04] ...guide/ecosystem/context-engineering-tools.md stars: 5147  license: CC-BY-SA-4.0 quality: 4.14  ``` 4. MCP server: `he
+  • [0.04] ...output-compress=RTK(have)/headroom(installed)/tilth/context-mode(98%MCP)/Token-Savior/stacklit; prompt=LLMLingua-2(20
+  • [0.04] ...Shows RTK gain   4. Shows decision matrix for which tool to use when - Updated `/sm tokens` — full 4-layer cheatsheet
+  • [0.04] ...argument-hint: "[init | search <q> | load <name> | list [cat] | auto <intent> | vault <name> | unvault <name> | stats
+  • [0.04] ...Ran `mcp__context-mode__ctx_doctor` and `mcp__context-mode__ctx_stats` confirming context-mode is already active and 
+  • [0.04] ...RTK + Context-Mode = maximale Token-Ersparnis auf beiden Ebenen ```  ### Kein Konflikt - RTK matcher: `Bash` nur - Co
+
