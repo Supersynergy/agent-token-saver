@@ -22,7 +22,7 @@ Core layers, each attacking a different token problem:
 | Shell output | RTK | active | Raw bash/git/build/process output before LLM sees it | 96.9% local, 96.3% global history |
 | Code/file reads | Tilth + context-mode | installed; context-mode Codex hooks need upgrade | Full-file dumps; retrieves outlines/chunks | 86.8–90.8% local |
 | MCP/tool schema bloat | MCP compressor / schema gateway | recommended for large catalogs | Verbose tool schemas every turn | 89.8% static local proxy |
-| Dynamic context | Headroom / sqz / CCR | Headroom installed, not routed | Tool outputs, logs, files, RAG chunks, history | 60–95% expected when routed |
+| Dynamic context | Headroom / sqz / CCR | Headroom wired: persistent proxy :8787, Claude Code + Codex routed | Tool outputs, logs, files, RAG chunks, history | 60–95% expected; verify with `headroom savings` |
 | Output verbosity | caveman + ponytail | recommended | Agent prose + unnecessary generated code | 65% typical output cut |
 | Web pre-filter | superweb CLI / hyperfetch / trafilatura | installed; CLI on-demand only, not MCP-default | HTML boilerplate/noisy pages | can backfire on tiny pages |
 
@@ -104,6 +104,20 @@ cat token-stack.md >> ~/.claude/CLAUDE.md
 smart-fetch https://httpbin.org/json   # should return 5t, 95% savings
 sg --help            # ayg→rg auto-router
 ```
+
+### 5. Wire Headroom (dynamic-context proxy, optional but recommended)
+```bash
+uv tool install headroom-ai
+headroom install apply --preset persistent-service   # persistent proxy on 127.0.0.1:8787
+headroom init -g claude                              # route Claude Code through it
+headroom init -g codex                               # route Codex CLI through it
+headroom doctor                                      # all checks green?
+```
+
+First startup downloads an ONNX embedding model; if `install apply` reports
+"did not become ready", run it again — the model is cached after the first try.
+Measure real savings after a few sessions with `headroom savings`.
+Undo anytime: `headroom install remove && headroom unwrap claude && headroom unwrap codex`.
 
 ---
 

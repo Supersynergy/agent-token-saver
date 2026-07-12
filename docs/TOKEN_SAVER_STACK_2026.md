@@ -1,7 +1,7 @@
 # Token Saver Stack 2026 — SuperSynergy Default
 
 Stand: 2026-07-09
-Ziel: 80–99% weniger Kontext-/Ausgabe-Tokens bei gleicher oder besserer Trefferquote.
+Ambition: in geeigneten Payload-Klassen 80–99% weniger Kontext-/Ausgabe-Tokens. End-to-end-Ersparnis und gleiche Trefferquote sind erst nach Task-Evals belegt.
 
 ## Antwort in 60 Sekunden
 
@@ -11,7 +11,7 @@ Der beste Stack ist kein einzelner Compressor. Es ist eine Kette:
 2. **Stabil cachen** — Systemprompt, Regeln, Tool-Schemas, häufige Präfixe.
 3. **Gezielt holen** — Synapse/FTS/CodeGraph/Graphify vor Datei-Dumps.
 4. **Output filtern** — RTK für Terminal, Headroom für Tool/RAG/Logs, Preview statt Rohdaten.
-5. **Reversibel speichern** — Context-Mode/Synapse/Graphify halten Originale + Retrieval-Pfade.
+5. **Reversibel speichern** — Context-Mode/Synapse halten Originale + Retrieval-Pfade; Graphify hält den abgeleiteten Projektgraphen.
 6. **Kurz antworten** — Ponytail/Output-Shaper gegen Zeremonie und Erklär-Overhead.
 7. **Messen erzwingen** — Token-Ledger, Budget-Gates, Benchmark vor Default-Rollout.
 
@@ -19,7 +19,7 @@ SuperSynergy Default:
 
 ```text
 ask/Synapse -> Skill Router -> ghmax/superweb CLI only when needed
--> MCP Dynamic Toolset / schema compression
+-> MCP Dynamic Toolset only when >20 tools or schemas >10% of context
 -> tool execution via RTK/batch/hyperfetch
 -> Headroom for large tool/RAG/log payloads
 -> context-mode snapshots + Synapse/Graphify durable memory
@@ -31,10 +31,10 @@ ask/Synapse -> Skill Router -> ghmax/superweb CLI only when needed
 
 | Bereich | Befehl | Ergebnis |
 |---|---|---:|
-| Skill-Router Benchmark | `python3 scripts/agent_token_saver.py bench "deep hermes token saver stack top50 context optimization"` in `/Users/master/BASE/projects/agent-token-saver-skill-router` | 33,454 → 180 geschätzte Tokens, **99.46% Reduktion** |
+| Skill-Router Katalog-Benchmark | `python3 scripts/agent_token_saver.py bench "deep hermes token saver stack top50 context optimization"` in `/Users/master/BASE/projects/agent-token-saver-skill-router` | 456 Skills; 36.840 → 211 geschätzte Katalog-Tokens, **99,43% Reduktion**. Nicht der gesamte Taskkontext. |
 | Token-Saver Tests | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 uv run python -m pytest` | **14 passed in 0.13s** |
 | Hermes Desktop Patch | `cd /Users/master/.hermes/hermes-agent/apps/desktop && npm run typecheck` | **OK** |
-| Headroom | `headroom doctor` | v0.30.0 installiert; Proxy nicht aktiv; keine Savings recorded |
+| Headroom | `headroom doctor` | v0.31.0; persistenter Proxy :8787 (launchd), Claude Code + Codex via `headroom init -g` geroutet (2026-07-12) |
 | Context-Mode | `context-mode doctor` | Storage/Server PASS; Codex hooks noch nicht verdrahtet |
 | RTK | `rtk --version` | v0.43.0 installiert |
 | ghmax | `ghmax --doctor` | **17/17 OK** |
@@ -51,14 +51,14 @@ python3 scripts/token_saver_benchmark.py
 
 | Case | Base tok | Opt tok | Saved | Factor | Ergebnis |
 |---|---:|---:|---:|---:|---|
-| RTK `ps aux` filter | 45,689 | 1,424 | 96.9% | 32.08x | ✅ |
+| RTK `ps aux` filter, Beispielrun | 45,459 | 1,408 | 96.9% | 32.29x | ✅ flüchtige Prozessliste |
 | Tilth README smart read | 5,172 | 683 | 86.8% | 7.57x | ✅ |
 | context-mode README search | 5,172 | 474 | 90.8% | 10.91x | ✅ |
 | hyperfetch markdown on tiny page | 139 | 207 | -48.9% | 0.67x | ✅ Backfire erkannt |
 | MCP schema slimming proxy | 5,649 | 577 | 89.8% | 9.79x | ✅ |
 | Headroom profile render | 121 | 121 | 0.0% | 1.0x | ✅ install check |
 
-Regel daraus: Web-Markdown/LLM-Extraktion nur mit Schwelle aktivieren; sehr kleine Seiten roh lassen.
+Tokenwerte sind UTF-8-Bytes/4-Schätzungen und messen Payload-Größe, nicht Taskqualität. Exakte `ps aux`-Werte ändern sich pro Lauf. Regel daraus: Web-Markdown/LLM-Extraktion nur mit Schwelle aktivieren; sehr kleine Seiten roh lassen.
 
 ## Universelle Formel
 
@@ -88,7 +88,7 @@ EffectiveTokens =
     × ReworkRatio
 ```
 
-Zielwerte:
+Startheuristiken, noch nicht universell kalibriert:
 
 ```text
 CacheMissRate        <= 0.10 für stabile Präfixe
@@ -105,8 +105,8 @@ Adoptieren, wenn:
   Nettoersparnis = TokenSavedValue - (LatencyCost + ErrorRisk + MaintenanceCost) > 0
 
 und:
-  AccuracyDrop <= 1–2% bei reversibler Kompression
-  oder AccuracyDrop == 0 bei reiner Filterung/Caching/Routing
+  AccuracyDrop wird mit derselben Task-Suite gemessen
+  keine Null-Auswirkung durch Filterung/Caching/Routing voraussetzen
 ```
 
 ## Optimale Verdrahtung für Hermes/SuperSynergy
@@ -132,15 +132,15 @@ Default-Tools:
 
 Problem: Große MCP-Server verbrennen Kontext nur durch Tool-Schemas.
 
-Default:
+Default für eine gemessen große Toolfläche:
 
 ```text
-MCP Server nicht direkt alle Tools expose.
-MCP Gateway davor:
+Bei >20 Tools oder >10% Schemaanteil native Deferred Tool Search zuerst testen.
+Nur falls der Client das nicht kann, Gateway A/B testen:
   list/search tools -> select -> load exact schema -> call
 ```
 
-Adopt-now:
+Herstellerbenchmarks und Muster; erst an der Schwelle testen:
 
 - Dynamic Toolsets nach Speakeasy/Gram-Muster: bis 96% Input- und 90% Gesamtreduktion laut veröffentlichter Benchmark-Seite.
 - `mcp-compressor`-Muster nach Atlassian: 70–97% Tool-Schema-Reduktion je Kompressionslevel.
@@ -172,22 +172,21 @@ Original muss abrufbar bleiben.
 Kein Blind-Summarize für kleine exakte Daten.
 ```
 
-Lokaler Status:
+Lokaler Status (2026-07-12):
 
-- Headroom v0.30.0 ist installiert.
-- Proxy ist noch nicht aktiv (`headroom doctor`: not reachable at `http://127.0.0.1:8787`).
-- Savings-Ledger ist leer.
+- Headroom v0.31.0 installiert; persistenter Proxy (launchd, Preset `persistent-service`) läuft auf `http://127.0.0.1:8787`.
+- Claude Code und Codex sind via `headroom init -g claude` / `headroom init -g codex` durch den Proxy geroutet; `headroom doctor` grün.
+- Savings-Ledger beginnt zu füllen; Netto-Wirkung nach einigen Sessions mit `headroom savings` bewerten.
+- Gotcha: erster Start lädt ein ONNX-Embedding-Modell; meldet `install apply` "did not become ready", einfach erneut ausführen (Modell dann gecacht).
 
-Rollout:
+Nachmessen statt glauben:
 
 ```bash
-headroom proxy
-headroom wrap codex
-headroom wrap claude
+headroom doctor
 headroom savings
 ```
 
-Nur nach Testlauf als Default aktivieren.
+Nur bei messbarem Netto-Gewinn aus Tokens, akzeptierter Ergebnisqualität, Latenz und Nacharbeit als Default aktivieren.
 
 ### 5. Retrieval statt Dump
 
@@ -231,11 +230,11 @@ Context-Mode Status:
 - Server test PASS.
 - Codex hooks fehlen aktuell in `/Users/master/.codex/hooks.json`.
 
-Next fix:
+Nächster Test, nicht ungeprüft als Default verdrahten:
 
 ```bash
 context-mode doctor
-# dann Hooks aus context-mode configs/codex/hooks.json in ~/.codex/hooks.json verdrahten
+# Hooks zuerst gegen Headroom/native Compaction mit gleicher Aufgabe benchmarken.
 ```
 
 ## Top-50 Context-/Token-Saving Tools und Methoden
@@ -246,8 +245,8 @@ Status: `adopt` = jetzt nutzen, `test` = Bench nötig, `watch` = beobachten, `av
 | # | Tool/Methode | Link | Haupthebel | Score | Status | SuperSynergy Default |
 |---:|---|---|---|---:|---|---|
 | 1 | RTK | local: `rtk 0.43.0` | Terminal-output filtering | 10 | adopt | Noisy shell immer via `rtk` |
-| 2 | Headroom | https://github.com/chopratejas/headroom | Reversible context compression | 9 | test | Proxy/MCP für große Tool/RAG/Log-Payloads |
-| 3 | context-mode MCP | local: `context-mode doctor` | Session snapshots / context recovery | 9 | adopt after hooks | Codex hooks reparieren |
+| 2 | Headroom | https://github.com/headroomlabs-ai/headroom | Reversible context compression | 9 | test | Proxy/MCP für große Tool/RAG/Log-Payloads |
+| 3 | context-mode MCP | local: `context-mode doctor` | Session snapshots / context recovery | 9 | test | Gegen native Compaction/Headroom benchmarken |
 | 4 | Skill Router | local: `/Users/master/BASE/projects/agent-token-saver-skill-router` | Lazy skill loading | 10 | adopt | Router vor Skill-Load |
 | 5 | Ponytail | https://github.com/DietrichGebert/ponytail | Lean output / anti-overengineering | 8 | test | Für Code-Review/Lean-Modus, nicht als Faktenfilter |
 | 6 | Synapse / ask | local: `ask`, `synxp` | Local KB before web/API | 10 | adopt | Immer erste Recherche-Stufe |
@@ -310,7 +309,7 @@ Fresh web/current facts? superweb CLI on-demand.
 MCP? lazy tool discovery; no full tool dump.
 ```
 
-### Default MCP policy
+### Default MCP policy — Startheuristik
 
 ```text
 Expose <= 12 tools per task by default.
@@ -319,7 +318,7 @@ Every tool response supports: fields, limit, cursor, summary.
 Large responses return artifact handle + short digest.
 ```
 
-### Default context budget
+### Default context budget — Startheuristik
 
 ```text
 System + rules:        <= 15% of window, cached/stable
@@ -341,7 +340,7 @@ Before adopting any new saver globally:
 5. Adopt only if net score improves.
 ```
 
-Scoring:
+Unkalibrierter Startscore; Gewichte nach realen Task-Evals anpassen:
 
 ```text
 Score = 0.45*TokenReduction + 0.25*AccuracyRetention + 0.15*LatencyScore + 0.10*Reversibility + 0.05*MaintenanceFit
@@ -357,12 +356,14 @@ Below 0.60: keep as research only
 
 ## Immediate SuperSynergy TODO
 
-1. Fix Codex context-mode hooks in `/Users/master/.codex/hooks.json`.
-2. Run `headroom proxy` and one controlled `headroom wrap codex` session.
-3. Add MCP dynamic toolset gateway before any large MCP server.
-4. Add token-budget regression test for system prompt + tools.
-5. Keep RTK hook default for noisy commands.
-6. Keep Skill Router before loading Hermes/Claude skills.
+1. Add a drift test for startup instructions and serialized tool-schema tokens.
+2. Codex/Claude route now through Headroom (2026-07-12): watch accepted-task quality + `headroom savings` over the next sessions; unroute (`headroom unwrap codex`) if quality drops.
+3. Keep the lean default at `tilth` only; test native deferred loading first if the profile exceeds 20 tools or schemas exceed 10% of context.
+4. Measure cache-hit ratio when Codex exposes it; keep tools/instructions stable inside a running task.
+5. Keep RTK default for noisy commands and the Skill Router before skill loading.
+6. Do not add Claw Compactor, PandaFilter, LLMLingua, RepoPrompt, Repomix or another MCP proxy without a local A/B win.
+
+Current cross-source research: [`TOKEN_SAVER_RESEARCH_2026-07-09.md`](./TOKEN_SAVER_RESEARCH_2026-07-09.md).
 
 ## Research sources captured locally
 
@@ -381,7 +382,7 @@ Research artifacts:
 
 Primary/current links:
 
-- https://github.com/chopratejas/headroom
+- https://github.com/headroomlabs-ai/headroom
 - https://github.com/DietrichGebert/ponytail
 - https://github.com/microsoft/LLMLingua
 - https://www.speakeasy.com/blog/how-we-reduced-token-usage-by-100x-dynamic-toolsets-v2
@@ -390,4 +391,3 @@ Primary/current links:
 - https://www.mindstudio.ai/blog/reduce-token-usage-ai-agents-mcp-optimization
 - https://github.com/olivomarco/github-copilot-token-optimization
 - https://github.com/pleasedodisturb/awesome-llm-token-optimization
-
