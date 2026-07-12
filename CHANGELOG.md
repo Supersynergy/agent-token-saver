@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Integrated the full local stack (2026-07-12): wired `hooks/pretooluse_backfire.py` into `~/.claude/settings.json` (advisory, ~41ms, never blocks); updated `~/.claude/cts-env.sh` to installed non-blacklisted models (gate `smollm2:1.7b-8k`, deep `granite4.1:3b`, mid `granite4:1b`) and sourced it from `~/.zshrc`; ran `context-mode upgrade` (all hook checks PASS).
+- `cts doctor` accuracy fixes: plugin-shipped hooks (`hooks/hooks.json`) now count as wired (PreCompact via context-mode), caveman detected as marketplace plugin, new Headroom proxy liveness check, dropped `PostCompact` (not a Claude Code event — recovery fires as SessionStart `compact`) in favor of `SessionEnd`. Result: ok 7→10, warn 5→2, crit 0.
 - Wired Headroom end-to-end (2026-07-12): persistent proxy on 127.0.0.1:8787 via `headroom install apply --preset persistent-service`, Claude Code + Codex routed via `headroom init -g`; `headroom doctor` green. README got a Quick Start step 5 with the exact commands, the first-start ONNX gotcha, and the undo path.
 - Honest-framing pass on `docs/TOKEN_SAVER_STACK_2026.md`: benchmark numbers labeled as chars/4 payload estimates, target values downgraded to start heuristics, accuracy-drop assumptions replaced with measure-first rules.
 - Committed research artifacts: `docs/TOKEN_SAVER_RESEARCH_2026-07-09.md`, headroom Codex audit + YouTube token-saver analysis JSONs.

@@ -34,16 +34,39 @@ SETTINGS = HOME / ".claude" / "settings.json"
 HOOKS_DIR = HOME / ".claude" / "hooks"
 LOG_AUTOPATCH = HOME / ".claude" / "logs" / "ggcoder-autopatch.log"
 
+PLUGIN_MARKETPLACES = HOME / ".claude" / "plugins" / "marketplaces"
+
+# PostCompact is not a Claude Code hook event — post-compact recovery fires as
+# SessionStart with source "compact", so we expect SessionEnd instead.
 EXPECTED_EVENTS = {
     "PreToolUse",
     "PostToolUse",
     "UserPromptSubmit",
     "PreCompact",
-    "PostCompact",
     "SubagentStop",
     "SessionStart",
+    "SessionEnd",
     "Stop",
 }
+
+
+def _plugin_hook_events() -> dict[str, str]:
+    """Map hook event -> plugin name for plugin-shipped hooks/hooks.json."""
+    events: dict[str, str] = {}
+    if not PLUGIN_MARKETPLACES.exists():
+        return events
+    for plugin in PLUGIN_MARKETPLACES.iterdir():
+        hj = plugin / "hooks" / "hooks.json"
+        if not hj.exists():
+            continue
+        try:
+            data = json.loads(hj.read_text())
+        except Exception:
+            continue
+        for ev in data.get("hooks", data):
+            events.setdefault(ev, plugin.name)
+    return events
+
 
 PATH_RE = re.compile(r'(?:\$HOME|~/\S*|/[^\s"\'`;|&]+\.(?:sh|py|mjs|js))')
 
@@ -88,18 +111,18 @@ def audit() -> dict:
                 if p:
                     referenced.add(os.path.realpath(p))
                     if not os.path.exists(p):
-                        report["warn"].append(
-                            f"{event}: missing script {os.path.basename(p)}"
-                        )
+                        report["warn"].append(f"{event}: missing script {os.path.basename(p)}")
 
-    # missing events
-    missing_events = EXPECTED_EVENTS - hooks_cfg.keys()
+    # missing events — plugin-shipped hooks (hooks/hooks.json) count as wired
+    plugin_events = _plugin_hook_events()
+    missing_events = EXPECTED_EVENTS - hooks_cfg.keys() - plugin_events.keys()
     for ev in missing_events:
         report["warn"].append(f"event not configured: {ev}")
-    if "PreCompact" in hooks_cfg:
-        report["ok"].append("PreCompact wired")
-    if "SubagentStop" in hooks_cfg:
-        report["ok"].append("SubagentStop wired")
+    for ev in ("PreCompact", "SubagentStop"):
+        if ev in hooks_cfg:
+            report["ok"].append(f"{ev} wired")
+        elif ev in plugin_events:
+            report["ok"].append(f"{ev} wired (plugin: {plugin_events[ev]})")
 
     # orphans
     if HOOKS_DIR.exists():
@@ -123,7 +146,9 @@ def audit() -> dict:
             try:
                 latest = subprocess.run(
                     ["npm", "view", "@mksglu/context-mode", "version"],
-                    capture_output=True, text=True, timeout=5,
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
                 ).stdout.strip()
                 if latest and latest != installed:
                     report["warn"].append(
@@ -147,8 +172,20 @@ def audit() -> dict:
     for tool in ["caveman", "rtk", "claude"]:
         if shutil.which(tool):
             report["ok"].append(f"{tool} on PATH")
+        elif tool == "caveman" and (PLUGIN_MARKETPLACES / "caveman").exists():
+            report["ok"].append("caveman plugin installed (marketplace)")
         else:
             report["warn"].append(f"{tool} not on PATH")
+
+    # Headroom dynamic-context proxy
+    if shutil.which("headroom"):
+        import urllib.request
+
+        try:
+            urllib.request.urlopen("http://127.0.0.1:8787/livez", timeout=1)
+            report["ok"].append("headroom proxy live on :8787")
+        except Exception:
+            report["warn"].append("headroom installed but proxy not reachable on :8787")
 
     cts_root = HOME / "projects" / "claude-token-saver"
     for layer in ["core/gemma-gate.py", "core/cache_replay.py", "core/reflection.py"]:

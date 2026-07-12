@@ -20,7 +20,7 @@ Core layers, each attacking a different token problem:
 | Layer | Tool | Current status | What it saves | Local / expected savings |
 |-------|------|--------------|--------------|---------|
 | Shell output | RTK | active | Raw bash/git/build/process output before LLM sees it | 96.9% local, 96.3% global history |
-| Code/file reads | Tilth + context-mode | installed; context-mode Codex hooks need upgrade | Full-file dumps; retrieves outlines/chunks | 86.8–90.8% local |
+| Code/file reads | Tilth + context-mode | active; context-mode hooks PASS (Claude Code), Codex covered via Headroom proxy | Full-file dumps; retrieves outlines/chunks | 86.8–90.8% local |
 | MCP/tool schema bloat | MCP compressor / schema gateway | recommended for large catalogs | Verbose tool schemas every turn | 89.8% static local proxy |
 | Dynamic context | Headroom / sqz / CCR | Headroom wired: persistent proxy :8787, Claude Code + Codex routed | Tool outputs, logs, files, RAG chunks, history | 60–95% expected; verify with `headroom savings` |
 | Output verbosity | caveman + ponytail | recommended | Agent prose + unnecessary generated code | 65% typical output cut |

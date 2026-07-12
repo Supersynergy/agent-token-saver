@@ -35,7 +35,7 @@ ask/Synapse -> Skill Router -> ghmax/superweb CLI only when needed
 | Token-Saver Tests | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 uv run python -m pytest` | **14 passed in 0.13s** |
 | Hermes Desktop Patch | `cd /Users/master/.hermes/hermes-agent/apps/desktop && npm run typecheck` | **OK** |
 | Headroom | `headroom doctor` | v0.31.0; persistenter Proxy :8787 (launchd), Claude Code + Codex via `headroom init -g` geroutet (2026-07-12) |
-| Context-Mode | `context-mode doctor` | Storage/Server PASS; Codex hooks noch nicht verdrahtet |
+| Context-Mode | `context-mode doctor` | Alle Checks PASS nach `context-mode upgrade` (2026-07-12); Codex-Seite läuft über Headroom-Proxy |
 | RTK | `rtk --version` | v0.43.0 installiert |
 | ghmax | `ghmax --doctor` | **17/17 OK** |
 | superweb | `superweb doctor` | **HEALTHY** |
