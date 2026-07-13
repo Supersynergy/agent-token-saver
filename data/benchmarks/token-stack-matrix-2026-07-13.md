@@ -6,21 +6,21 @@ Measured local CLIs/MCP schemas. Token proxy for local payloads: UTF-8 bytes / 4
 
 | Stack | Input tok | Provider input | Output tok | Total | Cost index | Accepted |
 |---|---:|---:|---:|---:|---:|:--:|
-| cli-selective | 2,428 | 2,428 | 340 | 2,768 | 0.73 | yes |
-| current-lean | 4,136 | 4,136 | 340 | 4,476 | 1.18 | yes |
-| context-on-demand | 9,962 | 9,962 | 340 | 10,302 | 2.70 | yes |
-| max-all+ponytail | 12,969 | 12,969 | 265 | 13,234 | 3.47 | yes |
-| none/raw | 380,531 | 380,531 | 340 | 380,871 | 100.00 | yes |
+| cli-selective | 2,303 | 2,303 | 340 | 2,643 | 0.68 | yes |
+| current-lean | 4,011 | 4,011 | 340 | 4,351 | 1.13 | yes |
+| context-on-demand | 9,837 | 9,837 | 340 | 10,177 | 2.64 | yes |
+| max-all+ponytail | 12,844 | 12,844 | 265 | 13,109 | 3.40 | yes |
+| none/raw | 385,707 | 385,707 | 340 | 386,047 | 100.00 | yes |
 
 ## Components
 
 | Component | Base tok | Optimized tok | Saved | Base ms | Opt ms | Accepted |
 |---|---:|---:|---:|---:|---:|:--:|
-| skill-routing | 37,080 | 226 | 99.39% | 0 | 588 | yes |
-| rtk-ps | 40,844 | 1,447 | 96.46% | 111 | 256 | yes |
-| tilth-read | 2,133 | 570 | 73.28% | 0 | 8 | yes |
-| native-log-projection | 300,474 | 185 | 99.94% | 0 | 3 | yes |
-| context-mode-log | 300,474 | 261 | 99.91% | 0 | 801 | yes |
+| skill-routing | 37,108 | 226 | 99.39% | 0 | 453 | yes |
+| rtk-ps | 44,711 | 1,158 | 97.41% | 67 | 91 | yes |
+| tilth-read | 3,414 | 734 | 78.50% | 0 | 6 | yes |
+| native-log-projection | 300,474 | 185 | 99.94% | 0 | 2 | yes |
+| context-mode-log | 300,474 | 261 | 99.91% | 0 | 405 | yes |
 
 ## Fixed overhead and observed runtime
 

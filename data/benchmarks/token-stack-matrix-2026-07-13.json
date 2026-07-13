@@ -1,5 +1,5 @@
 {
-  "date": "2026-07-13 16:19:28 CEST",
+  "date": "2026-07-13 17:49:58 CEST",
   "method": "local real CLIs/MCP schemas; bytes/4 token proxy; optional Codex provider usage for Ponytail A/B",
   "versions": {
     "context_mode": "1.0.169",
@@ -22,7 +22,7 @@
     "tilth": {
       "tools": 6,
       "tokens": 1836,
-      "ms": 119,
+      "ms": 44,
       "error": ""
     },
     "context_mode": {
@@ -115,40 +115,40 @@
   "components": [
     {
       "name": "skill-routing",
-      "baseline_tokens": 37080,
+      "baseline_tokens": 37108,
       "optimized_tokens": 226,
       "baseline_ms": 0,
-      "optimized_ms": 588,
+      "optimized_ms": 453,
       "accepted": true,
-      "detail": "458 skills -> 3 selected",
+      "detail": "459 skills -> 3 selected",
       "saved_pct": 99.39
     },
     {
       "name": "rtk-ps",
-      "baseline_tokens": 40844,
-      "optimized_tokens": 1447,
-      "baseline_ms": 111,
-      "optimized_ms": 256,
+      "baseline_tokens": 44711,
+      "optimized_tokens": 1158,
+      "baseline_ms": 67,
+      "optimized_ms": 91,
       "accepted": true,
       "detail": "Real process table, raw vs RTK.",
-      "saved_pct": 96.46
+      "saved_pct": 97.41
     },
     {
       "name": "tilth-read",
-      "baseline_tokens": 2133,
-      "optimized_tokens": 570,
+      "baseline_tokens": 3414,
+      "optimized_tokens": 734,
       "baseline_ms": 0,
-      "optimized_ms": 8,
+      "optimized_ms": 6,
       "accepted": true,
       "detail": "Full README vs 800-token structural budget.",
-      "saved_pct": 73.28
+      "saved_pct": 78.5
     },
     {
       "name": "native-log-projection",
       "baseline_tokens": 300474,
       "optimized_tokens": 185,
       "baseline_ms": 0,
-      "optimized_ms": 3,
+      "optimized_ms": 2,
       "accepted": true,
       "detail": "20k-line log -> exact error count + last 10 errors.",
       "saved_pct": 99.94
@@ -158,7 +158,7 @@
       "baseline_tokens": 300474,
       "optimized_tokens": 261,
       "baseline_ms": 0,
-      "optimized_ms": 801,
+      "optimized_ms": 405,
       "accepted": true,
       "detail": "Same exact oracle through ctx_execute_file; excludes schema overhead.",
       "saved_pct": 99.91
@@ -167,52 +167,52 @@
   "matrix": [
     {
       "name": "none/raw",
-      "workload_input_tokens": 380531,
-      "provider_input_tokens": 380531,
+      "workload_input_tokens": 385707,
+      "provider_input_tokens": 385707,
       "output_tokens": 340,
-      "total_tokens": 380871,
+      "total_tokens": 386047,
       "accepted": true,
       "cost_index_vs_none": 100.0,
       "note": "Full skill catalog + raw shell/file/log; no schema overhead."
     },
     {
       "name": "cli-selective",
-      "workload_input_tokens": 2428,
-      "provider_input_tokens": 2428,
+      "workload_input_tokens": 2303,
+      "provider_input_tokens": 2303,
       "output_tokens": 340,
-      "total_tokens": 2768,
+      "total_tokens": 2643,
       "accepted": true,
-      "cost_index_vs_none": 0.73,
+      "cost_index_vs_none": 0.68,
       "note": "Router + RTK + Tilth CLI + native projection; zero MCP schema."
     },
     {
       "name": "current-lean",
-      "workload_input_tokens": 4136,
-      "provider_input_tokens": 4136,
+      "workload_input_tokens": 4011,
+      "provider_input_tokens": 4011,
       "output_tokens": 340,
-      "total_tokens": 4476,
+      "total_tokens": 4351,
       "accepted": true,
-      "cost_index_vs_none": 1.18,
+      "cost_index_vs_none": 1.13,
       "note": "Prompt hook + RTK + Tilth MCP + native projection; no Headroom."
     },
     {
       "name": "context-on-demand",
-      "workload_input_tokens": 9962,
-      "provider_input_tokens": 9962,
+      "workload_input_tokens": 9837,
+      "provider_input_tokens": 9837,
       "output_tokens": 340,
-      "total_tokens": 10302,
+      "total_tokens": 10177,
       "accepted": true,
-      "cost_index_vs_none": 2.7,
+      "cost_index_vs_none": 2.64,
       "note": "Router + RTK + Tilth CLI + context-mode schema/call; no Headroom."
     },
     {
       "name": "max-all+ponytail",
-      "workload_input_tokens": 12969,
-      "provider_input_tokens": 12969,
+      "workload_input_tokens": 12844,
+      "provider_input_tokens": 12844,
       "output_tokens": 265,
-      "total_tokens": 13234,
+      "total_tokens": 13109,
       "accepted": true,
-      "cost_index_vs_none": 3.47,
+      "cost_index_vs_none": 3.4,
       "note": "Current + context-mode MCP + full Ponytail skill; cold-schema cost."
     }
   ],

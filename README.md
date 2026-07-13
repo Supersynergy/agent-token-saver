@@ -2,38 +2,100 @@
 
 ![agent-token-saver — less noise, better judgment](docs/assets/social-preview.png)
 
-**Less noise. Better judgment. Measured, not guessed.**
+**Use your coding agent more. Spend far fewer tokens getting there.**
 
 [![MIT](https://img.shields.io/badge/license-MIT-1c7c54.svg)](LICENSE)
 ![verified agents](https://img.shields.io/badge/verified-Codex%20%7C%20Claude%20%7C%20Hermes%20%7C%20GG%20Coder-f2c14e.svg)
-![measured](https://img.shields.io/badge/benchmark-0.73%25%20of%20raw-e8f1f2.svg)
+![measured](https://img.shields.io/badge/measured-up%20to%20146.1x%20payload%20capacity-e8f1f2.svg)
 
-Universal token routing for coding agents. Give the model the smallest decisive context, not another mountain of logs, schemas and duplicate research.
+> **Imagine getting 100x more context-heavy work from Codex, Claude Code,
+> Hermes or GG Coder before hitting the same token budget. In the included
+> accepted-workload benchmark, you can: 386,047 tokens became 2,643 tokens --
+> 99.32% less, or 146.1x more payload capacity.**
+
+`agent-token-saver` stops wasted tokens before they reach your model. It sends
+the smallest context that can still produce the correct result: the relevant
+skills, the useful error lines, the needed code and the right tools for this
+task.
 
 Verified with Codex CLI, Claude Code, Hermes Agent and GG Coder. The repo-local
 skill plus CLI/JSON interfaces also work with agents that understand
 `SKILL.md` or can run shell commands. No API keys or private configuration are
 shipped.
 
+## What this means in plain English
+
+Without routing, a coding agent may receive 459 skill descriptions, a complete
+process table, a full README and a 20,000-line log before it starts solving the
+task. Most of those tokens never help the answer.
+
+With `agent-token-saver`, the same accepted workload used:
+
+- **2,643 instead of 386,047 tokens** in the CLI-selective profile.
+- **4,351 instead of 386,047 tokens** in the automatic Lean profile.
+- **Up to 99.32% fewer tokens** across the measured workload.
+- **Up to 146 comparable payloads** inside the token budget previously used by one raw payload.
+
+That can mean more Codex or Claude work from the same subscription/API budget,
+longer useful sessions before compaction, fewer quota interruptions and more
+room for the model to reason about the code that actually matters.
+
+It does **not** make the model cheaper by making it dumber. It removes context
+the task did not need while keeping required evidence, errors, approvals and
+acceptance checks intact.
+
 ## Why this exists
 
-Most “token optimization” advice asks humans to think about tokens all day. That is backwards.
+Most "token optimization" advice asks humans to think about tokens all day.
+That is backwards.
 
-`agent-token-saver` makes the cheap choice automatic, preserves the evidence needed for a good answer, and keeps heavy tools one command away. You spend less quota. Your agent spends less attention. Neither of you has to work in caveman darkness to get there.
+`agent-token-saver` makes the token-efficient choice automatic, preserves the
+evidence needed for a good answer and keeps heavy tools one command away. Your
+agent reads less irrelevant text, consumes fewer tokens and keeps more of its
+context window for judgment and implementation.
 
-**The result:** one understandable stack, four workload profiles, real A/B measurements, reversible hooks and no lock-in.
+**The result:** more useful agent work per token, one understandable stack, four
+workload profiles, real A/B measurements, reversible hooks and no lock-in.
 
-## Measured answer
+## The measured result
 
 Local benchmark, 2026-07-13. Same accepted workload in every arm; UTF-8 bytes / 4 for local payloads and provider-reported usage for the live output A/B.
 
-| Stack | Total tokens | Index vs no saver |
-|---|---:|---:|
-| **CLI selective** | **2,768** | **0.73** |
-| Lean automatic | 4,476 | 1.18 |
-| Context-mode on demand | 10,302 | 2.70 |
-| Everything + Ponytail | 13,234 | 3.47 |
-| No saver | 380,871 | 100.00 |
+| Stack | Tokens per workload | Tokens saved | Payload capacity in the same raw budget |
+|---|---:|---:|---:|
+| **CLI selective** | **2,643** | **99.32%** | **146.1x** |
+| Lean automatic | 4,351 | 98.87% | 88.7x |
+| Context-mode on demand | 10,177 | 97.36% | 37.9x |
+| Everything + Ponytail | 13,109 | 96.60% | 29.4x |
+| No saver | 386,047 | 0% | 1.0x |
+
+### What "100x more usage" actually means
+
+Take the token budget consumed by one raw benchmark workload: **386,047
+tokens**.
+
+- Raw approach: that budget carries **1** comparable workload.
+- CLI-selective profile: that budget carries **146 full comparable payloads**.
+- Automatic Lean profile: that budget carries **88 full comparable payloads**.
+- Across 100 comparable workloads: **38,604,700 raw tokens vs 264,300 CLI-selective tokens**.
+
+The multiplier is `raw tokens / optimized tokens`. It measures useful payload
+capacity, not a promise of 146x more provider calls: subscription rate limits,
+cache accounting, model output, tool calls and task mix still matter. If tokens
+or quota are your bottleneck and your workload resembles this one, however,
+the practical gain can be enormous.
+
+### Where the tokens disappear
+
+| Instead of sending this | The agent receives this | Measured reduction |
+|---|---|---:|
+| All 459 installed skills | The 3 relevant skills | 99.39% |
+| Full noisy process output | RTK's useful projection | 97.41% |
+| Entire README | A bounded structural read | 78.50% |
+| A 20,000-line log | Exact error count + last 10 errors | 99.94% |
+
+The model still gets the facts needed to pass the same acceptance check. It
+simply stops paying attention to everything else.
 
 The cheapest default is not “enable everything”:
 
@@ -184,9 +246,9 @@ Measured component reductions:
 
 | Component | Raw | Optimized | Saved |
 |---|---:|---:|---:|
-| Skill catalog -> router | 37,080 | 226 | 99.39% |
-| process output -> RTK | 40,844 | 1,447 | 96.46% |
-| README -> Tilth budget | 2,133 | 570 | 73.28% |
+| Skill catalog -> router | 37,108 | 226 | 99.39% |
+| process output -> RTK | 44,711 | 1,158 | 97.41% |
+| README -> Tilth budget | 3,414 | 734 | 78.50% |
 | 20k-line log -> native projection | 300,474 | 185 | 99.94% |
 | same log -> context-mode | 300,474 | 261 | 99.91% |
 
