@@ -49,6 +49,7 @@ def test_all_agents_install_without_overwriting_existing_settings(tmp_path: Path
     assert (home / ".hermes" / "skills" / "agent-token-saver" / "SKILL.md").is_file()
     assert (home / ".gg" / "skills" / "agent-token-saver.md").is_file()
     assert (project / ".agents" / "skills" / "agent-token-saver" / "SKILL.md").is_file()
+    assert (home / ".local" / "bin" / "agent-token-ledger").is_symlink()
     config = json.loads((home / ".agent-token-saver" / "config.json").read_text())
     assert config == {
         "schema_version": 1,
@@ -62,7 +63,7 @@ def test_all_agents_install_without_overwriting_existing_settings(tmp_path: Path
     assert claude["hooks"]["PreToolUse"] == [existing_rtk]
     assert claude["hooks"]["UserPromptSubmit"]
     codex = json.loads((home / ".codex" / "hooks.json").read_text())
-    assert codex["hooks"]["PreToolUse"]
+    assert codex["hooks"]["PreToolUse"] == []
     assert codex["hooks"]["UserPromptSubmit"]
 
 
@@ -71,7 +72,7 @@ def test_repeated_install_deduplicates_hooks(tmp_path: Path) -> None:
     second = run_installer(tmp_path, "--agent", "codex")
     assert first.returncode == second.returncode == 0
     hooks = json.loads((tmp_path / "home" / ".codex" / "hooks.json").read_text())["hooks"]
-    assert len(hooks["PreToolUse"]) == 1
+    assert len(hooks["PreToolUse"]) == 0
     assert len(hooks["UserPromptSubmit"]) == 1
 
 
@@ -80,3 +81,42 @@ def test_dry_run_leaves_home_unchanged(tmp_path: Path) -> None:
     assert result.returncode == 0
     assert not (tmp_path / "home" / ".agent-token-saver").exists()
     assert not (tmp_path / "home" / ".codex" / "hooks.json").exists()
+
+
+def test_old_repo_rtk_hook_is_removed_from_codex(tmp_path: Path) -> None:
+    hooks_path = tmp_path / "home" / ".codex" / "hooks.json"
+    hooks_path.parent.mkdir(parents=True)
+    hooks_path.write_text(
+        json.dumps(
+            {
+                "hooks": {
+                    "PreToolUse": [
+                        {
+                            "matcher": "Bash",
+                            "hooks": [
+                                {
+                                    "type": "command",
+                                    "command": (
+                                        f"{tmp_path}/home/.agent-token-saver/hooks/rtk-rewrite.sh"
+                                    ),
+                                }
+                            ],
+                        }
+                    ]
+                }
+            }
+        )
+    )
+    result = run_installer(tmp_path, "--agent", "codex")
+    assert result.returncode == 0
+    hooks = json.loads(hooks_path.read_text())["hooks"]["PreToolUse"]
+    assert hooks == []
+
+
+def test_claude_uses_native_rtk_hook(tmp_path: Path) -> None:
+    result = run_installer(tmp_path, "--agent", "claude")
+    assert result.returncode == 0
+    settings = json.loads((tmp_path / "home" / ".claude" / "settings.json").read_text())
+    hooks = settings["hooks"]["PreToolUse"]
+    commands = [hook["command"] for entry in hooks for hook in entry["hooks"]]
+    assert commands == ["rtk hook claude"]

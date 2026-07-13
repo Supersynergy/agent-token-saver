@@ -64,20 +64,43 @@ def has_command(entries: list[Any], *needles: str) -> bool:
     return False
 
 
+def remove_repo_rtk_hooks(entries: list[Any]) -> None:
+    kept_entries: list[Any] = []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            kept_entries.append(entry)
+            continue
+        kept_hooks = []
+        for hook in entry.get("hooks", []):
+            if not isinstance(hook, dict):
+                kept_hooks.append(hook)
+                continue
+            current = str(hook.get("command", ""))
+            repo_hook = "agent-token-saver" in current and (
+                "rtk-rewrite.sh" in current or "rtk_rewrite.py" in current
+            )
+            if not repo_hook:
+                kept_hooks.append(hook)
+        if kept_hooks:
+            entry["hooks"] = kept_hooks
+            kept_entries.append(entry)
+    entries[:] = kept_entries
+
+
 def merge_hooks(path: Path, agent: str, dry_run: bool) -> None:
     data = load_json(path)
     hooks = data.setdefault("hooks", {})
     pre = hooks.setdefault("PreToolUse", [])
     prompt = hooks.setdefault("UserPromptSubmit", [])
-    rtk_command = str(INSTALL_HOME / "hooks" / "rtk-rewrite.sh")
     prompt_command = str(INSTALL_HOME / "hooks" / "token-stack-prompt.py")
     matcher = (
         "Bash"
         if agent == "claude"
         else r"Bash|Shell|shell|shell_command|exec_command|functions\.exec_command"
     )
-    if shutil.which("rtk") and not has_command(pre, "rtk-rewrite.sh", "rtk hook"):
-        pre.append(hook_entry(matcher, rtk_command, 5))
+    remove_repo_rtk_hooks(pre)
+    if agent == "claude" and shutil.which("rtk") and not has_command(pre, "rtk hook claude"):
+        pre.append(hook_entry(matcher, "rtk hook claude", 5))
     if not has_command(prompt, "token-stack-prompt.py"):
         prompt.append(hook_entry(None, prompt_command, 6))
     atomic_json(path, data, dry_run)
@@ -98,9 +121,9 @@ def install_files(dry_run: bool) -> None:
     copies = {
         ROOT / "stack" / "catalog.json": INSTALL_HOME / "stack" / "catalog.json",
         ROOT / "scripts" / "stack_doctor.py": INSTALL_HOME / "bin" / "agent-token-saver",
-        ROOT / "integration" / "hooks" / "rtk-rewrite.sh": INSTALL_HOME
-        / "hooks"
-        / "rtk-rewrite.sh",
+        ROOT / "scripts" / "full_context_ledger.py": INSTALL_HOME
+        / "bin"
+        / "agent-token-ledger",
         ROOT / "integration" / "hooks" / "token-stack-prompt.py": INSTALL_HOME
         / "hooks"
         / "token-stack-prompt.py",
@@ -118,6 +141,14 @@ def install_files(dry_run: bool) -> None:
         launcher.unlink(missing_ok=True)
         launcher.symlink_to(copies[ROOT / "scripts" / "stack_doctor.py"])
         print(f"linked {launcher}")
+    ledger_launcher = HOME / ".local" / "bin" / "agent-token-ledger"
+    ledger_target = copies[ROOT / "scripts" / "full_context_ledger.py"]
+    if dry_run:
+        print(f"would link {ledger_launcher} -> {ledger_target}")
+    else:
+        ledger_launcher.unlink(missing_ok=True)
+        ledger_launcher.symlink_to(ledger_target)
+        print(f"linked {ledger_launcher}")
     heavy_launcher = HOME / ".local" / "bin" / "codex-heavy-context"
     heavy_target = copies[ROOT / "integration" / "cli" / "codex-heavy-context"]
     if heavy_launcher.exists() or heavy_launcher.is_symlink():

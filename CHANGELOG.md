@@ -1,5 +1,18 @@
 # Changelog
 
+## 3.0.1 — 2026-07-13
+
+- Add a fresh-HOME neutral Ubuntu install gate to CI.
+- Separate portable `core-ready` health from optional `full` profile coverage.
+- Add `agent-token-ledger` for provider totals, cache classes, visible context
+  attribution and explicit unattributed host overhead.
+- Clarify that 146.1x is a dated accepted-payload result, not an automatic
+  clean-host billing multiplier.
+- Publish the clean-Codex full-context backfire: +0.68% on trivial work, with
+  the unverified shell-rewrite arm rejected.
+- Use RTK's native Claude hook and remove the unsupported transparent Codex
+  rewrite claim; Codex remains skill/CLI-guided.
+
 ## 3.0.0 — 2026-07-13
 
 - Rename the universal stack from `claude-token-saver` to `agent-token-saver`.

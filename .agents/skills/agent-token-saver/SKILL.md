@@ -1,7 +1,7 @@
 ---
 name: agent-token-saver
 description: Route context through the smallest measured CLI or projection before loading heavy tools.
-version: 3.0.0
+version: 3.0.1
 author: Supersynergy
 license: MIT
 metadata:

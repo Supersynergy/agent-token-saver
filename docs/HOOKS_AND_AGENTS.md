@@ -5,8 +5,8 @@ Hermes Agent 0.18.2 and GG Coder 5.15.1.
 
 | Agent | Stable integration | What the installer does |
 |---|---|---|
-| Codex CLI | native JSON hooks + skill | merges `~/.codex/hooks.json`; installs one skill |
-| Claude Code | native JSON hooks + skill | merges `~/.claude/settings.json`; installs one skill |
+| Codex CLI | prompt hook + skill/CLI | merges `~/.codex/hooks.json`; removes obsolete repo RTK rewrite hooks |
+| Claude Code | native RTK + prompt hooks | installs `rtk hook claude` when RTK exists; installs one skill |
 | Hermes Agent | Agent Skills standard | installs under `~/.hermes/skills/` |
 | GG Coder | global Markdown skill | installs under `~/.gg/skills/` |
 | Other agents | repo skill + CLI/JSON | installs `.agents/skills/`; call projections directly |
@@ -25,15 +25,19 @@ Hermes documents direct GitHub/URL skill installation, prompt-cache-friendly
 skill invocation and the Agent Skills layout at
 https://hermes-agent.nousresearch.com/docs/user-guide/features/skills.
 
-Codex support is verified against the installed CLI help and live
-`~/.codex/hooks.json` wiring. GG Coder support is verified against its installed
-skill discovery paths. The release does not claim a GG hook API that its public
-CLI does not expose.
+Codex support is verified against the installed CLI and the official hook
+contract at https://learn.chatgpt.com/docs/hooks. Current Codex `PreToolUse`
+coverage does not intercept every newer `unified_exec` shell path, so this
+release uses `UserPromptSubmit` plus skill/CLI guidance for RTK instead of
+claiming transparent rewrite parity. GG Coder support is verified against its
+installed skill discovery paths. The release does not claim a GG hook API that
+its public CLI does not expose.
 
 ## Hook contract
 
 - Hooks receive JSON on stdin and return either valid JSON or no output.
-- Failure, missing optional binary or unsupported command means no rewrite.
+- Claude shell rewrites use RTK's own `rtk hook claude`; missing RTK means no rewrite.
+- Codex shell compression is agent-guided until its unified shell hook coverage is complete.
 - Existing settings are loaded, merged, backed up and atomically replaced.
 - Repeated installation deduplicates agent-token-saver commands.
 - Approval, sandbox and permission decisions remain owned by the host agent.

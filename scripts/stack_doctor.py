@@ -100,7 +100,12 @@ def inspect_hooks() -> dict[str, Any]:
                     command = hook.get("command") if isinstance(hook, dict) else None
                     if command and any(
                         marker in command
-                        for marker in ("agent-token-saver", "rtk-rewrite", "token-stack-prompt")
+                        for marker in (
+                            "agent-token-saver",
+                            "rtk-rewrite",
+                            "rtk hook claude",
+                            "token-stack-prompt",
+                        )
                     ):
                         commands.append(command)
         report[agent] = {"path": str(path), "exists": True, "commands": commands}
@@ -124,12 +129,22 @@ def build_report(catalog: dict[str, Any], profile: str) -> dict[str, Any]:
     missing_required = [
         item["name"] for item in tools if item["required"] and not item["installed"]
     ]
+    missing_optional = [
+        item["name"] for item in tools if not item["required"] and not item["installed"]
+    ]
+    installed_count = sum(bool(item["installed"]) for item in tools)
+    healthy = not missing_required
+    profile_complete = healthy and not missing_optional
     return {
         "profile": profile,
         "tools": tools,
         "missing_required": missing_required,
+        "missing_optional": missing_optional,
         "hooks": inspect_hooks(),
-        "healthy": not missing_required,
+        "healthy": healthy,
+        "profile_complete": profile_complete,
+        "status": "full" if profile_complete else ("core-ready" if healthy else "blocked"),
+        "coverage_percent": round(installed_count / len(tools) * 100, 2) if tools else 100.0,
     }
 
 
@@ -155,7 +170,10 @@ def main() -> int:
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=2))
     else:
-        print(f"profile={args.profile} healthy={'yes' if report['healthy'] else 'no'}")
+        print(
+            f"profile={profile} status={report['status']} "
+            f"coverage={report['coverage_percent']:.0f}%"
+        )
         for item in report["tools"]:
             marker = "ok" if item["installed"] else ("MISSING" if item["required"] else "optional")
             version = f" | {item['version']}" if item["version"] else ""

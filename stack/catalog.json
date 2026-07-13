@@ -27,11 +27,11 @@
     },
     "rtk": {
       "kind": "command",
-      "required": true,
+      "required": false,
       "command": "rtk",
       "version_args": ["--version"],
       "source": "https://github.com/rtk-ai/rtk",
-      "activation": "safe rewrite hook",
+      "activation": "native Claude hook or agent-guided CLI",
       "purpose": "Compress supported noisy shell output"
     },
     "tilth": {

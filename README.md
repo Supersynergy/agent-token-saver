@@ -5,6 +5,7 @@
 **Use your coding agent more. Spend far fewer tokens getting there.**
 
 [![MIT](https://img.shields.io/badge/license-MIT-1c7c54.svg)](LICENSE)
+[![CI](https://github.com/Supersynergy/agent-token-saver/actions/workflows/ci.yml/badge.svg)](https://github.com/Supersynergy/agent-token-saver/actions/workflows/ci.yml)
 ![verified agents](https://img.shields.io/badge/verified-Codex%20%7C%20Claude%20%7C%20Hermes%20%7C%20GG%20Coder-f2c14e.svg)
 ![measured](https://img.shields.io/badge/measured-up%20to%20146.1x%20payload%20capacity-e8f1f2.svg)
 
@@ -61,6 +62,11 @@ workload profiles, real A/B measurements, reversible hooks and no lock-in.
 
 Local benchmark, 2026-07-13. Same accepted workload in every arm; UTF-8 bytes / 4 for local payloads and provider-reported usage for the live output A/B.
 
+This is a **profile payload benchmark**, not a claim that a brand-new host will
+immediately reduce its complete provider bill by 146.1x. The full profile used
+the named Router, RTK and Tilth components. Clean-host portability and complete
+provider context are measured separately below.
+
 | Stack | Tokens per workload | Tokens saved | Payload capacity in the same raw budget |
 |---|---:|---:|---:|
 | **CLI selective** | **2,643** | **99.32%** | **146.1x** |
@@ -113,6 +119,27 @@ python3 scripts/token_stack_matrix_benchmark.py \
 
 Raw result: [data/benchmarks/token-stack-matrix-2026-07-13.md](data/benchmarks/token-stack-matrix-2026-07-13.md).
 
+## Does it work on a neutral machine?
+
+Yes for the portable core. Every push runs a fresh-HOME install on a clean
+GitHub-hosted Ubuntu runner. It verifies the installer, CLI, ledger, Codex and
+Claude hook files, Hermes and GG Coder skills, and the repo-local skill without
+this machine's dotfiles.
+
+There are two deliberately separate states:
+
+- `core-ready`: portable skill, hooks, doctor and token ledger work; optional
+  optimizers may be missing.
+- `full`: every component selected by that profile is installed and detected.
+
+```bash
+bash scripts/neutral_install_smoke.sh
+bash scripts/remote_bootstrap_smoke.sh
+agent-token-saver doctor --profile lean --json
+```
+
+Live neutral runner: [GitHub Actions](https://github.com/Supersynergy/agent-token-saver/actions/workflows/ci.yml).
+
 ## Profiles
 
 | Profile | Use | Default components |
@@ -158,16 +185,22 @@ agents. `--agent repo --project /path/to/repo` installs a portable
 
 Integration is capability-based:
 
-- **Codex + Claude Code:** native `PreToolUse` and `UserPromptSubmit` hooks.
+- **Codex:** `UserPromptSubmit` routing plus skill/CLI guidance. Current
+  `unified_exec` paths are not all intercepted by `PreToolUse`.
+- **Claude Code:** native `rtk hook claude` for `PreToolUse` plus
+  `UserPromptSubmit` routing.
 - **Hermes:** `~/.hermes/skills/agent-token-saver/SKILL.md`.
 - **GG Coder:** `~/.gg/skills/agent-token-saver.md`; GG Coder 5.15.1 has no equivalent public hook CLI.
 - **Any repo agent:** `.agents/skills/agent-token-saver/SKILL.md` plus the CLI.
 
-Hooks fail open. Shell rewriting asks RTK for a safe rewrite and never changes
-approval policy. Prompt routing skips trivial prompts, loads at most three
-skills, and emits nothing when the companion router is absent.
+Hooks fail open and never change approval policy. Prompt routing skips trivial
+prompts, loads at most three skills, and emits nothing when the companion router
+is absent. Codex uses agent-guided RTK CLI calls until its shell hook coverage is
+complete; the installer does not pretend Claude hook parity.
 
-Use `agent-token-saver doctor --profile <name> --json` for machine-readable inventory. Missing optional tools remain optional.
+Use `agent-token-saver doctor --profile <name> --json` for machine-readable
+inventory. `healthy=true` means the portable core is usable;
+`profile_complete=true` means every selected optional optimizer is also present.
 
 ## Verified agent smokes
 
@@ -188,11 +221,45 @@ measures the task payload separately so those two effects are not mixed.
 
 Exact commands and caveats: [data/benchmarks/agent-cli-smoke-2026-07-13.md](data/benchmarks/agent-cli-smoke-2026-07-13.md).
 
+## Measure the complete token bill
+
+The installed `agent-token-ledger` reconciles provider-reported usage with the
+context layers you can see. Whatever the provider reports but your files do not
+explain becomes `unattributed_input_tokens` instead of disappearing from the
+benchmark.
+
+```bash
+codex exec --json --ephemeral "your real task" > run.jsonl
+
+agent-token-ledger \
+  --usage run.jsonl \
+  --provider codex \
+  --component project-rules=AGENTS.md \
+  --component active-skill=.agents/skills/agent-token-saver/SKILL.md \
+  --format markdown \
+  --out token-ledger.md
+```
+
+Add exported tool schemas, hook output, task text, retrieved context and history
+as more `--component NAME=PATH` arguments. Provider totals stay authoritative;
+visible files use the transparent bytes/4 estimate. Cached Codex input is
+treated as a subset, while Claude cache-create/cache-read fields are added as
+separate input classes.
+
+Full method, limitations and optimization ladder:
+[docs/FULL_CONTEXT_MEASUREMENT.md](docs/FULL_CONTEXT_MEASUREMENT.md).
+
+Neutral Codex control result: a trivial no-tool task cost **0.68% more** with
+the saver skill because there was nothing large to reduce. The attempted
+context-heavy shell arm did not expose a verifiable command event and was
+rejected. See the complete negative result:
+[data/benchmarks/full-context-codex-neutral-2026-07-13.md](data/benchmarks/full-context-codex-neutral-2026-07-13.md).
+
 ## Component routing
 
 | Component | Default posture | Use when |
 |---|---|---|
-| [RTK](https://github.com/rtk-ai/rtk) | automatic for supported noisy commands | git diff/log, builds, tests, process/docker output |
+| [RTK](https://github.com/rtk-ai/rtk) | native Claude hook; agent-guided Codex CLI | git diff/log, builds, tests, process/docker output |
 | Skill router | automatic, prompt-gated | large skill catalogs |
 | Any local memory CLI | optional/on demand | recall before repeated web or file loading |
 | Tilth | CLI or one lean MCP | structural code reads with a token budget |
@@ -264,15 +331,17 @@ Run checks:
 ```bash
 uv run pytest
 uv run ruff check scripts/install_agent_token_saver.py scripts/stack_doctor.py \
-  scripts/news_projection.py scripts/token_stack_matrix_benchmark.py \
-  tests/test_installer.py tests/test_stack_doctor.py tests/test_news_projection.py
-bash -n install-universal.sh integration/hooks/rtk-rewrite.sh
+  scripts/full_context_ledger.py scripts/news_projection.py \
+  scripts/token_stack_matrix_benchmark.py tests/test_installer.py \
+  tests/test_stack_doctor.py tests/test_full_context_ledger.py
+bash scripts/neutral_install_smoke.sh
 ```
 
 ## What this repository does not claim
 
 - Token proxies are not provider billing meters.
 - A component's best-case reduction is not the whole session reduction.
+- The 146.1x payload result is not a clean-host or provider-billing multiplier.
 - Popularity is not proof of savings.
 - “Installed” is not “active”; verify hooks, MCP startup and real usage.
 - Optional local models can add latency and storage while saving almost nothing after deterministic filtering.

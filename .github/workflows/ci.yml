@@ -21,9 +21,22 @@ jobs:
         run: >-
           uv run ruff check
           scripts/install_agent_token_saver.py scripts/stack_doctor.py
+          scripts/full_context_ledger.py
           scripts/news_projection.py scripts/token_stack_matrix_benchmark.py
           scripts/benchmark_output_filters.py scripts/bench_news_agent_stack.py
           scripts/graph_query_benchmark.py
           tests/test_installer.py tests/test_stack_doctor.py
           tests/test_news_projection.py tests/test_benchmark_helpers.py
-      - run: bash -n install-universal.sh integration/hooks/rtk-rewrite.sh
+          tests/test_full_context_ledger.py
+      - run: >-
+          bash -n install-universal.sh scripts/neutral_install_smoke.sh
+          scripts/remote_bootstrap_smoke.sh
+
+  neutral-install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Fresh HOME universal install
+        run: bash scripts/neutral_install_smoke.sh
+      - name: Standalone remote-bootstrap path
+        run: bash scripts/remote_bootstrap_smoke.sh

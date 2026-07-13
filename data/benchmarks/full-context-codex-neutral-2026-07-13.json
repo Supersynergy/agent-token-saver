@@ -1,0 +1,27 @@
+{
+  "date": "2026-07-13",
+  "agent": "codex-cli 0.144.2",
+  "environment": "fresh CODEX_HOME with auth only; user config, rules, hooks and history ignored",
+  "no_tool_warm": {
+    "prompt_oracle": "exact ATS_NEUTRAL_OK",
+    "baseline_input_runs": [11365, 11355],
+    "saver_input_runs": [11440, 11434],
+    "cached_input_each": 8960,
+    "output_tokens_each": 9,
+    "baseline_median_input": 11360,
+    "saver_median_input": 11437,
+    "delta_tokens": 77,
+    "delta_percent": 0.68,
+    "accepted": true,
+    "verdict": "backfire on trivial no-tool work"
+  },
+  "tool_probe": {
+    "prompt_oracle": "one observed process-list command plus exact ATS_PS_OK",
+    "baseline_input_tokens": 22878,
+    "attempted_saver_input_tokens": 23040,
+    "observed_command_event": false,
+    "accepted": false,
+    "verdict": "no end-to-end savings claim; current Codex unified shell path was not verifiably intercepted"
+  },
+  "claim_boundary": "Payload/component reductions remain separate from full provider request totals."
+}
