@@ -19,7 +19,7 @@ Drop-in Hyperstack auto-integration for Claude Code v2.1.x. Makes every fetch, e
 ## One-Shot Install
 
 ```bash
-cd ~/claude-token-saver
+cd ~/agent-token-saver
 bash integration/install.sh
 ```
 

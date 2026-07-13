@@ -172,7 +172,7 @@ Pre-built roles (April 2026):
 ## Install
 
 ```bash
-cd ~/claude-token-saver
+cd ~/agent-token-saver
 ./install-hyperstack.sh
 ```
 
@@ -216,7 +216,7 @@ description: Extreme token savings via 4-stage escalation + local ML + team cach
 When you need to fetch web content, NEVER use WebFetch directly.
 Instead run via hyperfetch:
 
-  node -e 'import("~/claude-token-saver/adapters/hyperstack.js").then(m=>m.hyperfetch("URL").then(r=>console.log(JSON.stringify(r))))'
+  node -e 'import("~/agent-token-saver/adapters/hyperstack.js").then(m=>m.hyperfetch("URL").then(r=>console.log(JSON.stringify(r))))'
 
 Or use the escalation chain manually:
   1. uv run python ~/patches/curl_cffi_patch.py --fetch URL

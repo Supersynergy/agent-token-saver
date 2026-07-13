@@ -1,7 +1,7 @@
 [project]
-name = "claude-token-saver"
-version = "2.1.0"
-description = "Token-optimized orchestrator for Anthropic Claude API (prompt caching, model tiering, effort routing)."
+name = "agent-token-saver"
+version = "3.0.0"
+description = "Measured token routing, projection and hook wiring for coding agents."
 authors = [{name = "Maxim Supersynergy"}]
 requires-python = ">=3.11"
 readme = "README.md"
@@ -19,6 +19,7 @@ dev = [
 
 [project.scripts]
 cts = "core.orchestrator:main"
+ats = "core.orchestrator:main"
 
 [build-system]
 requires = ["hatchling"]

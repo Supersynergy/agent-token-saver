@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "updated": "2026-07-13",
+  "profiles": {
+    "minimal": ["native-projection", "skill-router", "rtk"],
+    "lean": ["native-projection", "skill-router", "rtk", "tilth"],
+    "heavy": ["native-projection", "skill-router", "rtk", "tilth", "context-mode", "graphify", "codegraph"],
+    "news": ["native-projection", "skill-router", "rtk", "tilth", "superweb"]
+  },
+  "tools": {
+    "native-projection": {
+      "kind": "builtin",
+      "required": true,
+      "activation": "default",
+      "purpose": "Deterministic filter, dedupe and bounded projection before model context"
+    },
+    "skill-router": {
+      "kind": "path",
+      "required": false,
+      "paths": [
+        "~/.codex/skills/agent-token-saver-skill-router/scripts/agent_token_saver.py",
+        "~/.claude/skills/agent-token-saver-skill-router/scripts/agent_token_saver.py"
+      ],
+      "source": "https://github.com/Supersynergy/agent-token-saver-skill-router",
+      "activation": "prompt-gated",
+      "purpose": "Load only 1-3 relevant skills"
+    },
+    "rtk": {
+      "kind": "command",
+      "required": true,
+      "command": "rtk",
+      "version_args": ["--version"],
+      "source": "https://github.com/rtk-ai/rtk",
+      "activation": "safe rewrite hook",
+      "purpose": "Compress supported noisy shell output"
+    },
+    "tilth": {
+      "kind": "command",
+      "required": false,
+      "command": "tilth",
+      "version_args": ["--version"],
+      "source": "https://github.com/jahala/tilth",
+      "activation": "CLI or one lean MCP",
+      "purpose": "Budgeted structural code retrieval"
+    },
+    "context-mode": {
+      "kind": "command",
+      "required": false,
+      "command": "context-mode",
+      "version_args": ["--version"],
+      "source": "https://github.com/mksglu/context-mode",
+      "activation": "session/on demand",
+      "purpose": "Sandbox and search large repeated payloads"
+    },
+    "graphify": {
+      "kind": "command",
+      "required": false,
+      "command": "graphify",
+      "version_args": ["--version"],
+      "source": "https://github.com/Graphify-Labs/graphify",
+      "activation": "build once, query on demand",
+      "purpose": "Persistent corpus graph and relationship paths"
+    },
+    "codegraph": {
+      "kind": "command",
+      "required": false,
+      "command": "codegraph",
+      "version_args": ["--version"],
+      "source": "https://github.com/colbymchenry/codegraph",
+      "activation": "on demand",
+      "purpose": "Callers, callees and impact analysis"
+    },
+    "headroom": {
+      "kind": "command",
+      "required": false,
+      "command": "headroom",
+      "version_args": ["--version"],
+      "source": "https://github.com/headroomlabs-ai/headroom",
+      "activation": "observe before default-on",
+      "purpose": "Dynamic context and tool-search compression"
+    },
+    "superweb": {
+      "kind": "command",
+      "required": false,
+      "command": "superweb",
+      "version_args": ["--version"],
+      "activation": "CLI on demand",
+      "purpose": "Current web search/fetch into file or bounded projection"
+    },
+    "ponytail": {
+      "kind": "path",
+      "required": false,
+      "paths": ["~/.claude/skills/superskills/ponytail/SKILL.md"],
+      "source": "https://github.com/DietrichGebert/ponytail",
+      "activation": "off until output A/B wins",
+      "purpose": "Behavior and output shaping"
+    }
+  }
+}

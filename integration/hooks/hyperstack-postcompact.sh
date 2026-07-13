@@ -21,9 +21,9 @@ echo "[$(date +%Y-%m-%dT%H:%M:%S)] post-compact fired" >> "$LOG" 2>/dev/null
     echo ""
   fi
 
-  if [[ -x "$HOME/claude-token-saver/plugins/team-sandbox.sh" && -f "$HOME/.claude/toolstack.db" ]]; then
+  if [[ -x "$HOME/agent-token-saver/plugins/team-sandbox.sh" && -f "$HOME/.claude/toolstack.db" ]]; then
     echo "### Hyperstack team savings (current session namespace)"
-    bash "$HOME/claude-token-saver/plugins/team-sandbox.sh" stats 2>/dev/null | head -20 || echo "(sandbox stats unavailable)"
+    bash "$HOME/agent-token-saver/plugins/team-sandbox.sh" stats 2>/dev/null | head -20 || echo "(sandbox stats unavailable)"
     echo ""
   fi
 

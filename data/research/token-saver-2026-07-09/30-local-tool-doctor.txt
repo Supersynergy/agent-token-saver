@@ -1,33 +1,33 @@
 # tool versions
 rtk
 rtk 0.43.0
-/Users/master/.local/bin/headroom
+$HOME/.local/bin/headroom
 headroom, version 0.30.0
-/Users/master/.local/bin/context-mode
+$HOME/.local/bin/context-mode
 ┌   context-mode doctor
 │
 ●  Platform: Codex CLI (high confidence — CODEX_THREAD_ID or CODEX_CI env var set)
 │
 ◇  Storage paths ──────────────────────────────────────────────────────────╮
 │                                                                          │
-│  sessions: /Users/master/.codex/context-mode/sessions (adapter default)  │
-│  content:  /Users/master/.codex/context-mode/content (adapter default)   │
-│  stats:    /Users/master/.codex/context-mode/sessions (adapter default)  │
+│  sessions: $HOME/.codex/context-mode/sessions (adapter default)  │
+│  content:  $HOME/.codex/context-mode/content (adapter default)   │
+│  stats:    $HOME/.codex/context-mode/sessions (adapter default)  │
 │                                                                          │
 ├──────────────────────────────────────────────────────────────────────────╯
 │
-◆  Storage session: PASS — /Users/master/.codex/context-mode/sessions (adapter default)
+◆  Storage session: PASS — $HOME/.codex/context-mode/sessions (adapter default)
 │
-◆  Storage content: PASS — /Users/master/.codex/context-mode/content (adapter default)
+◆  Storage content: PASS — $HOME/.codex/context-mode/content (adapter default)
 │
-◆  Storage stats: PASS — /Users/master/.codex/context-mode/sessions (adapter default)
+◆  Storage stats: PASS — $HOME/.codex/context-mode/sessions (adapter default)
 [?25l│
 ◇  Diagnostics complete
 [?25h│
 ◇  Runtimes ────────────────────────────────────────────────────────────────╮
 │                                                                           │
-│    JavaScript: /Users/master/.bun/bin/bun (1.3.13) ⚡                     │
-│    TypeScript: /Users/master/.bun/bin/bun (1.3.13)                        │
+│    JavaScript: $HOME/.bun/bin/bun (1.3.13) ⚡                     │
+│    TypeScript: $HOME/.bun/bin/bun (1.3.13)                        │
 │    Python:     python3 (Python 3.14.4)                                    │
 │    Shell:      /bin/zsh (zsh 5.9 (arm64-apple-darwin24.0))                │
 │    Ruby:       ruby (ruby 2.6.10p210 (2022-04-12 revision 67958)          │
@@ -53,25 +53,25 @@ headroom, version 0.30.0
 │
 ◆  Codex CLI binary: PASS — codex --version resolved to codex-cli 0.143.0-alpha.14
 │
-◆  Codex hooks feature flag: PASS — [features].hooks enabled in /Users/master/.codex/config.toml
+◆  Codex hooks feature flag: PASS — [features].hooks enabled in $HOME/.codex/config.toml
 │
 ■  PreToolUse hook: FAIL — PreToolUse hook missing or not pointing to context-mode
-│    Run: Update /Users/master/.codex/hooks.json to match configs/codex/hooks.json
+│    Run: Update $HOME/.codex/hooks.json to match configs/codex/hooks.json
 │
 ■  PostToolUse hook: FAIL — PostToolUse hook missing or not pointing to context-mode
-│    Run: Update /Users/master/.codex/hooks.json to match configs/codex/hooks.json
+│    Run: Update $HOME/.codex/hooks.json to match configs/codex/hooks.json
 │
 ■  SessionStart hook: FAIL — SessionStart hook missing or not pointing to context-mode
-│    Run: Update /Users/master/.codex/hooks.json to match configs/codex/hooks.json
+│    Run: Update $HOME/.codex/hooks.json to match configs/codex/hooks.json
 │
 ▲  PreCompact hook: WARN — PreCompact hook missing or not pointing to context-mode; compaction snapshots require a Codex build that emits PreCompact
-│    Run: Update /Users/master/.codex/hooks.json to match configs/codex/hooks.json
+│    Run: Update $HOME/.codex/hooks.json to match configs/codex/hooks.json
 │
 ■  UserPromptSubmit hook: FAIL — UserPromptSubmit hook missing or not pointing to context-mode
-│    Run: Update /Users/master/.codex/hooks.json to match configs/codex/hooks.json
+│    Run: Update $HOME/.codex/hooks.json to match configs/codex/hooks.json
 │
 ■  Stop hook: FAIL — Stop hook missing or not pointing to context-mode
-│    Run: Update /Users/master/.codex/hooks.json to match configs/codex/hooks.json
+│    Run: Update $HOME/.codex/hooks.json to match configs/codex/hooks.json
 │
 ◇  Checking hook scripts...
 │
@@ -101,7 +101,7 @@ headroom, version 0.30.0
 │
 └  Diagnostics complete!
 
-/Users/master/.local/bin/ghmax
+$HOME/.local/bin/ghmax
 COMPONENT                   STATUS                                                CATEGORY       OK
 --------------------------------------------------------------------------------------------------------
 python3                     3.14.4                                                core           ✓
@@ -120,14 +120,14 @@ vec backend                 sqlite-vec                                          
 curl_cffi sessions          yes                                                   plus           ✓
 extra sources               codeberg,debian,npm,crates,pypi,brew,gitlab,aur,ru... plus           ✓
 gitstars harvest            yes (--gitstars N)                                    plus           ✓
-bandit db                   /Users/master/.cache/ghmax/bandit.db                  plus           ✓
+bandit db                   $HOME/.cache/ghmax/bandit.db                  plus           ✓
 
 17/17 OK · core ready
-/Users/master/.local/bin/superweb
+$HOME/.local/bin/superweb
 === superweb doctor ===
 [OK ] Chrome:  /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
 [OK ] Ollama:  reachable at http://127.0.0.1:11434
-[OK ] Cache DB: /Users/master/Library/Caches/superweb/cache.db
-[OK ] Learn DB: /Users/master/Library/Caches/superweb/learn.db
+[OK ] Cache DB: $HOME/Library/Caches/superweb/cache.db
+[OK ] Learn DB: $HOME/Library/Caches/superweb/learn.db
 
 Status: HEALTHY

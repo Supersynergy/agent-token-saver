@@ -1,19 +1,16 @@
 {
-  "name": "universal-agent-token-saver",
-  "version": "1.0.0",
-  "description": "⚡ Speed or 💰 Savings — Adaptive Model Selection + Token Optimization for ALL CLI Coding Agents. Supports Claude Code, Gemini CLI, Kilo, Codex, Kimi, OpenCode and more.",
-  "main": "core/adapter-interface.js",
+  "name": "agent-token-saver",
+  "version": "3.0.0",
+  "description": "Measured token routing, projection and hook wiring for coding agents.",
   "bin": {
-    "uts": "cli/uts-dashboard.js",
-    "rtk-universal": "plugins/rtk-universal.sh"
+    "agent-token-saver": "scripts/stack_doctor.py"
   },
   "scripts": {
-    "build": "tsc",
-    "dashboard": "node cli/uts-dashboard.js",
+    "build": "python3 -m compileall -q core scripts integration/hooks",
     "install": "bash install-universal.sh"
   },
   "keywords": [
-    "universal-agent-token-saver",
+    "agent-context-optimization",
     "adaptive-model-selection",
     "multi-cli-agent",
     "token-optimization",
@@ -37,21 +34,12 @@
   ],
   "author": "Supersynergy",
   "license": "MIT",
-  "engines": {
-    "node": ">=16.0.0"
-  },
-  "dependencies": {
-    "glob": "^10.3.0"
-  },
-  "optionalDependencies": {
-    "better-sqlite3": "^9.0.0"
-  },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Supersynergy/universal-agent-token-saver"
+    "url": "https://github.com/Supersynergy/agent-token-saver"
   },
   "bugs": {
-    "url": "https://github.com/Supersynergy/universal-agent-token-saver/issues"
+    "url": "https://github.com/Supersynergy/agent-token-saver/issues"
   },
-  "homepage": "https://github.com/Supersynergy/universal-agent-token-saver#readme"
+  "homepage": "https://github.com/Supersynergy/agent-token-saver#readme"
 }

@@ -119,10 +119,10 @@ When you run this against the Hyperstack, the slots become:
 - `<TOOL_NAME>`: hyperfetch
 - `<BUDGET_TOKENS>`: 200000 (enough for ~40 gemma calls)
 - `<BUDGET_MINUTES>`: 30
-- `<RESULTS_DIR>`: `~/claude-token-saver/bench/runs/<timestamp>/`
-- `<BUDGET_CHECK_CMD>`: `bash ~/claude-token-saver/plugins/team-sandbox.sh stats`
+- `<RESULTS_DIR>`: `~/agent-token-saver/bench/runs/<timestamp>/`
+- `<BUDGET_CHECK_CMD>`: `bash ~/agent-token-saver/plugins/team-sandbox.sh stats`
 - `<TOOL_CMD>`: `hyperfetch <url>`
-- `<TOOL_DOCS_PATH>`: `~/claude-token-saver/HYPERSTACK.md`
+- `<TOOL_DOCS_PATH>`: `~/agent-token-saver/HYPERSTACK.md`
 - `<BASELINE_CMD>`: `~/.cts/venv/bin/python ~/.cts/bin/hyperfetch-stage.py --stage curl_cffi --url <URL>` (raw, no optimizations)
 - `<INPUTS_DIR>`: A list of URLs in tiers:
   - **trivial**: example.com, example.org, httpbin.org/html

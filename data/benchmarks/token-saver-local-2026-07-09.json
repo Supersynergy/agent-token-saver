@@ -1,6 +1,6 @@
 {
   "date": "2026-07-09 19:26:35 CEST",
-  "repo": "/Users/master/BASE/projects/claude-token-saver",
+  "repo": "$HOME/BASE/projects/claude-token-saver",
   "cases": [
     {
       "name": "RTK shell-output filter: ps aux",

@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Opt-in heavy Codex profile. Keeps the default MCP surface lean.
+set -euo pipefail
+
+exec codex \
+  -c 'mcp_servers.codegraph.command="codegraph"' \
+  -c 'mcp_servers.codegraph.args=["serve","--mcp"]' \
+  -c 'mcp_servers.context_mode.command="context-mode"' \
+  -c 'mcp_servers.context_mode.args=[]' \
+  "$@"

@@ -14,9 +14,9 @@ from pathlib import Path
 HOME = Path.home()
 HYPERFETCH = HOME / ".cts" / "bin" / "hyperfetch"
 STAGE_HELPER = HOME / ".cts" / "bin" / "hyperfetch-stage.py"
-SANDBOX = HOME / "claude-token-saver" / "plugins" / "team-sandbox.sh"
-ML_FILTER = HOME / "claude-token-saver" / "core" / "ml-filter.py"
-GEMMA_GATE = HOME / "claude-token-saver" / "core" / "gemma-gate.py"
+SANDBOX = HOME / "agent-token-saver" / "plugins" / "team-sandbox.sh"
+ML_FILTER = HOME / "agent-token-saver" / "core" / "ml-filter.py"
+GEMMA_GATE = HOME / "agent-token-saver" / "core" / "gemma-gate.py"
 VENV_PY = HOME / ".cts" / "venv" / "bin" / "python"
 
 URLS = [

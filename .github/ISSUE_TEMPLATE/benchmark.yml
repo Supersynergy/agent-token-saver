@@ -1,0 +1,23 @@
+name: Benchmark result
+description: Share a reproducible win, loss or regression.
+title: "bench: "
+labels: [benchmark]
+body:
+  - type: textarea
+    id: workload
+    attributes:
+      label: Workload and acceptance oracle
+    validations:
+      required: true
+  - type: textarea
+    id: commands
+    attributes:
+      label: Exact commands
+    validations:
+      required: true
+  - type: textarea
+    id: results
+    attributes:
+      label: Raw vs optimized tokens and latency
+    validations:
+      required: true

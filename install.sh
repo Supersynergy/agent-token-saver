@@ -9,8 +9,15 @@
 # └──────────────────────────��─────────────────────────���────────────┘
 set -euo pipefail
 
+if [[ "${ATS_LEGACY_CTS_INSTALLER:-0}" != "1" ]]; then
+  echo "install.sh is the archived Claude-only installer and is disabled by default." >&2
+  echo "Use ./install-universal.sh --profile lean --agent auto" >&2
+  echo "Set ATS_LEGACY_CTS_INSTALLER=1 only after reviewing this file." >&2
+  exit 2
+fi
+
 CTS_VERSION="3.1.0"
-CTS_REPO="https://raw.githubusercontent.com/Supersynergy/claude-token-saver/main"
+CTS_REPO="https://raw.githubusercontent.com/Supersynergy/agent-token-saver/main"
 CLAUDE_DIR="${CLAUDE_DIR:-$HOME/.claude}"
 CTS_DIR="$CLAUDE_DIR/cts"           # vault: all cold-stored skills/agents/commands
 SKILLS_DIR="$CLAUDE_DIR/skills"     # hot: only cts.md lives here
@@ -474,7 +481,7 @@ print_summary() {
 
 # ── Main ───────────────────────────────────────────────────────────
 main() {
-  [[ $SILENT -eq 0 ]] && echo -e "\n${B}CTS — Claude Token Saver v${CTS_VERSION}${NC}  |  github.com/Supersynergy/claude-token-saver\n"
+  [[ $SILENT -eq 0 ]] && echo -e "\n${B}CTS — Claude Token Saver v${CTS_VERSION}${NC}  |  github.com/Supersynergy/agent-token-saver\n"
   command -v python3 &>/dev/null || die "Python 3 required"
   [[ -d "$CLAUDE_DIR" ]] || die "~/.claude not found — is Claude Code installed?"
   export SETTINGS IDX CTS_DIR

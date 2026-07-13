@@ -4,7 +4,7 @@
 # Configures: gemma-gate · smart-fetch · sg · hooks · CLAUDE.md addon
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/Supersynergy/claude-token-saver/main/install-optimized.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/Supersynergy/agent-token-saver/main/install-optimized.sh | bash
 #   bash install-optimized.sh [--fast] [--skip-mlx] [--skip-ollama] [--model phi4|qwen3|gemma4e2b]
 #
 # Attribution:
@@ -21,6 +21,13 @@
 #   ripgrep-all   https://github.com/phiresky/ripgrep-all
 
 set -euo pipefail
+
+if [[ "${ATS_LEGACY_HEAVY:-0}" != "1" ]]; then
+  echo "install-optimized.sh is a legacy heavy installer and is disabled by default." >&2
+  echo "Use ./install-universal.sh --profile lean --agent auto" >&2
+  echo "Set ATS_LEGACY_HEAVY=1 only after reviewing this file." >&2
+  exit 2
+fi
 
 # ── Args ──────────────────────────────────────────────────────────────────────
 FAST=0; SKIP_MLX=0; SKIP_OLLAMA=0; SKIP_SEEK=0; MODEL="qwen3"

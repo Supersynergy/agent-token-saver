@@ -136,9 +136,9 @@ Then:  output is key list only, ≤10t, <1s
 
 **Example:**
 ```bash
-sg "featurize" /tmp/claude-token-saver
-# → /tmp/claude-token-saver/core/catboost_50tests.py
-# → /tmp/claude-token-saver/core/agent_token_guard.py
+sg "featurize" /tmp/agent-token-saver
+# → /tmp/agent-token-saver/core/catboost_50tests.py
+# → /tmp/agent-token-saver/core/agent_token_guard.py
 ```
 
 **Given/When/Then:**

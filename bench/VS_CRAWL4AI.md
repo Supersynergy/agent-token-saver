@@ -112,7 +112,7 @@ This gives the user the **best of both**: prefetch-speed triage + crawl4ai-quali
 ## Rerun this benchmark
 
 ```bash
-~/.cts/venv/bin/python ~/claude-token-saver/bench/compare_vs_crawl4ai.py
+~/.cts/venv/bin/python ~/agent-token-saver/bench/compare_vs_crawl4ai.py
 ```
 
 Outputs: `bench/vs_crawl4ai.json` + markdown table.

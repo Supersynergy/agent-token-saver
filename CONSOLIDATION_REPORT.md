@@ -183,7 +183,7 @@ All changes are live at:
 - `~/.cts/bin/hyperfetch-stage.py` — stage helper with crawl4ai + browser pool
 - `~/.cts/bin/hyperfetch-batch` — parallel multi-URL CLI
 - `~/.cts/bin/hyperfetch-prefetch.py` — regex extractor
-- `~/claude-token-saver/` — full source repo, pushed to GitHub
+- `~/agent-token-saver/` — full source repo, pushed to GitHub
 
 Integration files still in `~/.claude/`:
 - `skills/hyperstack.md`, `agents/hyperstack-*.md`, `teams/hyperstack/config.json`, `loop-hyperstack.md`

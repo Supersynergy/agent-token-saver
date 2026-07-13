@@ -32,7 +32,7 @@ export interface TeamResult {
   apiTokenEstimate: number;
 }
 
-const SANDBOX = join(homedir(), "claude-token-saver", "plugins", "team-sandbox.sh");
+const SANDBOX = join(homedir(), "agent-token-saver", "plugins", "team-sandbox.sh");
 
 async function broadcastEvent(agentId: string, event: string, payload: object = {}): Promise<void> {
   return new Promise((resolve) => {

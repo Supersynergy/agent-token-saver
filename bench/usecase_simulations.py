@@ -78,7 +78,7 @@ print("\n[UC2] smart-fetch: JSON API → minimal tokens")
 try:
     t0 = time.perf_counter()
     result = subprocess.run(
-        ['smart-fetch', 'https://api.github.com/repos/Supersynergy/claude-token-saver'],
+        ['smart-fetch', 'https://api.github.com/repos/Supersynergy/agent-token-saver'],
         capture_output=True, text=True, timeout=10
     )
     ms = int((time.perf_counter()-t0)*1000)
@@ -121,7 +121,7 @@ except Exception as e:
 # ── USE CASE 4: TokenGuard routing real agent queries ─────────────────
 print("\n[UC4] TokenGuard: real agent team queries")
 try:
-    sys.path.insert(0, '/tmp/claude-token-saver')
+    sys.path.insert(0, '/tmp/agent-token-saver')
     from core.agent_token_guard import TokenGuard, TOOL_COST
     guard = TokenGuard(budget=50_000)
 

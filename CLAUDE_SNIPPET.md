@@ -1,8 +1,8 @@
 # Token Optimization Stack — CLAUDE.md Addon
 
 > Add this to ~/.claude/CLAUDE.md — auto-loaded every session.
-> Source: https://github.com/Supersynergy/claude-token-saver
-> Install: bash <(curl -fsSL https://raw.githubusercontent.com/Supersynergy/claude-token-saver/main/install-optimized.sh)
+> Source: https://github.com/Supersynergy/agent-token-saver
+> Install: curl -fsSL https://raw.githubusercontent.com/Supersynergy/agent-token-saver/main/install-universal.sh | bash -s -- --profile lean --agent claude
 
 ## Tool Routing (fastest → lowest tokens)
 

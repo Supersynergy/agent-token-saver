@@ -1,7 +1,7 @@
 <!-- REPO-POLISH-AGENTS:START -->
 # AGENTS.md
 
-Claude Token Saver is a TypeScript app/toolkit for practical developer workflows.
+Agent Token Saver is an agent-neutral toolkit for measured context reduction, safe hook wiring, and bounded research/news projection.
 
 ## Commands
 
@@ -18,4 +18,3 @@ Claude Token Saver is a TypeScript app/toolkit for practical developer workflows
 - Add or update tests when behavior changes.
 - Put durable architecture rationale in `docs/adr/`.
 <!-- REPO-POLISH-AGENTS:END -->
-

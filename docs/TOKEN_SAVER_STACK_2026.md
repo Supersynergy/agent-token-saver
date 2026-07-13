@@ -31,9 +31,9 @@ ask/Synapse -> Skill Router -> ghmax/superweb CLI only when needed
 
 | Bereich | Befehl | Ergebnis |
 |---|---|---:|
-| Skill-Router Katalog-Benchmark | `python3 scripts/agent_token_saver.py bench "deep hermes token saver stack top50 context optimization"` in `/Users/master/BASE/projects/agent-token-saver-skill-router` | 456 Skills; 36.840 → 211 geschätzte Katalog-Tokens, **99,43% Reduktion**. Nicht der gesamte Taskkontext. |
+| Skill-Router Katalog-Benchmark | `python3 scripts/agent_token_saver.py bench "deep hermes token saver stack top50 context optimization"` in `$HOME/BASE/projects/agent-token-saver-skill-router` | 456 Skills; 36.840 → 211 geschätzte Katalog-Tokens, **99,43% Reduktion**. Nicht der gesamte Taskkontext. |
 | Token-Saver Tests | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 uv run python -m pytest` | **14 passed in 0.13s** |
-| Hermes Desktop Patch | `cd /Users/master/.hermes/hermes-agent/apps/desktop && npm run typecheck` | **OK** |
+| Hermes Desktop Patch | `cd $HOME/.hermes/hermes-agent/apps/desktop && npm run typecheck` | **OK** |
 | Headroom | `headroom doctor` | v0.31.0; persistenter Proxy :8787 (launchd), Claude Code + Codex via `headroom init -g` geroutet (2026-07-12) |
 | Context-Mode | `context-mode doctor` | Alle Checks PASS nach `context-mode upgrade` (2026-07-12); Codex-Seite läuft über Headroom-Proxy |
 | RTK | `rtk --version` | v0.43.0 installiert |
@@ -228,7 +228,7 @@ Context-Mode Status:
 
 - Storage PASS.
 - Server test PASS.
-- Codex hooks fehlen aktuell in `/Users/master/.codex/hooks.json`.
+- Codex hooks fehlen aktuell in `$HOME/.codex/hooks.json`.
 
 Nächster Test, nicht ungeprüft als Default verdrahten:
 
@@ -247,11 +247,11 @@ Status: `adopt` = jetzt nutzen, `test` = Bench nötig, `watch` = beobachten, `av
 | 1 | RTK | local: `rtk 0.43.0` | Terminal-output filtering | 10 | adopt | Noisy shell immer via `rtk` |
 | 2 | Headroom | https://github.com/headroomlabs-ai/headroom | Reversible context compression | 9 | test | Proxy/MCP für große Tool/RAG/Log-Payloads |
 | 3 | context-mode MCP | local: `context-mode doctor` | Session snapshots / context recovery | 9 | test | Gegen native Compaction/Headroom benchmarken |
-| 4 | Skill Router | local: `/Users/master/BASE/projects/agent-token-saver-skill-router` | Lazy skill loading | 10 | adopt | Router vor Skill-Load |
+| 4 | Skill Router | local: `$HOME/BASE/projects/agent-token-saver-skill-router` | Lazy skill loading | 10 | adopt | Router vor Skill-Load |
 | 5 | Ponytail | https://github.com/DietrichGebert/ponytail | Lean output / anti-overengineering | 8 | test | Für Code-Review/Lean-Modus, nicht als Faktenfilter |
 | 6 | Synapse / ask | local: `ask`, `synxp` | Local KB before web/API | 10 | adopt | Immer erste Recherche-Stufe |
 | 7 | Graphify | local install | Graph memory | 8 | adopt | Projektwissen graphen statt wiederholen |
-| 8 | CodeGraph | local: `/Users/master/.local/bin/codegraph` | Code retrieval | 9 | adopt | Symbol-/Graphsuche vor Datei-Dump |
+| 8 | CodeGraph | local: `$HOME/.local/bin/codegraph` | Code retrieval | 9 | adopt | Symbol-/Graphsuche vor Datei-Dump |
 | 9 | ghmax | local: `ghmax --doctor` | Current code pattern mining | 8 | adopt | GitHub-Muster ohne Browser-Rauschen |
 | 10 | superweb CLI | local: `superweb doctor` | Multi-engine web + extract | 8 | adopt | On-demand via CLI nach Synapse/ghmax; nicht MCP-default |
 | 11 | hyperfetch | local stack | Known URL markdown extraction | 9 | adopt | URL → markdown, nicht HTML-Dump |
@@ -369,16 +369,16 @@ Current cross-source research: [`TOKEN_SAVER_RESEARCH_2026-07-09.md`](./TOKEN_SA
 
 Research artifacts:
 
-- `/Users/master/BASE/projects/claude-token-saver/data/research/token-saver-2026-07-09/00-ask.txt`
-- `/Users/master/BASE/projects/claude-token-saver/data/research/token-saver-2026-07-09/10-ghmax.txt`
-- `/Users/master/BASE/projects/claude-token-saver/data/research/token-saver-2026-07-09/20-superweb-mega.md`
-- `/Users/master/BASE/projects/claude-token-saver/data/research/token-saver-2026-07-09/20-superweb-mega.jsonl`
-- `/Users/master/BASE/projects/claude-token-saver/data/research/token-saver-2026-07-09/21-superweb-search.md`
-- `/Users/master/BASE/projects/claude-token-saver/data/research/token-saver-2026-07-09/30-local-tool-doctor.txt`
-- `/Users/master/BASE/projects/claude-token-saver/data/research/token-saver-2026-07-09/30-superweb-research.md`
-- `/Users/master/BASE/projects/claude-token-saver/data/research/token-saver-2026-07-09/40-ghmax-summary.txt`
-- `/Users/master/BASE/projects/claude-token-saver/data/benchmarks/token-saver-local-2026-07-09.md`
-- `/Users/master/BASE/projects/claude-token-saver/data/benchmarks/token-saver-local-2026-07-09.json`
+- `$HOME/BASE/projects/agent-token-saver/data/research/token-saver-2026-07-09/00-ask.txt`
+- `$HOME/BASE/projects/agent-token-saver/data/research/token-saver-2026-07-09/10-ghmax.txt`
+- `$HOME/BASE/projects/agent-token-saver/data/research/token-saver-2026-07-09/20-superweb-mega.md`
+- `$HOME/BASE/projects/agent-token-saver/data/research/token-saver-2026-07-09/20-superweb-mega.jsonl`
+- `$HOME/BASE/projects/agent-token-saver/data/research/token-saver-2026-07-09/21-superweb-search.md`
+- `$HOME/BASE/projects/agent-token-saver/data/research/token-saver-2026-07-09/30-local-tool-doctor.txt`
+- `$HOME/BASE/projects/agent-token-saver/data/research/token-saver-2026-07-09/30-superweb-research.md`
+- `$HOME/BASE/projects/agent-token-saver/data/research/token-saver-2026-07-09/40-ghmax-summary.txt`
+- `$HOME/BASE/projects/agent-token-saver/data/benchmarks/token-saver-local-2026-07-09.md`
+- `$HOME/BASE/projects/agent-token-saver/data/benchmarks/token-saver-local-2026-07-09.json`
 
 Primary/current links:
 

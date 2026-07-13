@@ -1,6 +1,20 @@
 # Changelog
 
-## Unreleased
+## 3.0.0 — 2026-07-13
+
+- Rename the universal stack from `claude-token-saver` to `agent-token-saver`.
+- Replace synthetic top-line claims with the reproducible stack matrix.
+- Add minimal, lean, heavy and news profiles plus a read-only doctor.
+- Add one idempotent installer for Codex, Claude Code, Hermes, GG Coder and repo-local agents.
+- Add safe Codex/Claude hook merging, portable agent skills, a compact prompt router and RTK rewrite hook.
+- Add deterministic news projection and the bounded subagent operating pattern.
+- Add live four-agent compatibility smokes and separate host overhead from workload savings.
+- Keep unreleased Synapse outside the public dependency graph; expose an optional memory CLI seam.
+- Add CI, security/contribution policy, issue templates and a 1280×640 release visual.
+- Keep Headroom as an optional provider/proxy, outside Lean profiles and never as MCP.
+- Keep `cts` as a compatibility entrypoint; add `ats`.
+
+## 2.x historical notes
 
 - Integrated the full local stack (2026-07-12): wired `hooks/pretooluse_backfire.py` into `~/.claude/settings.json` (advisory, ~41ms, never blocks); updated `~/.claude/cts-env.sh` to installed non-blacklisted models (gate `smollm2:1.7b-8k`, deep `granite4.1:3b`, mid `granite4:1b`) and sourced it from `~/.zshrc`; ran `context-mode upgrade` (all hook checks PASS).
 - `cts doctor` accuracy fixes: plugin-shipped hooks (`hooks/hooks.json`) now count as wired (PreCompact via context-mode), caveman detected as marketplace plugin, new Headroom proxy liveness check, dropped `PostCompact` (not a Claude Code event — recovery fires as SessionStart `compact`) in favor of `SessionEnd`. Result: ok 7→10, warn 5→2, crit 0.
@@ -18,7 +32,7 @@ Verification:
 
 ```bash
 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 uv run python -m pytest
-python3 /Users/master/BASE/projects/agent-token-saver-skill-router/scripts/agent_token_saver.py bench "deep hermes token saver stack top50 context optimization"
+python3 $HOME/BASE/projects/agent-token-saver-skill-router/scripts/agent_token_saver.py bench "deep hermes token saver stack top50 context optimization"
 headroom doctor
 context-mode doctor
 ghmax --doctor

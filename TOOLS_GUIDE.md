@@ -7,7 +7,7 @@
 
 ## Search Tools — Full Benchmark
 
-All tested on `/tmp/claude-token-saver` (~60 files, small repo). Best of 3 runs.
+All tested on `/tmp/agent-token-saver` (~60 files, small repo). Best of 3 runs.
 
 ```
 Tool                    Time    Output lines   Notes

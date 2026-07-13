@@ -63,7 +63,7 @@ if [[ -z "$URL" ]]; then
 fi
 
 PATCHES="$HOME/patches"
-TOOLSAVER="$HOME/claude-token-saver"
+TOOLSAVER="$HOME/agent-token-saver"
 SANDBOX="$TOOLSAVER/plugins/team-sandbox.sh"
 ML_FILTER="$TOOLSAVER/core/ml-filter.py"
 GEMMA="$TOOLSAVER/core/gemma-gate.py"

@@ -161,7 +161,7 @@ See `results.json` for the full run.
 ## Rerun
 
 ```bash
-~/.cts/venv/bin/python ~/claude-token-saver/bench/run.py
+~/.cts/venv/bin/python ~/agent-token-saver/bench/run.py
 ```
 
 Takes ~8-12 minutes end-to-end depending on gemma load.

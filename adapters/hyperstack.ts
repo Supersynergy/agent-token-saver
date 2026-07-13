@@ -168,7 +168,7 @@ async function stageBrowser(url: string): Promise<FetchResult | null> {
 }
 
 async function mlFilter(content: string): Promise<{ keep: boolean; category: string; confidence: number }> {
-  const r = await runPy(join(homedir(), "claude-token-saver", "core", "ml-filter.py"), ["--classify"], 5000);
+  const r = await runPy(join(homedir(), "agent-token-saver", "core", "ml-filter.py"), ["--classify"], 5000);
   try {
     return JSON.parse(r.stdout);
   } catch {
@@ -178,7 +178,7 @@ async function mlFilter(content: string): Promise<{ keep: boolean; category: str
 
 async function gemmaGate(content: string, thresholdTokens: number): Promise<string | null> {
   if (estimateTokens(content.length) < thresholdTokens) return null;
-  const r = await runPy(join(homedir(), "claude-token-saver", "core", "gemma-gate.py"), ["--summarize"], 10000);
+  const r = await runPy(join(homedir(), "agent-token-saver", "core", "gemma-gate.py"), ["--summarize"], 10000);
   if (r.code !== 0) return null;
   return r.stdout.trim();
 }
