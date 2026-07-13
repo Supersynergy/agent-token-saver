@@ -9,6 +9,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+from xml.sax.saxutils import quoteattr
 
 TRIVIAL = re.compile(
     r"^\s*(?:ok|okay|yes|no|ja|nein|thanks|danke|continue|weiter|passt|done|fertig)[.!?\s]*$",
@@ -20,12 +21,13 @@ ATS_TRIGGER = re.compile(
     r"compress\s+(?:logs?|output|context)|rtk|synapse)\b",
     re.IGNORECASE,
 )
-LOAD_LINE = re.compile(r"^- ([^:]+): .*\((/[^)]+/SKILL\.md)\)$")
 
 
 def router_path() -> Path | None:
     candidates = [
         os.environ.get("ATS_ROUTER", ""),
+        "~/.local/bin/si",
+        "~/.local/bin/agent-skill-route",
         "~/.codex/skills/agent-token-saver-skill-router/scripts/agent_token_saver.py",
         "~/.claude/skills/agent-token-saver-skill-router/scripts/agent_token_saver.py",
     ]
@@ -87,30 +89,32 @@ def main() -> int:
                 "--max",
                 "1",
                 "--strict",
+                "--json",
             ],
             capture_output=True,
             text=True,
             timeout=4,
             check=False,
         )
-    except (OSError, subprocess.TimeoutExpired):
+        payload = json.loads(result.stdout)
+        selected = payload.get("selected") or []
+    except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError):
         return 0
-    selected: list[tuple[str, str]] = []
-    for raw_line in result.stdout.splitlines():
-        match = LOAD_LINE.match(raw_line.strip())
-        if match:
-            selected.append((match.group(1).replace(" ★", ""), match.group(2)))
-        if len(selected) == 1:
-            break
-    if selected:
-        routes = "; ".join(f"{name}={path}" for name, path in selected)
-        emit(
-            "<token_stack_route>"
-            f"Load only these routed skills: {routes}. "
-            "Read this primary SKILL.md completely. Add another skill only for a distinct blocker or phase. "
-            "Use RTK for supported noisy shell output."
-            "</token_stack_route>"
-        )
+    if result.returncode != 0 or not isinstance(selected, list) or not selected:
+        return 0
+    winner = selected[0]
+    if not isinstance(winner, dict):
+        return 0
+    name = str(winner.get("name") or "").strip()
+    path = Path(str(winner.get("path") or ""))
+    if not name or not path.is_file():
+        return 0
+    emit(
+        f"<skill_route name={quoteattr(name)} path={quoteattr(str(path))}>"
+        "Read this SKILL.md completely before acting. "
+        "Do not auto-load a second skill."
+        "</skill_route>"
+    )
     return 0
 
 

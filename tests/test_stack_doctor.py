@@ -28,6 +28,15 @@ def test_catalog_profiles_reference_known_tools():
         assert set(tools) <= known
 
 
+def test_catalog_contains_no_dead_profile_entries():
+    root = Path(__file__).resolve().parents[1]
+    catalog = json.loads((root / "stack" / "catalog.json").read_text())
+    referenced = {name for profile in catalog["profiles"].values() for name in profile}
+
+    assert set(catalog["tools"]) == referenced
+    assert catalog["profiles"]["minimal"] == ["native-projection"]
+
+
 def test_missing_optional_tool_is_core_ready(monkeypatch):
     monkeypatch.setattr("scripts.stack_doctor.shutil.which", lambda _command: None)
     catalog = {

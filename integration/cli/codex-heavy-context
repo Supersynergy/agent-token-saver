@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Opt-in heavy Codex profile. Keeps the default MCP surface lean.
+# Public and portable: host-specific browser/node_repl settings stay in a local override.
 set -euo pipefail
 
 exec codex \

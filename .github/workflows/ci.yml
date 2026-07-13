@@ -12,32 +12,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
       - uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff # v6
         with:
           enable-cache: true
       - run: uv sync --extra dev
       - run: uv run pytest
       - name: Lint release surface
-        run: >-
-          uv run ruff check
-          scripts/install_agent_token_saver.py scripts/stack_doctor.py
-          scripts/full_context_ledger.py
-          integration/hooks/token-stack-prompt.py
-          scripts/news_projection.py scripts/token_stack_matrix_benchmark.py
-          scripts/benchmark_output_filters.py scripts/bench_news_agent_stack.py
-          scripts/graph_query_benchmark.py
-          tests/test_installer.py tests/test_stack_doctor.py
-          tests/test_news_projection.py tests/test_benchmark_helpers.py
-          tests/test_full_context_ledger.py
-          tests/test_prompt_hook.py
+        run: uv run ruff check scripts integration tests
       - run: >-
-          bash -n install-universal.sh scripts/neutral_install_smoke.sh
-          scripts/remote_bootstrap_smoke.sh
+          bash -n install-universal.sh integration/cli/codex-heavy-context
+          scripts/neutral_install_smoke.sh scripts/remote_bootstrap_smoke.sh
 
   neutral-install:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
       - name: Fresh HOME universal install
         run: bash scripts/neutral_install_smoke.sh
       - name: Standalone remote-bootstrap path

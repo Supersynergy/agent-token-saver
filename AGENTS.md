@@ -5,10 +5,10 @@ Agent Token Saver is an agent-neutral toolkit for measured context reduction, sa
 
 ## Commands
 
-- `build`: `bun run build`
-- `setup`: `bun install`
+- `setup`: `uv sync --extra dev`
 - `test`: `uv run pytest`
-- `check`: `uv run pytest`
+- `lint`: `uv run ruff check scripts integration tests`
+- `smoke`: `bash scripts/neutral_install_smoke.sh`
 
 ## Repo Rules
 

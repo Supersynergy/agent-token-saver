@@ -18,7 +18,7 @@ schemas, repeated research, or a broad skill catalog.
 
 1. Exact local search or deterministic projection.
 2. RTK for supported noisy shell commands.
-3. Load 1-3 routed skills, not the whole skill library.
+3. Load zero or one primary routed skill automatically, never the whole library.
 4. Use a budgeted code reader only when exact search misses.
 5. Enable graph, browser, or large-context tooling for one session only.
 
@@ -34,9 +34,20 @@ python3 scripts/token_stack_matrix_benchmark.py --help
 ```
 
 For adaptive routing across a large skill collection, install the companion
-`agent-token-saver-skill-router` and load only the paths it selects:
+`agent-token-saver-skill-router`. Keep the index and ranking outside model
+context; load only the selected domain skill:
 
 https://github.com/Supersynergy/agent-token-saver-skill-router
+
+```bash
+si route "<task>" --max 1 --strict --json  # automatic 0/1 decision
+si find "<capability>" --json               # manual discovery only
+si resolve "<exact-name>" --json            # exact path only
+si index --refresh --json                    # after skill changes
+```
+
+Do not auto-load the router skill itself or a second reserve skill. An explicit
+`$SkillName` remains the user override.
 
 ## Done gate
 

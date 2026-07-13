@@ -77,6 +77,37 @@ def test_repeated_install_deduplicates_hooks(tmp_path: Path) -> None:
     assert len(hooks["UserPromptSubmit"]) == 1
 
 
+def test_existing_host_heavy_launcher_is_preserved(tmp_path: Path) -> None:
+    launcher = tmp_path / "home" / ".local" / "bin" / "codex-heavy-context"
+    launcher.parent.mkdir(parents=True)
+    local_overlay = "#!/bin/sh\n# host-only node_repl overlay\n"
+    launcher.write_text(local_overlay)
+
+    result = run_installer(tmp_path, "--agent", "codex")
+
+    assert result.returncode == 0, result.stderr
+    assert launcher.read_text() == local_overlay
+    portable = (
+        tmp_path
+        / "home"
+        / ".agent-token-saver"
+        / "bin"
+        / "codex-heavy-context"
+    )
+    assert portable.is_file()
+    assert portable.read_text() == (
+        ROOT / "integration" / "cli" / "codex-heavy-context"
+    ).read_text()
+
+
+def test_public_heavy_launcher_has_no_host_paths() -> None:
+    launcher = (ROOT / "integration" / "cli" / "codex-heavy-context").read_text()
+
+    assert "/Users/" not in launcher
+    assert "/Applications/" not in launcher
+    assert "NODE_REPL_TRUSTED_BROWSER_CLIENT_SHA256S" not in launcher
+
+
 def test_dry_run_leaves_home_unchanged(tmp_path: Path) -> None:
     result = run_installer(tmp_path, "--agent", "all", "--dry-run")
     assert result.returncode == 0
@@ -108,10 +139,14 @@ def test_old_repo_rtk_hook_is_removed_from_codex(tmp_path: Path) -> None:
             }
         )
     )
+    obsolete = tmp_path / "home" / ".agent-token-saver" / "hooks" / "rtk-rewrite.sh"
+    obsolete.parent.mkdir(parents=True)
+    obsolete.write_text("#!/bin/sh\n")
     result = run_installer(tmp_path, "--agent", "codex")
     assert result.returncode == 0
     hooks = json.loads(hooks_path.read_text())["hooks"]["PreToolUse"]
     assert hooks == []
+    assert not obsolete.exists()
 
 
 def test_claude_uses_native_rtk_hook(tmp_path: Path) -> None:

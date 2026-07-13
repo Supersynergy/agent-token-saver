@@ -12,6 +12,7 @@ import argparse
 import http.client
 import json
 import os
+import re
 import subprocess
 import tempfile
 import time
@@ -25,9 +26,32 @@ STAMP = time.strftime("%Y-%m-%d")
 OUT_DIR = ROOT / "data" / "benchmarks"
 OUT_JSON = OUT_DIR / f"token-stack-matrix-{STAMP}.json"
 OUT_MD = OUT_DIR / f"token-stack-matrix-{STAMP}.md"
-ROUTER = HOME / ".codex/skills/agent-token-saver-skill-router/scripts/agent_token_saver.py"
-PROMPT_HOOK = HOME / ".codex/hooks/token-stack-prompt.py"
+ROUTER = next(
+    (
+        path
+        for path in (
+            HOME / ".local/bin/si",
+            HOME / ".local/bin/agent-skill-route",
+            HOME
+            / ".codex/skills/agent-token-saver-skill-router/scripts/agent_token_saver.py",
+        )
+        if path.is_file()
+    ),
+    HOME / ".local/bin/si",
+)
+PROMPT_HOOK = next(
+    (
+        path
+        for path in (
+            HOME / ".agent-token-saver/hooks/token-stack-prompt.py",
+            HOME / ".codex/hooks/token-stack-prompt.py",
+        )
+        if path.is_file()
+    ),
+    HOME / ".agent-token-saver/hooks/token-stack-prompt.py",
+)
 PONYTAIL = HOME / ".claude/skills/superskills/ponytail/SKILL.md"
+VERSION_RE = re.compile(r"\b\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?\b")
 LIVE_TASKS = [
     {
         "name": "ttl-cache",
@@ -88,6 +112,58 @@ def run(
     except (OSError, subprocess.TimeoutExpired) as exc:
         elapsed = round((time.perf_counter() - started) * 1000)
         return 124, "", str(exc), elapsed
+
+
+def extract_version(output: str) -> str | None:
+    match = VERSION_RE.search(output)
+    return match.group(0) if match else None
+
+
+def parse_json_object(output: str) -> dict[str, Any]:
+    try:
+        value = json.loads(output)
+    except json.JSONDecodeError:
+        return {}
+    return value if isinstance(value, dict) else {}
+
+
+def process_fixture(rows: int = 900) -> str:
+    """Stable ps-style payload; the first high-CPU signal must survive RTK."""
+    lines = [
+        "USER PID %CPU %MEM VSZ RSS TT STAT STARTED TIME COMMAND",
+        "agent 42 99.9 1.0 999999 99999 ?? R 10:00AM 9:59.99 /opt/critical-worker --serve",
+    ]
+    for index in range(rows - 1):
+        lines.append(
+            f"worker {1000 + index} {90 - index % 80}.0 0.1 420000000 64000 ?? "
+            f"S 10:00AM 0:00.{index % 100:02d} /usr/bin/python3 /srv/jobs/worker-{index:04d}.py "
+            f"--queue queue-{index % 12} --request request-{index:08d}"
+        )
+    return "\n".join(lines) + "\n"
+
+
+def command_version(command: list[str]) -> str:
+    rc, stdout, stderr, _ = run(command, timeout=5)
+    if rc != 0:
+        return "unavailable"
+    return extract_version(f"{stdout}\n{stderr}") or "unknown"
+
+
+def context_mode_version() -> str:
+    detected = command_version(["context-mode", "--version"])
+    if detected not in {"unknown", "unavailable"}:
+        return detected
+    plugin_root = HOME / ".claude/plugins/cache/context-mode/context-mode"
+    versions: list[tuple[tuple[int, int, int], str]] = []
+    for manifest in plugin_root.glob("*/package.json"):
+        try:
+            version = str(json.loads(manifest.read_text()).get("version", ""))
+            parts = tuple(int(part) for part in version.split("."))
+        except (OSError, ValueError, TypeError, json.JSONDecodeError):
+            continue
+        if len(parts) == 3:
+            versions.append((parts, version))
+    return max(versions)[1] if versions else detected
 
 
 @dataclass
@@ -248,34 +324,70 @@ def main() -> int:
     components: list[Component] = []
 
     # Skill catalog vs adaptive router.
-    rc, router_out, router_err, router_ms = run(
+    router_intent = "Benchmark Ponytail context-mode Headroom RTK Tilth"
+    bench_rc, bench_out, _, _ = run(
         [
             "python3",
             str(ROUTER),
             "bench",
-            "Benchmark Ponytail context-mode Headroom RTK Tilth",
+            router_intent,
             "--max",
-            "3",
+            "1",
         ]
     )
-    router = json.loads(router_out) if rc == 0 else {}
+    route_rc, route_out, _, router_ms = run(
+        [
+            "python3",
+            str(ROUTER),
+            "route",
+            router_intent,
+            "--max",
+            "1",
+            "--strict",
+            "--json",
+        ]
+    )
+    benchmark = parse_json_object(bench_out) if bench_rc == 0 else {}
+    route = parse_json_object(route_out) if route_rc == 0 else {}
+    selected = route.get("selected") if isinstance(route.get("selected"), list) else []
+    router_tokens = est_tokens(str(route.get("router_block") or ""))
     components.append(
         Component(
             "skill-routing",
-            router.get("full_est_tokens", 1),
-            router.get("router_est_tokens", 1),
+            benchmark.get("full_est_tokens", 1),
+            router_tokens,
             0,
             router_ms,
-            rc == 0 and len(router.get("selected", [])) == 3,
-            f"{router.get('skills_scanned', 0)} skills -> 3 selected",
+            bench_rc == 0 and route_rc == 0 and len(selected) == 1,
+            f"{benchmark.get('skills_scanned', 0)} skills -> {len(selected)} selected (strict)",
         )
     )
 
-    # Shell output filtering.
-    rc_raw, raw_ps, raw_ps_err, raw_ps_ms = run(["ps", "aux"], cwd=HOME, timeout=20)
-    rc_rtk, rtk_ps, rtk_ps_err, rtk_ps_ms = run(
-        ["rtk", "ps", "aux"], cwd=HOME, timeout=30
-    )
+    # Shell output filtering against a stable fixture through the real RTK CLI.
+    with tempfile.TemporaryDirectory(prefix="agent-token-saver-ps-") as temporary:
+        temp_root = Path(temporary)
+        bin_dir = temp_root / "bin"
+        fixture = temp_root / "ps.txt"
+        fake_ps = bin_dir / "ps"
+        bin_dir.mkdir()
+        fixture.write_text(process_fixture())
+        fake_ps.write_text(
+            "#!/usr/bin/env python3\n"
+            "from pathlib import Path\n"
+            "import sys\n"
+            f"sys.stdout.write(Path({str(fixture)!r}).read_text())\n"
+        )
+        fake_ps.chmod(0o755)
+        fixture_env = os.environ.copy()
+        fixture_env["HOME"] = str(temp_root / "home")
+        fixture_env["PATH"] = f"{bin_dir}{os.pathsep}{fixture_env['PATH']}"
+        fixture_env["NO_COLOR"] = "1"
+        rc_raw, raw_ps, raw_ps_err, raw_ps_ms = run(
+            ["ps", "aux"], cwd=temp_root, timeout=20, env=fixture_env
+        )
+        rc_rtk, rtk_ps, rtk_ps_err, rtk_ps_ms = run(
+            ["rtk", "ps", "aux"], cwd=temp_root, timeout=30, env=fixture_env
+        )
     ps_raw_tokens = est_tokens(raw_ps + raw_ps_err)
     ps_rtk_tokens = est_tokens(rtk_ps + rtk_ps_err)
     components.append(
@@ -285,13 +397,16 @@ def main() -> int:
             ps_rtk_tokens,
             raw_ps_ms,
             rtk_ps_ms,
-            rc_raw == 0 and rc_rtk == 0,
-            "Real process table, raw vs RTK.",
+            rc_raw == 0
+            and rc_rtk == 0
+            and "critical-worker" in rtk_ps
+            and ps_rtk_tokens < ps_raw_tokens,
+            "Stable 900-row process fixture through real RTK.",
         )
     )
 
     # Structural read.
-    document = ROOT / "README.md"
+    document = ROOT / "scripts" / "token_stack_matrix_benchmark.py"
     raw_document = document.read_text(errors="ignore")
     rc_tilth, tilth_out, tilth_err, tilth_ms = run(
         ["tilth", str(document), "--budget", "800", "--scope", str(ROOT)], timeout=30
@@ -306,7 +421,7 @@ def main() -> int:
             0,
             tilth_ms,
             rc_tilth == 0 and bool(tilth_out.strip()),
-            "Full README vs 800-token structural budget.",
+            "Full benchmark source vs 800-token structural budget.",
         )
     )
 
@@ -538,11 +653,11 @@ def main() -> int:
         "date": time.strftime("%Y-%m-%d %H:%M:%S %Z"),
         "method": "local real CLIs/MCP schemas; bytes/4 token proxy; optional Codex provider usage for Ponytail A/B",
         "versions": {
-            "context_mode": "1.0.169",
-            "headroom": "0.31.0",
-            "rtk": "0.43.0",
-            "tilth": "0.9.0",
-            "codex": "0.144.0-alpha.4",
+            "context_mode": context_mode_version(),
+            "headroom": command_version(["headroom", "--version"]),
+            "rtk": command_version(["rtk", "--version"]),
+            "tilth": command_version(["tilth", "--version"]),
+            "codex": command_version(["codex", "--version"]),
         },
         "headroom_codex_observed": headroom,
         "schemas": {

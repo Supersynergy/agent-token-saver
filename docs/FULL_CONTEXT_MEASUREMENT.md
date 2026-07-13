@@ -92,7 +92,7 @@ difference end-to-end savings.
 ## Optimization order
 
 1. Remove unused always-on MCP schemas and plugin catalogs.
-2. Route only the one to three skills needed for the current task.
+2. Route zero or one primary skill automatically; add another only for a distinct explicit phase.
 3. Project large shell/log/web payloads before model context.
 4. Prefer diffs, exact symbols and source deltas over whole files.
 5. Keep stable prefixes cacheable; separate cold and warm results.

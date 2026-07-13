@@ -10,10 +10,10 @@ Improvements need evidence, not a larger tool list.
 
 ```bash
 uv run pytest
-uv run ruff check scripts/install_agent_token_saver.py scripts/stack_doctor.py \
-  scripts/news_projection.py scripts/token_stack_matrix_benchmark.py \
-  tests/test_installer.py tests/test_stack_doctor.py tests/test_news_projection.py
-bash -n install-universal.sh integration/hooks/rtk-rewrite.sh
+uv run ruff check scripts integration tests
+bash -n install-universal.sh integration/cli/codex-heavy-context \
+  scripts/neutral_install_smoke.sh scripts/remote_bootstrap_smoke.sh
+bash scripts/neutral_install_smoke.sh
 ```
 
 A new dependency needs a reason, maintenance check and measured win over the

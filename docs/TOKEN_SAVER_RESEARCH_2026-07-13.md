@@ -8,7 +8,7 @@ Live GitHub API, ghmax and Superweb snapshot. Stars are discovery signals, not b
 |---|---:|---|---|
 | [Graphify](https://github.com/Graphify-Labs/graphify) | 83,830 | pushed 2026-07-13 | Excellent persistent graph projection; not an always-on saver |
 | [Ponytail](https://github.com/DietrichGebert/ponytail) | 81,839 | v4.8.4, 2026-07-10 | Popular; local A/B was net more tokens |
-| [RTK](https://github.com/rtk-ai/rtk) | 70,717 | v0.43.0, 2026-06-28 | Strongest mature default; local shell reduction 97.98% |
+| [RTK](https://github.com/rtk-ai/rtk) | 70,717 | v0.43.0, 2026-06-28 | Strongest mature default; stable process-fixture reduction 97.25% |
 | [CodeGraph](https://github.com/colbymchenry/codegraph) | 59,586 | pushed 2026-07-13 | Strong repeated repo relationship queries; workload-gated |
 | [Headroom](https://github.com/headroomlabs-ai/headroom) | 58,872 | v0.31.0, 2026-07-09 | Large vendor claims; observed Codex gain was workload-dependent |
 | [context-mode](https://github.com/mksglu/context-mode) | 18,878 | v1.0.169 | 99.91% large-log projection; 7,458-token cold schema |
@@ -64,4 +64,4 @@ repeated structure: choose Graphify OR CodeGraph per repo
 broad MCP catalog: benchmark mcp-compressor before enabling
 ```
 
-Do not combine every layer. The measured all-on profile cost 12,989 tokens versus 2,531 for CLI-selective.
+Do not combine every layer. The measured all-on profile cost 12,567 input tokens versus 1,918 for CLI-selective.

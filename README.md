@@ -1,18 +1,18 @@
 # agent-token-saver
 
-![agent-token-saver — less noise, better judgment](docs/assets/social-preview.png)
+![agent-token-saver — less noise, better judgment](docs/assets/social-preview.svg)
 
 **Use your coding agent more. Spend far fewer tokens getting there.**
 
 [![MIT](https://img.shields.io/badge/license-MIT-1c7c54.svg)](LICENSE)
 [![CI](https://github.com/Supersynergy/agent-token-saver/actions/workflows/ci.yml/badge.svg)](https://github.com/Supersynergy/agent-token-saver/actions/workflows/ci.yml)
 ![verified agents](https://img.shields.io/badge/verified-Codex%20%7C%20Claude%20%7C%20Hermes%20%7C%20GG%20Coder-f2c14e.svg)
-![measured](https://img.shields.io/badge/measured-up%20to%20146.1x%20payload%20capacity-e8f1f2.svg)
+![measured](https://img.shields.io/badge/measured-up%20to%20196.4x%20payload%20capacity-e8f1f2.svg)
 
 > **Imagine getting 100x more context-heavy work from Codex, Claude Code,
 > Hermes or GG Coder before hitting the same token budget. In the included
-> accepted-workload benchmark, you can: 386,047 tokens became 2,643 tokens --
-> 99.32% less, or 146.1x more payload capacity.**
+> accepted-workload benchmark, you can: 376,626 tokens became 1,918 tokens --
+> 99.49% less, or 196.4x more payload capacity.**
 
 `agent-token-saver` stops wasted tokens before they reach your model. It sends
 the smallest context that can still produce the correct result: the relevant
@@ -26,16 +26,16 @@ shipped.
 
 ## What this means in plain English
 
-Without routing, a coding agent may receive 459 skill descriptions, a complete
+Without routing, a coding agent may receive 460 skill descriptions, a complete
 process table, a full README and a 20,000-line log before it starts solving the
 task. Most of those tokens never help the answer.
 
 With `agent-token-saver`, the same accepted workload used:
 
-- **2,643 instead of 386,047 tokens** in the CLI-selective profile.
-- **4,351 instead of 386,047 tokens** in the automatic Lean profile.
-- **Up to 99.32% fewer tokens** across the measured workload.
-- **Up to 146 comparable payloads** inside the token budget previously used by one raw payload.
+- **1,918 instead of 376,626 tokens** in the CLI-selective profile.
+- **3,734 instead of 376,626 tokens** in the automatic Lean profile.
+- **Up to 99.49% fewer tokens** across the measured workload.
+- **Up to 196 comparable payloads** inside the token budget previously used by one raw payload.
 
 That can mean more Codex or Claude work from the same subscription/API budget,
 longer useful sessions before compaction, fewer quota interruptions and more
@@ -60,33 +60,33 @@ workload profiles, real A/B measurements, reversible hooks and no lock-in.
 
 ## The measured result
 
-Local benchmark, 2026-07-13. Same accepted workload in every arm; UTF-8 bytes / 4 for local payloads and provider-reported usage for the live output A/B.
+Local benchmark, 2026-07-13. Same accepted workload and deterministic fixtures in every arm; UTF-8 bytes / 4 for local payloads and provider-reported usage for the reused live output A/B.
 
 This is a **profile payload benchmark**, not a claim that a brand-new host will
-immediately reduce its complete provider bill by 146.1x. The full profile used
+immediately reduce its complete provider bill by 196.4x. The full profile used
 the named Router, RTK and Tilth components. Clean-host portability and complete
 provider context are measured separately below.
 
 | Stack | Tokens per workload | Tokens saved | Payload capacity in the same raw budget |
 |---|---:|---:|---:|
-| **CLI selective** | **2,643** | **99.32%** | **146.1x** |
-| Lean automatic | 4,351 | 98.87% | 88.7x |
-| Context-mode on demand | 10,177 | 97.36% | 37.9x |
-| Everything + Ponytail | 13,109 | 96.60% | 29.4x |
-| No saver | 386,047 | 0% | 1.0x |
+| **CLI selective** | **1,918** | **99.49%** | **196.4x** |
+| Lean automatic | 3,734 | 99.01% | 100.9x |
+| Context-mode on demand | 9,452 | 97.49% | 39.8x |
+| Everything + Ponytail | 12,567 | 96.66% | 30.0x |
+| No saver | 376,626 | 0% | 1.0x |
 
 ### What "100x more usage" actually means
 
-Take the token budget consumed by one raw benchmark workload: **386,047
+Take the token budget consumed by one raw benchmark workload: **376,626
 tokens**.
 
 - Raw approach: that budget carries **1** comparable workload.
-- CLI-selective profile: that budget carries **146 full comparable payloads**.
-- Automatic Lean profile: that budget carries **88 full comparable payloads**.
-- Across 100 comparable workloads: **38,604,700 raw tokens vs 264,300 CLI-selective tokens**.
+- CLI-selective profile: that budget carries **196 full comparable payloads**.
+- Automatic Lean profile: that budget carries **100 full comparable payloads**.
+- Across 100 comparable workloads: **37,662,600 raw tokens vs 191,800 CLI-selective tokens**.
 
 The multiplier is `raw tokens / optimized tokens`. It measures useful payload
-capacity, not a promise of 146x more provider calls: subscription rate limits,
+capacity, not a promise of 196x more provider calls: subscription rate limits,
 cache accounting, model output, tool calls and task mix still matter. If tokens
 or quota are your bottleneck and your workload resembles this one, however,
 the practical gain can be enormous.
@@ -95,9 +95,9 @@ the practical gain can be enormous.
 
 | Instead of sending this | The agent receives this | Measured reduction |
 |---|---|---:|
-| All 459 installed skills | The 3 relevant skills | 99.39% |
-| Full noisy process output | RTK's useful projection | 97.41% |
-| Entire README | A bounded structural read | 78.50% |
+| All 460 installed skills | One primary skill pointer | 99.74% |
+| Full noisy process fixture | RTK's useful projection | 97.25% |
+| Full source file | A bounded structural read | 88.98% |
 | A 20,000-line log | Exact error count + last 10 errors | 99.94% |
 
 The model still gets the facts needed to pass the same acceptance check. It
@@ -146,7 +146,7 @@ Live neutral runner: [GitHub Actions](https://github.com/Supersynergy/agent-toke
 |---|---|---|
 | `minimal` | Zero-hot portable CLI/ledger | no visible skill and no prompt hook |
 | `lean` | Daily prompt-gated coding | hidden skill + zero-output gate; host-native RTK where supported |
-| `heavy` | large logs, deep code graph, browser | lean + context-mode/Graphify/CodeGraph only for that session |
+| `heavy` | large logs and deep code graph | lean + context-mode/Graphify/CodeGraph only for that session |
 | `news` | scrape/research fan-out | lean + cached fetch + dedupe/rank/project + bounded subagents |
 
 Rules:
@@ -157,6 +157,21 @@ Rules:
 - Graphify wins when a repo/corpus is queried repeatedly and structural paths matter; do not build it for one exact lookup.
 - Ponytail/caveman shape output. Their instruction tokens can cost more than they save on short answers.
 - MCP schemas are a recurring tax. Default to CLI/file/socket surfaces unless measured otherwise.
+
+## Repository layout
+
+```text
+scripts/       installer, doctor, ledger, projections and benchmarks
+integration/   one prompt hook and one opt-in heavy Codex launcher
+skills/        portable agent-token-saver skill
+stack/         profile catalog consumed by the doctor
+tests/         current release contracts only
+data/          dated, reproducible benchmark evidence
+docs/          operating and measurement guides
+```
+
+Older adapters, MCP servers, ML routers, Hyperstack prototypes and release
+campaign files remain available in Git history, not in the active tree.
 
 ## Install and wire hooks
 
@@ -183,6 +198,19 @@ silently install third-party packages. `--agent auto` touches only detected
 agents. `--agent repo --project /path/to/repo` installs a portable
 `.agents/skills` copy.
 
+### Portable public core, local host overlay
+
+The public `integration/cli/codex-heavy-context` launcher contains only portable
+CodeGraph and context-mode settings. It ships no user paths, app-bundle paths,
+browser hashes or private configuration.
+
+The installer always refreshes that portable copy under
+`~/.agent-token-saver/bin/`. An existing
+`~/.local/bin/codex-heavy-context` is user-owned and remains untouched, so one
+machine may add its own `node_repl` or browser settings without leaking them into
+the public repository. Without a local override, the installer links the public
+portable launcher there.
+
 Integration is capability-based:
 
 - **Codex:** zero-hot hidden skill activated only by `UserPromptSubmit`; current
@@ -198,6 +226,15 @@ at most one primary skill and returns nothing for trivial, low-confidence or
 ambiguous prompts. Without the companion router, a conservative built-in gate
 activates only the hidden token-saver skill for explicit token/context tasks.
 Codex uses agent-guided RTK CLI calls until shell-hook coverage is complete.
+
+The companion index stays out of prompt context:
+
+```bash
+si route "<task>" --max 1 --strict --json
+si find "<capability>" --json
+si resolve "<exact-name>" --json
+si index --refresh --json   # after skill edits
+```
 
 Use `agent-token-saver doctor --profile <name> --json` for machine-readable
 inventory. `healthy=true` means the portable core is usable;
@@ -283,11 +320,9 @@ Artifact: [data/benchmarks/codex-explicit-rtk-e2e-2026-07-13.md](data/benchmarks
 | [context-mode](https://github.com/mksglu/context-mode) | session/on demand | large payload queried or transformed repeatedly |
 | Graphify | build once, query on demand | persistent repo/corpus graph and paths |
 | CodeGraph | on demand | callers, callees and impact analysis |
-| [Ponytail](https://github.com/DietrichGebert/ponytail) | off by default | long prose/code generation after an A/B proves gain |
-| Headroom | optional provider/proxy, never MCP | keep when the agent connection depends on it; exclude from Lean stack claims and measure separately |
 | Superweb-compatible fetch CLI | on demand | current web/search/fetch; save raw responses outside prompt context |
 
-Exact source, version, activation and profile metadata live in [stack/catalog.json](stack/catalog.json). Latest versions and popularity drift; `doctor` reports the installed state, while release decisions belong in dated benchmark/research artifacts.
+Exact active-profile source and activation metadata live in [stack/catalog.json](stack/catalog.json). Headroom and Ponytail remain dated benchmark comparators, not profile dependencies. Latest versions and popularity drift; `doctor` reports installed state.
 
 Synapse is not released and is not a dependency of this repository. The public
 stack exposes replaceable CLI/file/JSON seams so a memory system can be added
@@ -336,9 +371,9 @@ Measured component reductions:
 
 | Component | Raw | Optimized | Saved |
 |---|---:|---:|---:|
-| Skill catalog -> router | 37,108 | 226 | 99.39% |
-| process output -> RTK | 44,711 | 1,158 | 97.41% |
-| README -> Tilth budget | 3,414 | 734 | 78.50% |
+| Skill catalog -> router | 37,157 | 98 | 99.74% |
+| process fixture -> RTK | 32,210 | 887 | 97.25% |
+| source file -> Tilth budget | 6,785 | 748 | 88.98% |
 | 20k-line log -> native projection | 300,474 | 185 | 99.94% |
 | same log -> context-mode | 300,474 | 261 | 99.91% |
 
@@ -353,10 +388,9 @@ Run checks:
 
 ```bash
 uv run pytest
-uv run ruff check scripts/install_agent_token_saver.py scripts/stack_doctor.py \
-  scripts/full_context_ledger.py scripts/news_projection.py \
-  scripts/token_stack_matrix_benchmark.py tests/test_installer.py \
-  tests/test_stack_doctor.py tests/test_full_context_ledger.py
+uv run ruff check scripts integration tests
+bash -n install-universal.sh integration/cli/codex-heavy-context \
+  scripts/neutral_install_smoke.sh scripts/remote_bootstrap_smoke.sh
 bash scripts/neutral_install_smoke.sh
 ```
 
@@ -364,7 +398,7 @@ bash scripts/neutral_install_smoke.sh
 
 - Token proxies are not provider billing meters.
 - A component's best-case reduction is not the whole session reduction.
-- The 146.1x payload result is not a clean-host or provider-billing multiplier.
+- The 196.4x payload result is not a clean-host or provider-billing multiplier.
 - Popularity is not proof of savings.
 - “Installed” is not “active”; verify hooks, MCP startup and real usage.
 - Optional local models can add latency and storage while saving almost nothing after deterministic filtering.
@@ -382,6 +416,6 @@ That makes this repository useful as a living benchmark, not another “awesome 
 
 ## Migration from claude-token-saver
 
-GitHub redirects the former repository name. Existing `cts` entrypoints remain compatible; new docs and tooling use `agent-token-saver` / `ats`. Re-run the universal installer to merge current hooks without deleting existing settings.
+GitHub redirects the former repository name. Re-run the universal installer to replace retired managed files and merge current hooks without deleting user settings.
 
 License: MIT.

@@ -7,26 +7,13 @@ requires-python = ">=3.11"
 readme = "README.md"
 license = {text = "MIT"}
 
-dependencies = [
-    "anthropic>=0.40.0",
-]
+dependencies = []
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
-    "ruff>=0.6",
+    "ruff==0.14.14",
 ]
-
-[project.scripts]
-cts = "core.orchestrator:main"
-ats = "core.orchestrator:main"
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.hatch.build.targets.wheel]
-packages = ["core"]
 
 [tool.ruff]
 line-length = 100

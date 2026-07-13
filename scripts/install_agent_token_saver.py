@@ -10,12 +10,16 @@ import shutil
 import stat
 import tempfile
 import time
+from contextlib import suppress
 from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 HOME = Path.home()
 INSTALL_HOME = HOME / ".agent-token-saver"
+OBSOLETE_INSTALL_FILES = (
+    INSTALL_HOME / "hooks" / "rtk-rewrite.sh",
+)
 
 
 def atomic_json(path: Path, data: dict[str, Any], dry_run: bool) -> None:
@@ -129,6 +133,18 @@ def install_copy(source: Path, target: Path, dry_run: bool, executable: bool = F
     print(f"installed {target}")
 
 
+def remove_obsolete_install_files(dry_run: bool) -> None:
+    """Prune files written by older universal installers, never user config."""
+    for path in OBSOLETE_INSTALL_FILES:
+        if not (path.exists() or path.is_symlink()):
+            continue
+        if dry_run:
+            print(f"would remove obsolete {path}")
+            continue
+        path.unlink()
+        print(f"removed obsolete {path}")
+
+
 def install_files(dry_run: bool) -> None:
     copies = {
         ROOT / "stack" / "catalog.json": INSTALL_HOME / "stack" / "catalog.json",
@@ -168,7 +184,7 @@ def install_files(dry_run: bool) -> None:
     heavy_launcher = HOME / ".local" / "bin" / "codex-heavy-context"
     heavy_target = copies[ROOT / "integration" / "cli" / "codex-heavy-context"]
     if heavy_launcher.exists() or heavy_launcher.is_symlink():
-        print(f"kept existing {heavy_launcher}")
+        print(f"kept user-owned host override {heavy_launcher}")
     elif dry_run:
         print(f"would link {heavy_launcher} -> {heavy_target}")
     else:
@@ -212,10 +228,8 @@ def remove_visible_skill(agent: str, project: Path, dry_run: bool) -> None:
         print(f"would remove fixed-context skill {target}")
         return
     target.unlink()
-    try:
+    with suppress(OSError):
         target.parent.rmdir()
-    except OSError:
-        pass
     print(f"removed fixed-context skill {target}")
 
 
@@ -262,6 +276,7 @@ def main() -> int:
     )
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
+    remove_obsolete_install_files(args.dry_run)
     install_files(args.dry_run)
     targets = {
         "codex": HOME / ".codex" / "hooks.json",

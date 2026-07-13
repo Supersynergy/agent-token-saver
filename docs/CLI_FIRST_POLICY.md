@@ -37,10 +37,15 @@ Tilth only; memory, web, GitHub, Graphify, and CodeGraph tools remain CLI/on
 demand.  Headroom may remain the model provider proxy.  It contributes no MCP
 schema and must not be added as a second default tool server.
 
-For a deliberate browser/deep-graph session, use `codex-heavy-context`.  That
-launcher adds CodeGraph, context-mode, and node_repl for that process only.  It
-is not the normal `codex` command.  Do not assume a named Codex profile imports
-a separate TOML file; verify the actual launch command with `codex mcp list`.
+For a deliberate deep-graph or large-payload session, use
+`codex-heavy-context`. That launcher adds CodeGraph and context-mode for that
+process only. Browser control and `node_repl` are host-specific extensions;
+enable them explicitly only when available. The repository and
+`~/.agent-token-saver/bin/` hold the portable launcher. An existing
+`~/.local/bin/codex-heavy-context` is a user-owned host overlay and is never
+overwritten by the installer. The launcher is not the normal `codex` command.
+Do not assume a named Codex profile imports a separate TOML file; verify the
+actual launch command with `codex mcp list`.
 
 Verification:
 

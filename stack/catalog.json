@@ -2,7 +2,7 @@
   "schema_version": 1,
   "updated": "2026-07-13",
   "profiles": {
-    "minimal": ["native-projection", "skill-router", "rtk"],
+    "minimal": ["native-projection"],
     "lean": ["native-projection", "skill-router", "rtk", "tilth"],
     "heavy": ["native-projection", "skill-router", "rtk", "tilth", "context-mode", "graphify", "codegraph"],
     "news": ["native-projection", "skill-router", "rtk", "tilth", "superweb"]
@@ -18,12 +18,14 @@
       "kind": "path",
       "required": false,
       "paths": [
+        "~/.local/bin/si",
+        "~/.local/bin/agent-skill-route",
         "~/.codex/skills/agent-token-saver-skill-router/scripts/agent_token_saver.py",
         "~/.claude/skills/agent-token-saver-skill-router/scripts/agent_token_saver.py"
       ],
       "source": "https://github.com/Supersynergy/agent-token-saver-skill-router",
       "activation": "prompt-gated",
-      "purpose": "Load only 1-3 relevant skills"
+      "purpose": "Load zero or one primary skill automatically"
     },
     "rtk": {
       "kind": "command",
@@ -70,15 +72,6 @@
       "activation": "on demand",
       "purpose": "Callers, callees and impact analysis"
     },
-    "headroom": {
-      "kind": "command",
-      "required": false,
-      "command": "headroom",
-      "version_args": ["--version"],
-      "source": "https://github.com/headroomlabs-ai/headroom",
-      "activation": "observe before default-on",
-      "purpose": "Dynamic context and tool-search compression"
-    },
     "superweb": {
       "kind": "command",
       "required": false,
@@ -86,14 +79,6 @@
       "version_args": ["--version"],
       "activation": "CLI on demand",
       "purpose": "Current web search/fetch into file or bounded projection"
-    },
-    "ponytail": {
-      "kind": "path",
-      "required": false,
-      "paths": ["~/.claude/skills/superskills/ponytail/SKILL.md"],
-      "source": "https://github.com/DietrichGebert/ponytail",
-      "activation": "off until output A/B wins",
-      "purpose": "Behavior and output shaping"
     }
   }
 }
