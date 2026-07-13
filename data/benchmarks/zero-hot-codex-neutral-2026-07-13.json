@@ -1,0 +1,19 @@
+{
+  "date": "2026-07-13",
+  "agent": "codex-cli 0.144.2",
+  "prompt": "Reply exactly with OK.",
+  "setup": "clean CODEX_HOME; auth.json only; empty working directory; Lean installs hidden skill plus prompt hook",
+  "order": ["baseline", "lean", "lean", "baseline"],
+  "runs": [
+    {"arm": "baseline", "input_tokens": 11204, "cached_input_tokens": 8960, "output_tokens": 5, "accepted": true},
+    {"arm": "lean", "input_tokens": 11209, "cached_input_tokens": 8960, "output_tokens": 5, "accepted": true},
+    {"arm": "lean", "input_tokens": 11209, "cached_input_tokens": 8960, "output_tokens": 5, "accepted": true},
+    {"arm": "baseline", "input_tokens": 11204, "cached_input_tokens": 8960, "output_tokens": 5, "accepted": true}
+  ],
+  "median_baseline_input_tokens": 11204,
+  "median_lean_input_tokens": 11209,
+  "delta_input_tokens": 5,
+  "delta_percent": 0.045,
+  "static_prompt_input_delta_bytes": 5,
+  "claim_boundary": "trivial no-tool microbenchmark; not a full workload or billing claim"
+}

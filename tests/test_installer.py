@@ -44,8 +44,9 @@ def test_all_agents_install_without_overwriting_existing_settings(tmp_path: Path
     assert result.returncode == 0, result.stderr
     home = tmp_path / "home"
     project = tmp_path / "project"
-    assert (home / ".codex" / "skills" / "agent-token-saver" / "SKILL.md").is_file()
-    assert (home / ".claude" / "skills" / "agent-token-saver" / "SKILL.md").is_file()
+    assert not (home / ".codex" / "skills" / "agent-token-saver" / "SKILL.md").exists()
+    assert not (home / ".claude" / "skills" / "agent-token-saver" / "SKILL.md").exists()
+    assert (home / ".agent-token-saver" / "skills" / "agent-token-saver" / "SKILL.md").is_file()
     assert (home / ".hermes" / "skills" / "agent-token-saver" / "SKILL.md").is_file()
     assert (home / ".gg" / "skills" / "agent-token-saver.md").is_file()
     assert (project / ".agents" / "skills" / "agent-token-saver" / "SKILL.md").is_file()
@@ -120,3 +121,36 @@ def test_claude_uses_native_rtk_hook(tmp_path: Path) -> None:
     hooks = settings["hooks"]["PreToolUse"]
     commands = [hook["command"] for entry in hooks for hook in entry["hooks"]]
     assert commands == ["rtk hook claude"]
+
+
+def test_minimal_profile_has_no_visible_skills_or_prompt_hooks(tmp_path: Path) -> None:
+    result = run_installer(tmp_path, "--agent", "all", "--profile", "minimal")
+    assert result.returncode == 0, result.stderr
+    home = tmp_path / "home"
+    project = tmp_path / "project"
+    assert (home / ".agent-token-saver" / "skills" / "agent-token-saver" / "SKILL.md").is_file()
+    assert not (home / ".codex" / "skills" / "agent-token-saver" / "SKILL.md").exists()
+    assert not (home / ".claude" / "skills" / "agent-token-saver" / "SKILL.md").exists()
+    assert not (home / ".hermes" / "skills" / "agent-token-saver" / "SKILL.md").exists()
+    assert not (home / ".gg" / "skills" / "agent-token-saver.md").exists()
+    assert not (project / ".agents" / "skills" / "agent-token-saver" / "SKILL.md").exists()
+    codex = json.loads((home / ".codex" / "hooks.json").read_text())
+    claude = json.loads((home / ".claude" / "settings.json").read_text())
+    assert codex["hooks"]["UserPromptSubmit"] == []
+    assert claude["hooks"]["UserPromptSubmit"] == []
+
+
+def test_switching_to_minimal_removes_only_managed_visible_skills(tmp_path: Path) -> None:
+    first = run_installer(tmp_path, "--agent", "all", "--profile", "lean")
+    assert first.returncode == 0, first.stderr
+    custom = tmp_path / "home" / ".claude" / "skills" / "agent-token-saver" / "SKILL.md"
+    custom.parent.mkdir(parents=True, exist_ok=True)
+    custom.write_text("---\nname: agent-token-saver\nauthor: Someone Else\n---\n")
+
+    second = run_installer(tmp_path, "--agent", "all", "--profile", "minimal")
+
+    assert second.returncode == 0, second.stderr
+    assert custom.is_file()
+    assert not (tmp_path / "home" / ".hermes" / "skills" / "agent-token-saver" / "SKILL.md").exists()
+    assert not (tmp_path / "home" / ".gg" / "skills" / "agent-token-saver.md").exists()
+    assert not (tmp_path / "project" / ".agents" / "skills" / "agent-token-saver" / "SKILL.md").exists()

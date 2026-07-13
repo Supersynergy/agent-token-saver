@@ -144,8 +144,8 @@ Live neutral runner: [GitHub Actions](https://github.com/Supersynergy/agent-toke
 
 | Profile | Use | Default components |
 |---|---|---|
-| `minimal` | Lowest measured token cost | skill router, RTK, native projection |
-| `lean` | Daily automatic coding | minimal + Tilth |
+| `minimal` | Zero-hot portable CLI/ledger | no visible skill and no prompt hook |
+| `lean` | Daily prompt-gated coding | hidden skill + zero-output gate; host-native RTK where supported |
 | `heavy` | large logs, deep code graph, browser | lean + context-mode/Graphify/CodeGraph only for that session |
 | `news` | scrape/research fan-out | lean + cached fetch + dedupe/rank/project + bounded subagents |
 
@@ -177,7 +177,7 @@ cd agent-token-saver
 agent-token-saver doctor --profile lean
 ```
 
-The installer copies this repository's manifest, doctor, skill and hooks. It
+The installer copies this repository's manifest, doctor, hidden skill and hooks. It
 backs up and merges existing Codex/Claude JSON; it does not replace settings or
 silently install third-party packages. `--agent auto` touches only detected
 agents. `--agent repo --project /path/to/repo` installs a portable
@@ -185,18 +185,19 @@ agents. `--agent repo --project /path/to/repo` installs a portable
 
 Integration is capability-based:
 
-- **Codex:** `UserPromptSubmit` routing plus skill/CLI guidance. Current
+- **Codex:** zero-hot hidden skill activated only by `UserPromptSubmit`; current
   `unified_exec` paths are not all intercepted by `PreToolUse`.
 - **Claude Code:** native `rtk hook claude` for `PreToolUse` plus
-  `UserPromptSubmit` routing.
+  a zero-output-unless-needed prompt gate.
 - **Hermes:** `~/.hermes/skills/agent-token-saver/SKILL.md`.
 - **GG Coder:** `~/.gg/skills/agent-token-saver.md`; GG Coder 5.15.1 has no equivalent public hook CLI.
 - **Any repo agent:** `.agents/skills/agent-token-saver/SKILL.md` plus the CLI.
 
-Hooks fail open and never change approval policy. Prompt routing skips trivial
-prompts, loads at most three skills, and emits nothing when the companion router
-is absent. Codex uses agent-guided RTK CLI calls until its shell hook coverage is
-complete; the installer does not pretend Claude hook parity.
+Hooks fail open and never change approval policy. Strict automatic routing loads
+at most one primary skill and returns nothing for trivial, low-confidence or
+ambiguous prompts. Without the companion router, a conservative built-in gate
+activates only the hidden token-saver skill for explicit token/context tasks.
+Codex uses agent-guided RTK CLI calls until shell-hook coverage is complete.
 
 Use `agent-token-saver doctor --profile <name> --json` for machine-readable
 inventory. `healthy=true` means the portable core is usable;
@@ -232,7 +233,8 @@ benchmark.
 codex exec --json --ephemeral "your real task" > run.jsonl
 
 agent-token-ledger \
-  --usage run.jsonl \
+  --usage parent=run.jsonl \
+  --usage child-review=child.jsonl \
   --provider codex \
   --component project-rules=AGENTS.md \
   --component active-skill=.agents/skills/agent-token-saver/SKILL.md \
@@ -246,14 +248,29 @@ visible files use the transparent bytes/4 estimate. Cached Codex input is
 treated as a subset, while Claude cache-create/cache-read fields are added as
 separate input classes.
 
+Repeated `--usage [NAME=]PATH` inputs are summed, so parent, child, retry and
+compaction runs remain in the total. Repeated visible components are fingerprinted
+and reported as duplicate-context tax.
+
 Full method, limitations and optimization ladder:
 [docs/FULL_CONTEXT_MEASUREMENT.md](docs/FULL_CONTEXT_MEASUREMENT.md).
 
-Neutral Codex control result: a trivial no-tool task cost **0.68% more** with
-the saver skill because there was nothing large to reduce. The attempted
-context-heavy shell arm did not expose a verifiable command event and was
-rejected. See the complete negative result:
+The original visible saver skill cost **0.68% more** on a trivial warm Codex
+turn. The zero-hot layout removes that regression: an ABBA clean-HOME probe now
+reports `11,204` baseline versus `11,209` Lean input tokens in both orders
+(`+5`, `+0.045%`, identical 8,960 cached and 5 output). `minimal` has no prompt
+hook at all. This is a microbenchmark, not a full workload claim. Historical
+negative result and current zero-hot evidence:
 [data/benchmarks/full-context-codex-neutral-2026-07-13.md](data/benchmarks/full-context-codex-neutral-2026-07-13.md).
+[data/benchmarks/zero-hot-codex-neutral-2026-07-13.md](data/benchmarks/zero-hot-codex-neutral-2026-07-13.md).
+
+Accepted Codex tool-output probe, same oracle and verified command events:
+
+- raw `ps aux`: `25,210` input (`5,242` uncached)
+- explicit `rtk ps aux`: `23,996` input (`4,028` uncached)
+- saving: **1,214 full input tokens / 4.82%**, or **23.16% of uncached input**
+
+Artifact: [data/benchmarks/codex-explicit-rtk-e2e-2026-07-13.md](data/benchmarks/codex-explicit-rtk-e2e-2026-07-13.md).
 
 ## Component routing
 
@@ -306,6 +323,12 @@ Subagent rule:
 - Specialists receive only source deltas relevant to their lane.
 - Maximum three parallel specialists unless a machine oracle justifies more.
 - Final synthesizer receives evidence packets, never raw HTML.
+- Independent workers use no parent transcript; send a 300–700-token task capsule.
+- Sum every child in the ledger. Parallel execution saves wall time, not automatically tokens.
+- Spawn only when displaced raw context exceeds child bootstrap + capsule + summary.
+
+Exact task packet, break-even rule, memory tiers and parent/child accounting:
+[docs/SUBAGENT_CONTEXT_PROTOCOL.md](docs/SUBAGENT_CONTEXT_PROTOCOL.md).
 
 ## Benchmark details
 

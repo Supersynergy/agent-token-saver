@@ -34,7 +34,7 @@ schemas, plugins, cache accounting and tokenizer differences. Reducing it
 requires an A/B at the agent boundary; it must never be presented as an already
 achieved saving.
 
-## One-run ledger
+## Parent-and-child ledger
 
 Capture the agent's machine-readable usage and every visible context layer you
 can export:
@@ -43,7 +43,9 @@ can export:
 codex exec --json --ephemeral "your real task" > run.jsonl
 
 agent-token-ledger \
-  --usage run.jsonl \
+  --usage parent=run.jsonl \
+  --usage child-review=child-review.jsonl \
+  --usage child-research=child-research.jsonl \
   --provider codex \
   --component system-rules=/path/to/AGENTS.md \
   --component tool-schemas=/path/to/tools.json \
@@ -59,6 +61,16 @@ The parser accepts JSON or JSONL and understands common Codex, Claude and
 OpenAI-style usage fields. Codex `cached_input_tokens` is treated as a subset of
 input. Claude `cache_creation_input_tokens` and `cache_read_input_tokens` are
 separate input classes and are added.
+
+Each usage file contributes its final provider usage object. Repeat `--usage`
+for every parent, child, retry, fallback and compaction request. The ledger sums
+them and shows the individual sources. Visible components carry SHA-256
+fingerprints; repeated payloads are reported as duplicate visible input.
+
+Do not use `fork all` as an invisible shortcut. A worker should receive a small
+task capsule: objective, exact input pointers, constraints, oracle, allowed
+tools, try limit and bounded return schema. Keep raw material in files or a
+content-addressed store and pass path/hash identifiers.
 
 ## A defensible A/B
 
@@ -88,6 +100,7 @@ difference end-to-end savings.
 7. Route trivial work to cheaper models only after a quality gate.
 8. Shape output only when provider-reported total tokens improve.
 9. Track retries and rework; a short wrong answer is not a saving.
+10. Use subagents only after deterministic projection; sum their bootstrap and output.
 
 The release gate is simple: no optimization becomes a default unless task
 success stays equal and full provider tokens improve on the same workload.

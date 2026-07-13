@@ -27,6 +27,7 @@ assert report["status"] in {"core-ready", "full"}, report
 required = [
     home / ".local/bin/agent-token-saver",
     home / ".local/bin/agent-token-ledger",
+    home / ".agent-token-saver/skills/agent-token-saver/SKILL.md",
     home / ".codex/hooks.json",
     home / ".claude/settings.json",
     home / ".hermes/skills/agent-token-saver/SKILL.md",
@@ -34,6 +35,8 @@ required = [
     project / ".agents/skills/agent-token-saver/SKILL.md",
 ]
 assert all(path.exists() or path.is_symlink() for path in required), required
+assert not (home / ".codex/skills/agent-token-saver/SKILL.md").exists()
+assert not (home / ".claude/skills/agent-token-saver/SKILL.md").exists()
 print(
     json.dumps(
         {

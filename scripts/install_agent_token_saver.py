@@ -87,7 +87,18 @@ def remove_repo_rtk_hooks(entries: list[Any]) -> None:
     entries[:] = kept_entries
 
 
-def merge_hooks(path: Path, agent: str, dry_run: bool) -> None:
+def remove_prompt_hooks(entries: list[Any]) -> None:
+    entries[:] = [
+        entry
+        for entry in entries
+        if not (
+            isinstance(entry, dict)
+            and has_command([entry], "token-stack-prompt.py")
+        )
+    ]
+
+
+def merge_hooks(path: Path, agent: str, profile: str, dry_run: bool) -> None:
     data = load_json(path)
     hooks = data.setdefault("hooks", {})
     pre = hooks.setdefault("PreToolUse", [])
@@ -99,9 +110,10 @@ def merge_hooks(path: Path, agent: str, dry_run: bool) -> None:
         else r"Bash|Shell|shell|shell_command|exec_command|functions\.exec_command"
     )
     remove_repo_rtk_hooks(pre)
+    remove_prompt_hooks(prompt)
     if agent == "claude" and shutil.which("rtk") and not has_command(pre, "rtk hook claude"):
         pre.append(hook_entry(matcher, "rtk hook claude", 5))
-    if not has_command(prompt, "token-stack-prompt.py"):
+    if profile != "minimal":
         prompt.append(hook_entry(None, prompt_command, 6))
     atomic_json(path, data, dry_run)
 
@@ -127,6 +139,10 @@ def install_files(dry_run: bool) -> None:
         ROOT / "integration" / "hooks" / "token-stack-prompt.py": INSTALL_HOME
         / "hooks"
         / "token-stack-prompt.py",
+        ROOT / "skills" / "agent-token-saver" / "SKILL.md": INSTALL_HOME
+        / "skills"
+        / "agent-token-saver"
+        / "SKILL.md",
         ROOT / "integration" / "cli" / "codex-heavy-context": INSTALL_HOME
         / "bin"
         / "codex-heavy-context",
@@ -170,6 +186,37 @@ def install_skill(agent: str, project: Path, dry_run: bool) -> None:
         "repo": project / ".agents" / "skills" / "agent-token-saver" / "SKILL.md",
     }
     install_copy(source, targets[agent], dry_run)
+
+
+def remove_visible_skill(agent: str, project: Path, dry_run: bool) -> None:
+    targets = {
+        "codex": HOME / ".codex" / "skills" / "agent-token-saver" / "SKILL.md",
+        "claude": HOME / ".claude" / "skills" / "agent-token-saver" / "SKILL.md",
+        "hermes": HOME / ".hermes" / "skills" / "agent-token-saver" / "SKILL.md",
+        "ggcoder": HOME / ".gg" / "skills" / "agent-token-saver.md",
+        "repo": project / ".agents" / "skills" / "agent-token-saver" / "SKILL.md",
+    }
+    target = targets[agent]
+    if not target.exists():
+        return
+    try:
+        content = target.read_text(errors="replace")
+    except OSError:
+        print(f"kept unreadable skill {target}")
+        return
+    managed = "name: agent-token-saver" in content and "author: Supersynergy" in content
+    if not managed:
+        print(f"kept unmanaged skill {target}")
+        return
+    if dry_run:
+        print(f"would remove fixed-context skill {target}")
+        return
+    target.unlink()
+    try:
+        target.parent.rmdir()
+    except OSError:
+        pass
+    print(f"removed fixed-context skill {target}")
 
 
 def detected_agents(requested: str, project: Path) -> list[str]:
@@ -222,9 +269,12 @@ def main() -> int:
     }
     agents = detected_agents(args.agent, args.project.resolve())
     for agent in agents:
-        install_skill(agent, args.project.resolve(), args.dry_run)
+        if agent in {"codex", "claude"} or args.profile == "minimal":
+            remove_visible_skill(agent, args.project.resolve(), args.dry_run)
+        elif args.profile != "minimal":
+            install_skill(agent, args.project.resolve(), args.dry_run)
         if agent in targets:
-            merge_hooks(targets[agent], agent, args.dry_run)
+            merge_hooks(targets[agent], agent, args.profile, args.dry_run)
     write_config(args.profile, agents, args.dry_run)
     print(f"profile={args.profile}")
     print(f"agents={','.join(agents)}")

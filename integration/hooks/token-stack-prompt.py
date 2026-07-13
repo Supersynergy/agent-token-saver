@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail-open prompt hook: lazy-load at most three routed skills."""
+"""Fail-open prompt hook: lazy-load at most one primary routed skill."""
 
 from __future__ import annotations
 
@@ -12,6 +12,12 @@ from pathlib import Path
 
 TRIVIAL = re.compile(
     r"^\s*(?:ok|okay|yes|no|ja|nein|thanks|danke|continue|weiter|passt|done|fertig)[.!?\s]*$",
+    re.IGNORECASE,
+)
+ATS_TRIGGER = re.compile(
+    r"\b(?:token(?:s)?|context\s+(?:bloat|budget|compression|saving)|"
+    r"skill\s+router|mcp\s+schema|noisy\s+(?:log|output)|"
+    r"compress\s+(?:logs?|output|context)|rtk|synapse)\b",
     re.IGNORECASE,
 )
 LOAD_LINE = re.compile(r"^- ([^:]+): .*\((/[^)]+/SKILL\.md)\)$")
@@ -53,11 +59,35 @@ def main() -> int:
         return 0
     prompt = str(event.get("prompt") or "").strip()
     router = router_path()
-    if not router or len(prompt) < 10 or TRIVIAL.fullmatch(prompt):
+    if len(prompt) < 10 or TRIVIAL.fullmatch(prompt):
+        return 0
+    if not router:
+        fallback = (
+            Path.home()
+            / ".agent-token-saver"
+            / "skills"
+            / "agent-token-saver"
+            / "SKILL.md"
+        )
+        if fallback.is_file() and ATS_TRIGGER.search(prompt):
+            emit(
+                "<token_stack_route>"
+                f"Primary skill={fallback}. Read it completely. "
+                "Keep raw data outside model context and preserve retrieval pointers."
+                "</token_stack_route>"
+            )
         return 0
     try:
         result = subprocess.run(
-            [sys.executable, str(router), "route", prompt[:2000]],
+            [
+                sys.executable,
+                str(router),
+                "route",
+                prompt[:2000],
+                "--max",
+                "1",
+                "--strict",
+            ],
             capture_output=True,
             text=True,
             timeout=4,
@@ -70,14 +100,14 @@ def main() -> int:
         match = LOAD_LINE.match(raw_line.strip())
         if match:
             selected.append((match.group(1).replace(" ★", ""), match.group(2)))
-        if len(selected) == 3:
+        if len(selected) == 1:
             break
     if selected:
         routes = "; ".join(f"{name}={path}" for name, path in selected)
         emit(
             "<token_stack_route>"
             f"Load only these routed skills: {routes}. "
-            "Read each selected SKILL.md completely; max 3. "
+            "Read this primary SKILL.md completely. Add another skill only for a distinct blocker or phase. "
             "Use RTK for supported noisy shell output."
             "</token_stack_route>"
         )

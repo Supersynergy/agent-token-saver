@@ -5,8 +5,8 @@ Hermes Agent 0.18.2 and GG Coder 5.15.1.
 
 | Agent | Stable integration | What the installer does |
 |---|---|---|
-| Codex CLI | prompt hook + skill/CLI | merges `~/.codex/hooks.json`; removes obsolete repo RTK rewrite hooks |
-| Claude Code | native RTK + prompt hooks | installs `rtk hook claude` when RTK exists; installs one skill |
+| Codex CLI | zero-hot prompt gate + CLI | hidden skill; no visible catalog entry; removes obsolete repo RTK rewrite hooks |
+| Claude Code | native RTK + zero-hot prompt gate | `rtk hook claude` when present; hidden skill activates only on demand |
 | Hermes Agent | Agent Skills standard | installs under `~/.hermes/skills/` |
 | GG Coder | global Markdown skill | installs under `~/.gg/skills/` |
 | Other agents | repo skill + CLI/JSON | installs `.agents/skills/`; call projections directly |
@@ -19,7 +19,7 @@ Hermes also exposes shell hooks through the `hooks:` block in
 `~/.hermes/config.yaml`, with `pre_tool_call` and `pre_llm_call` events, explicit
 first-use consent and `hermes hooks doctor`. This release uses the skill path by
 default because it is zero-config and does not mutate YAML; native Hermes hook
-support can be added later with a separate Hermes wire-protocol adapter.
+support remains host-native through `rtk init --agent hermes --global`.
 
 Hermes documents direct GitHub/URL skill installation, prompt-cache-friendly
 skill invocation and the Agent Skills layout at
@@ -38,6 +38,7 @@ its public CLI does not expose.
 - Hooks receive JSON on stdin and return either valid JSON or no output.
 - Claude shell rewrites use RTK's own `rtk hook claude`; missing RTK means no rewrite.
 - Codex shell compression is agent-guided until its unified shell hook coverage is complete.
+- Automatic fuzzy routing is strict and limited to one primary skill; ambiguity returns no skill.
 - Existing settings are loaded, merged, backed up and atomically replaced.
 - Repeated installation deduplicates agent-token-saver commands.
 - Approval, sandbox and permission decisions remain owned by the host agent.

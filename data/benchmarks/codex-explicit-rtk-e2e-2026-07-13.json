@@ -1,0 +1,38 @@
+{
+  "date": "2026-07-13",
+  "agent": "codex-cli 0.144.2",
+  "task": "Run exactly one process-list command; verify the PID header; answer exactly YES",
+  "setup": "clean CODEX_HOME with auth only; empty working directory; approval/sandbox bypass for deterministic noninteractive command execution",
+  "accepted_runs": [
+    {
+      "arm": "raw",
+      "executed_command": "/bin/zsh -lc 'ps aux'",
+      "exit_code": 0,
+      "answer": "YES",
+      "input_tokens": 25210,
+      "cached_input_tokens": 19968,
+      "uncached_input_tokens": 5242,
+      "output_tokens": 78
+    },
+    {
+      "arm": "explicit-rtk",
+      "executed_command": "/bin/zsh -lc 'rtk ps aux'",
+      "exit_code": 0,
+      "answer": "YES",
+      "input_tokens": 23996,
+      "cached_input_tokens": 19968,
+      "uncached_input_tokens": 4028,
+      "output_tokens": 79
+    }
+  ],
+  "input_tokens_saved": 1214,
+  "full_input_reduction_percent": 4.82,
+  "uncached_input_reduction_percent": 23.16,
+  "rejected_warmup": {
+    "reason": "no command event and wrong answer",
+    "input_tokens": 22570,
+    "cached_input_tokens": 19968,
+    "output_tokens": 92
+  },
+  "claim_boundary": "proves explicit RTK for one process-output workload; does not prove transparent Codex hook interception or universal savings"
+}

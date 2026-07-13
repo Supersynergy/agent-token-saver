@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.1.0 — 2026-07-13
+
+- Removed visible Codex/Claude saver skills from Lean installs; the on-demand skill now lives outside native catalogs.
+- Strict automatic routing now emits zero on trivial/ambiguous prompts and loads at most one primary skill.
+- Added a conservative token-task fallback when the companion router is absent.
+- Added real clean-CODEX_HOME ABBA evidence: `11,204` baseline vs `11,209` Lean input (`+0.045%`).
+- Added accepted Codex explicit-RTK E2E evidence: `25,210` raw vs `23,996` input (`-4.82%`).
+- Extended `agent-token-ledger` across parent/child usage files and duplicate-context fingerprints.
+- Added Minimal zero-hot installation semantics and prompt-hook regression tests.
+
 ## 3.0.1 — 2026-07-13
 
 - Add a fresh-HOME neutral Ubuntu install gate to CI.

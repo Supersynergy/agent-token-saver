@@ -9,6 +9,7 @@ context such as system prompts, built-in tools, plugins, history and cache state
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 from typing import Any
@@ -92,6 +93,31 @@ def load_usage(path: Path) -> dict[str, int]:
     }
 
 
+def aggregate_usages(usages: list[dict[str, int]]) -> dict[str, int]:
+    if not usages:
+        raise ValueError("at least one usage source is required")
+    return {
+        key: sum(usage.get(key, 0) for usage in usages)
+        for key in usages[0]
+    }
+
+
+def load_usage_sources(specs: list[str]) -> tuple[dict[str, int], list[dict[str, Any]]]:
+    sources: list[dict[str, Any]] = []
+    for index, spec in enumerate(specs, start=1):
+        if "=" in spec:
+            label, raw_path = spec.split("=", 1)
+        else:
+            raw_path = spec
+            label = Path(raw_path).stem or f"run-{index}"
+        path = Path(raw_path).expanduser().resolve()
+        if not label.strip() or not path.is_file():
+            raise ValueError(f"invalid usage source: {spec}")
+        usage = load_usage(path)
+        sources.append({"name": label.strip(), "path": str(path), "usage": usage})
+    return aggregate_usages([source["usage"] for source in sources]), sources
+
+
 def load_components(specs: list[str]) -> list[dict[str, Any]]:
     components: list[dict[str, Any]] = []
     for spec in specs:
@@ -108,25 +134,40 @@ def load_components(specs: list[str]) -> list[dict[str, Any]]:
                 "path": str(path),
                 "bytes": len(payload),
                 "estimated_tokens": est_tokens(payload),
+                "sha256": hashlib.sha256(payload).hexdigest(),
             }
         )
     return components
 
 
 def build_ledger(
-    usage: dict[str, int], components: list[dict[str, Any]], provider: str
+    usage: dict[str, int],
+    components: list[dict[str, Any]],
+    provider: str,
+    usage_sources: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     known_input = sum(item["estimated_tokens"] for item in components)
     reported_input = usage["total_input_tokens"]
     unattributed = max(0, reported_input - known_input)
     over_attributed = max(0, known_input - reported_input)
     coverage = round(known_input / reported_input * 100, 2) if reported_input else 0.0
+    seen_hashes: set[str] = set()
+    duplicate_visible = 0
+    for item in components:
+        digest = item.get("sha256", "")
+        if digest in seen_hashes:
+            duplicate_visible += item["estimated_tokens"]
+        else:
+            seen_hashes.add(digest)
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "provider": provider,
         "provider_usage": usage,
+        "usage_sources": usage_sources or [],
         "visible_input_components": components,
         "estimated_visible_input_tokens": known_input,
+        "duplicate_visible_input_tokens": duplicate_visible,
+        "unique_visible_input_tokens": max(0, known_input - duplicate_visible),
         "unattributed_input_tokens": unattributed,
         "over_attributed_tokens": over_attributed,
         "attribution_coverage_percent": coverage,
@@ -162,8 +203,28 @@ def render_markdown(ledger: dict[str, Any]) -> str:
             f"| **Provider input total** | **{usage['total_input_tokens']:,}** | reported |",
             f"| Provider output | {usage['output_tokens']:,} | reported |",
             f"| **Provider total** | **{usage['reported_total_tokens']:,}** | reported |",
+        ]
+    )
+    if ledger["usage_sources"]:
+        lines.extend(
+            [
+                "",
+                "## Provider usage sources",
+                "",
+                "| Run | Input | Output | Total |",
+                "|---|---:|---:|---:|",
+            ]
+        )
+        lines.extend(
+            f"| {source['name']} | {source['usage']['total_input_tokens']:,} | "
+            f"{source['usage']['output_tokens']:,} | {source['usage']['reported_total_tokens']:,} |"
+            for source in ledger["usage_sources"]
+        )
+    lines.extend(
+        [
             "",
             f"Attribution coverage: **{ledger['attribution_coverage_percent']:.2f}%**.",
+            f"Duplicate visible input: **{ledger['duplicate_visible_input_tokens']:,} tokens**.",
             "",
             "Unattributed input can include the host system prompt, built-in tool schemas, plugins,",
             "conversation history, cache accounting and tokenizer differences. It is a measurement",
@@ -175,7 +236,13 @@ def render_markdown(ledger: dict[str, Any]) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(prog="agent-token-ledger")
-    parser.add_argument("--usage", type=Path, required=True, help="provider/agent JSON or JSONL")
+    parser.add_argument(
+        "--usage",
+        action="append",
+        required=True,
+        metavar="[NAME=]PATH",
+        help="provider/agent JSON or JSONL; repeat for parent and child runs",
+    )
     parser.add_argument(
         "--component",
         action="append",
@@ -188,8 +255,12 @@ def main() -> int:
     parser.add_argument("--out", type=Path)
     args = parser.parse_args()
     try:
+        usage, usage_sources = load_usage_sources(args.usage)
         ledger = build_ledger(
-            load_usage(args.usage), load_components(args.component), args.provider
+            usage,
+            load_components(args.component),
+            args.provider,
+            usage_sources=usage_sources,
         )
     except (OSError, ValueError) as error:
         parser.error(str(error))
