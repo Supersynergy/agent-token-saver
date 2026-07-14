@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 3.1.4 — 2026-07-14
+
+- Point the Router companion guidance at current releases, including v1.2.2's
+  zero-skill behavior for plain test verification.
+
 ## 3.1.3 — 2026-07-14
 
 - Add a dedicated Router companion section with install, index and strict-route

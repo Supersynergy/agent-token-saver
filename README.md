@@ -236,9 +236,9 @@ Use `si resolve <exact-skill>` for an explicit named skill and `si find` only
 for manual discovery. The router is an optional CLI companion, never an MCP or
 always-hot prompt layer.
 
-The companion's [v1.2.1 release](https://github.com/Supersynergy/agent-token-saver-skill-router/releases/tag/v1.2.1)
-also keeps `context-mode` explicit-only, preventing ordinary test and small
-verification tasks from loading its heavy session handbook automatically.
+The companion's current [release notes](https://github.com/Supersynergy/agent-token-saver-skill-router/releases)
+keep `context-mode` explicit-only and plain test verification zero-skill,
+preventing ordinary checks from loading a heavy handbook or debugger.
 
 ### Portable public core, local host overlay
 
