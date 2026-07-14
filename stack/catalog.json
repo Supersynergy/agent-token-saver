@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
-  "updated": "2026-07-13",
+  "updated": "2026-07-14",
   "profiles": {
     "minimal": ["native-projection"],
     "lean": ["native-projection", "skill-router", "rtk", "tilth"],
-    "heavy": ["native-projection", "skill-router", "rtk", "tilth", "context-mode", "graphify", "codegraph"],
-    "news": ["native-projection", "skill-router", "rtk", "tilth", "superweb"]
+    "teams": ["native-projection", "skill-router", "rtk", "tilth"],
+    "heavy": ["native-projection", "skill-router", "rtk", "tilth", "context-mode", "graphify", "codegraph"]
   },
   "tools": {
     "native-projection": {
@@ -71,14 +71,6 @@
       "source": "https://github.com/colbymchenry/codegraph",
       "activation": "on demand",
       "purpose": "Callers, callees and impact analysis"
-    },
-    "superweb": {
-      "kind": "command",
-      "required": false,
-      "command": "superweb",
-      "version_args": ["--version"],
-      "activation": "CLI on demand",
-      "purpose": "Current web search/fetch into file or bounded projection"
     }
   }
 }

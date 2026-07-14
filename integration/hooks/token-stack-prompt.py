@@ -18,7 +18,7 @@ TRIVIAL = re.compile(
 ATS_TRIGGER = re.compile(
     r"\b(?:token(?:s)?|context\s+(?:bloat|budget|compression|saving)|"
     r"skill\s+router|mcp\s+schema|noisy\s+(?:log|output)|"
-    r"compress\s+(?:logs?|output|context)|rtk|synapse)\b",
+    r"compress\s+(?:logs?|output|context)|rtk)\b",
     re.IGNORECASE,
 )
 

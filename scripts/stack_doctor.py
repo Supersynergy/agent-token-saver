@@ -14,14 +14,16 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CATALOG = ROOT / "stack" / "catalog.json"
 DEFAULT_CONFIG = ROOT / "config.json"
+LEGACY_PROFILE_ALIASES = {"news": "teams"}
 
 
 def configured_profile() -> str:
     try:
-        value = json.loads(DEFAULT_CONFIG.read_text()).get("profile", "lean")
+        value = str(json.loads(DEFAULT_CONFIG.read_text()).get("profile", "lean"))
     except (OSError, json.JSONDecodeError, AttributeError):
         return "lean"
-    return value if value in {"minimal", "lean", "heavy", "news"} else "lean"
+    value = LEGACY_PROFILE_ALIASES.get(value, value)
+    return value if value in {"minimal", "lean", "teams", "heavy"} else "lean"
 
 
 def expand_path(value: str) -> Path:
@@ -154,7 +156,7 @@ def main() -> int:
     doctor = subparsers.add_parser("doctor", help="inspect one profile")
     doctor.add_argument(
         "--profile",
-        choices=("minimal", "lean", "heavy", "news"),
+        choices=("minimal", "lean", "teams", "heavy"),
         default=None,
         help="profile to inspect (default: installed profile, else lean)",
     )

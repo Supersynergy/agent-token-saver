@@ -219,6 +219,15 @@ def test_minimal_profile_has_no_visible_skills_or_prompt_hooks(tmp_path: Path) -
     assert claude["hooks"]["UserPromptSubmit"] == []
 
 
+def test_team_profile_is_a_supported_lean_runtime(tmp_path: Path) -> None:
+    result = run_installer(tmp_path, "--agent", "all", "--profile", "teams")
+
+    assert result.returncode == 0, result.stderr
+    config = json.loads((tmp_path / "home" / ".agent-token-saver" / "config.json").read_text())
+    assert config["profile"] == "teams"
+    assert (tmp_path / "home" / ".codex" / "hooks.json").is_file()
+
+
 def test_switching_to_minimal_removes_only_managed_visible_skills(tmp_path: Path) -> None:
     first = run_installer(tmp_path, "--agent", "all", "--profile", "lean")
     assert first.returncode == 0, first.stderr

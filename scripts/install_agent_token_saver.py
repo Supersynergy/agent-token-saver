@@ -270,7 +270,7 @@ def write_config(profile: str, agents: list[str], dry_run: bool) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--profile", choices=("minimal", "lean", "heavy", "news"), default="lean")
+    parser.add_argument("--profile", choices=("minimal", "lean", "teams", "heavy"), default="lean")
     parser.add_argument(
         "--agent",
         choices=("auto", "codex", "claude", "hermes", "ggcoder", "repo", "all"),

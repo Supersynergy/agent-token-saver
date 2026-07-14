@@ -18,6 +18,25 @@ future parent turns × (raw context - compact result)
 With a clean Codex base near 11k input tokens, a small two-file read almost
 never breaks even. A 40k-token log or independent research corpus can.
 
+## Team profile
+
+The `teams` installer profile has the same lean runtime surface. It adds no
+daemon, no always-hot schema and no automatic fan-out; it exists to make this
+contract explicit.
+
+1. The controller performs local projection and states one machine oracle.
+2. A worker gets one independent lane, one 300–700-token capsule and zero or
+   one routed skill path.
+3. Start at most three independent workers. Do not split a small overlapping
+   check merely to reduce wall time.
+4. Workers return claim, evidence path/hash, command, oracle result and blocker
+   in at most 500 tokens.
+5. The controller sums parent, children, retries, fallbacks and compactions;
+   it accepts the team only when the same oracle passes.
+
+The router remains a separate optional skill. The main installer detects an
+existing `si` launcher but never downloads, clones or silently installs it.
+
 ## Task packet
 
 Send only:

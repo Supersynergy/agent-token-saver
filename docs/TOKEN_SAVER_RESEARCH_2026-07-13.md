@@ -1,6 +1,6 @@
 # Token-saver landscape — 2026-07-13
 
-Live GitHub API, ghmax and Superweb snapshot. Stars are discovery signals, not benchmark scores.
+Public GitHub metadata snapshot. Stars are discovery signals, not benchmark scores.
 
 ## Ranked candidates
 
@@ -39,14 +39,12 @@ The strongest repeated community pattern is progressive tool/schema disclosure. 
 | Graphify | 0.9.11 | 0.9.14 | defer: release inside 14-day gate |
 | CodeGraph | 1.3.1 | 1.4.1 | defer: release inside 14-day gate |
 | Ponytail | local unversioned skill | 4.8.4 | do not global-load; measured net negative |
-| Synapse | 1.0.1-rc.1, dirty source | remote diverged | no blind upgrade |
-| Superweb | package 16.0.0, CLI says 0.1.0 | private upstream | fix version reporting separately |
 
 No new candidate was installed merely because it was new or popular.
 
 ## Graphify query measurement
 
-Existing Superweb graph:
+Existing code graph:
 
 - 2,982 nodes, 6,187 links, 10 hyperedges.
 - raw `graph.json`: 3,094,806 bytes, about 773,702 tokens.

@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+## 3.1.5 — 2026-07-14
+
+- Add the `teams` profile: the Lean runtime plus an explicit bounded
+  controller/worker protocol, not another daemon or always-hot tool schema.
+- Position `agent-token-saver-skill-router` as a separate optional skill/CLI;
+  the installer detects an existing router but never installs third-party code.
+- Remove Superweb and private/unreleased host-tool references from the active
+  public catalog and CLI-first guidance. Existing `news` config maps to
+  `teams` in the read-only doctor for a non-breaking upgrade.
+- Document capsule, oracle, accounting and three-worker limits for cheap agent
+  teams.
+
 ## 3.1.4 — 2026-07-14
 
 - Point the Router companion guidance at current releases, including v1.2.2's

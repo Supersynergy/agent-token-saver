@@ -24,6 +24,10 @@ skill plus CLI/JSON interfaces also work with agents that understand
 `SKILL.md` or can run shell commands. No API keys or private configuration are
 shipped.
 
+The public core does not depend on a private memory service, private web
+fetcher or host-only tool. It installs only its own files and detects optional
+public CLIs already present on the machine.
+
 ## What this means in plain English
 
 Without routing, a coding agent may receive 460 skill descriptions, a complete
@@ -165,8 +169,8 @@ Live neutral runner: [GitHub Actions](https://github.com/Supersynergy/agent-toke
 |---|---|---|
 | `minimal` | Zero-hot portable CLI/ledger | no visible skill and no prompt hook |
 | `lean` | Daily prompt-gated coding | hidden skill + zero-output gate; host-native RTK where supported |
+| `teams` | independent coding lanes | Lean runtime + bounded controller/worker protocol; no auto fan-out |
 | `heavy` | large logs and deep code graph | lean + context-mode/Graphify/CodeGraph only for that session |
-| `news` | scrape/research fan-out | lean + cached fetch + dedupe/rank/project + bounded subagents |
 
 Rules:
 
@@ -176,6 +180,8 @@ Rules:
 - Graphify wins when a repo/corpus is queried repeatedly and structural paths matter; do not build it for one exact lookup.
 - Ponytail/caveman shape output. Their instruction tokens can cost more than they save on short answers.
 - MCP schemas are a recurring tax. Default to CLI/file/socket surfaces unless measured otherwise.
+- The `teams` profile adds no tool process. It only standardizes capsules,
+  closed oracles and a maximum of three independent workers.
 
 ## Repository layout
 
@@ -217,9 +223,10 @@ silently install third-party packages. `--agent auto` touches only detected
 agents. `--agent repo --project /path/to/repo` installs a portable
 `.agents/skills` copy.
 
-### Companion: agent-token-saver-skill-router
+### Optional extra skill: agent-token-saver-skill-router
 
-For a large skill library, install
+`agent-token-saver` is the installer and measured context-saving core. For a
+large skill library, install
 [agent-token-saver-skill-router](https://github.com/Supersynergy/agent-token-saver-skill-router).
 It keeps discovery and ranking on disk, then returns zero or one primary
 `SKILL.md` path. The saver hook calls `si` when it is present; it never loads
@@ -231,6 +238,9 @@ curl -fsSL https://raw.githubusercontent.com/Supersynergy/agent-token-saver-skil
 si index --refresh --json
 si route "fix failing tests in this repo" --max 1 --strict --json
 ```
+
+The main installer never downloads, clones or updates this companion. It is a
+separate optional skill/CLI so users can inspect and install it independently.
 
 Use `si resolve <exact-skill>` for an explicit named skill and `si find` only
 for manual discovery. The router is an optional CLI companion, never an MCP or
@@ -358,37 +368,36 @@ Artifact: [data/benchmarks/codex-explicit-rtk-e2e-2026-07-13.md](data/benchmarks
 |---|---|---|
 | [RTK](https://github.com/rtk-ai/rtk) | native Claude hook; agent-guided Codex CLI | git diff/log, builds, tests, process/docker output |
 | Skill router | automatic, prompt-gated | large skill catalogs |
-| Any local memory CLI | optional/on demand | recall before repeated web or file loading |
+| Local project artifacts / `rg` | on demand | exact prior evidence or code is needed |
 | Tilth | CLI or one lean MCP | structural code reads with a token budget |
 | [context-mode](https://github.com/mksglu/context-mode) | session/on demand | large payload queried or transformed repeatedly |
 | Graphify | build once, query on demand | persistent repo/corpus graph and paths |
 | CodeGraph | on demand | callers, callees and impact analysis |
-| Superweb-compatible fetch CLI | on demand | current web/search/fetch; save raw responses outside prompt context |
 
 Exact active-profile source and activation metadata live in [stack/catalog.json](stack/catalog.json). Headroom and Ponytail remain dated benchmark comparators, not profile dependencies. Latest versions and popularity drift; `doctor` reports installed state.
 
-Synapse is not released and is not a dependency of this repository. The public
-stack exposes replaceable CLI/file/JSON seams so a memory system can be added
-without changing the core.
+Private or unreleased host tooling is not a dependency of this repository. The
+public stack exposes replaceable CLI/file/JSON seams so an approved memory or
+retrieval system can be added without changing the core.
 
 Agent-specific hook evidence: [docs/HOOKS_AND_AGENTS.md](docs/HOOKS_AND_AGENTS.md).
 Benchmark contributions: [CONTRIBUTING.md](CONTRIBUTING.md).
 Security boundary: [SECURITY.md](SECURITY.md).
 
-## Token-efficient news and scraping
+## Token-efficient shared input
 
-Do not give every subagent the same raw scrape.
+Do not give every subagent the same raw input.
 
 ```text
-fetch once -> content-addressed cache -> normalize -> canonical URL dedupe
+intake once -> content-addressed cache -> normalize -> canonical ID dedupe
 -> trust/relevance score -> bounded evidence packet -> parallel specialists
 -> one final synthesis -> memory/artifact writeback
 ```
 
-Project raw JSONL into a small evidence packet:
+Project user-supplied JSONL into a small evidence packet:
 
 ```bash
-python3 scripts/news_projection.py raw-news.jsonl \
+python3 scripts/news_projection.py raw-input.jsonl \
   --keywords "Fed,ECB,earnings,tariff,oil,gold" \
   --top 40 --format jsonl > evidence.jsonl
 ```

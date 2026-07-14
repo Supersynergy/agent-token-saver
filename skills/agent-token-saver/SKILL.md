@@ -1,18 +1,18 @@
 ---
 name: agent-token-saver
 description: Route token-heavy context, noisy shell logs and output through the smallest measured CLI or projection before loading heavy tools; benchmark cheap subagent workflows without broad prompt bloat.
-version: 3.1.4
+version: 3.1.5
 author: Supersynergy
 license: MIT
 metadata:
   hermes:
-    tags: [tokens, context, cli, benchmark, compress, log, noisy, output, subagent, codex, claude-code, hermes, ggcoder]
+    tags: [tokens, context, cli, benchmark, compress, log, noisy, output, subagent, agent-teams, capsule, codex, claude-code, hermes, ggcoder]
 ---
 
 # Agent Token Saver
 
-Use this skill when a task can produce large logs, files, scraped pages, tool
-schemas, repeated research, or a broad skill catalog.
+Use this skill when a task can produce large logs, files, tool schemas,
+repeated work, a broad skill catalog, or an agent team.
 
 ## Default ladder
 
@@ -29,7 +29,7 @@ provider billing savings from a local character estimate.
 
 ```bash
 agent-token-saver doctor --profile lean
-python3 scripts/news_projection.py raw.jsonl --top 40 --format jsonl
+agent-token-saver doctor --profile teams
 python3 scripts/token_stack_matrix_benchmark.py --help
 ```
 
@@ -50,10 +50,28 @@ si index --refresh --json                    # after skill changes
 Do not auto-load the router skill itself or a second reserve skill. An explicit
 `$SkillName` remains the user override.
 
+## Agent teams
+
+`agent-token-saver` is the installer and measured core. The router is a
+separate optional skill/CLI: install it only when a large skill catalog makes
+0/1 routing worthwhile.
+
+Before a team starts, keep one controller and require every worker to have:
+
+- one independent closed objective;
+- one 300–700-token capsule with paths/hashes, exact constraints and a PASS/FAIL oracle;
+- zero or one routed primary skill; never the controller's catalog or transcript;
+- at most three attempts and a <=500-token result pointing to evidence.
+
+Do not spawn for a small overlapping check. Sum parent, children, retries,
+fallbacks and compactions in `agent-token-ledger`; parallelism saves wall time,
+not automatically provider tokens. Default maximum: three independent workers.
+
 ## Done gate
 
 - Same accepted result before and after optimization.
 - Raw and optimized token estimate recorded.
 - Latency recorded.
+- Parent-plus-children total and the machine oracle recorded for a team.
 - Optional tools remain optional.
 - Hook presence verified in live agent config, not inferred from files on disk.

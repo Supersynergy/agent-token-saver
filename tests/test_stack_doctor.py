@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+import scripts.stack_doctor as stack_doctor
 from scripts.stack_doctor import build_report
 
 
@@ -35,6 +36,32 @@ def test_catalog_contains_no_dead_profile_entries():
 
     assert set(catalog["tools"]) == referenced
     assert catalog["profiles"]["minimal"] == ["native-projection"]
+    assert catalog["profiles"]["teams"] == catalog["profiles"]["lean"]
+    assert "news" not in catalog["profiles"]
+    assert "superweb" not in catalog["tools"]
+
+
+def test_legacy_news_config_maps_to_team_profile(tmp_path: Path, monkeypatch) -> None:
+    config = tmp_path / "config.json"
+    config.write_text('{"profile":"news"}')
+    monkeypatch.setattr(stack_doctor, "DEFAULT_CONFIG", config)
+
+    assert stack_doctor.configured_profile() == "teams"
+
+
+def test_active_public_surface_excludes_private_host_tools() -> None:
+    root = Path(__file__).resolve().parents[1]
+    active_files = (
+        root / "README.md",
+        root / "skills" / "agent-token-saver" / "SKILL.md",
+        root / "stack" / "catalog.json",
+        root / "docs" / "CLI_FIRST_POLICY.md",
+        root / "integration" / "hooks" / "token-stack-prompt.py",
+    )
+
+    text = "\n".join(path.read_text().lower() for path in active_files)
+    for marker in ("superweb", "synapse", "ghmax", "ghgrep"):
+        assert marker not in text
 
 
 def test_missing_optional_tool_is_core_ready(monkeypatch):

@@ -8,8 +8,8 @@ through a compressor.
 
 | Tier | Starts by default | Use for | Do not use for |
 |---|---|---|---|
-| Lean | prompt router, RTK hook, memory/search CLIs; at most one small code MCP | normal coding and research | browser, huge repeated payloads |
-| Task CLI | one command with bounded output and an artifact path | web, GitHub, code graph, batch intake | permanent tool schemas |
+| Lean | prompt router, RTK hook; at most one small code MCP | normal coding | browser, huge repeated payloads |
+| Task CLI | one command with bounded output and an artifact path | repository, GitHub, code graph, batch intake | permanent tool schemas |
 | Heavy session | explicitly launched extra MCPs | browser control, repeated graph queries, large payload transformation | routine tasks |
 | Provider proxy | Headroom when connection/routing requires it | provider-side cache/compression/memory | MCP discovery or terminal filtering |
 
@@ -17,11 +17,11 @@ through a compressor.
 
 | Need | First choice | Escalate only when |
 |---|---|---|
-| Existing decision or cross-session fact | `synxp` / `synx` | cached recall misses |
+| Existing decision or project fact | local artifact or repository documentation | local evidence misses |
 | Exact local text | `rg`, then a line window | structural context is needed |
 | Code structure/callers | `tilth --budget …`, `codegraph` CLI | repeated interactive navigation justifies a session MCP |
-| Current GitHub pattern | `ghmax` / `ghgrep` | local and cached evidence miss |
-| Current web source | `superweb fetch|batch|search` into a file, then project | an interactive browser is required |
+| Current GitHub pattern | `gh api` or `gh search code` with a narrow query | local evidence misses |
+| Current web source | user-supplied artifact or a separately approved fetcher | the task has a source and an oracle |
 | Noisy terminal output | RTK hook or `rtk <cmd>` | raw evidence is required for audit/debug |
 | Large JSON/log/article set | deterministic projection/dedupe | repeated exploration justifies context-mode |
 | Browser/JS | normal browser task or explicit heavy session | never as global default |
@@ -32,9 +32,10 @@ model.  Keep original data retrievable for audits and exact edits.
 
 ## Codex
 
-Lean Codex is the normal `codex` invocation.  Its standard MCP surface is
-Tilth only; memory, web, GitHub, Graphify, and CodeGraph tools remain CLI/on
-demand.  Headroom may remain the model provider proxy.  It contributes no MCP
+Lean Codex is the normal `codex` invocation. Its standard MCP surface is Tilth
+only; repository and GitHub retrieval remain bounded CLI/on-demand work. This
+repository does not ship a browser, crawler, private memory service or web
+fetcher. Headroom may remain the model provider proxy. It contributes no MCP
 schema and must not be added as a second default tool server.
 
 For a deliberate deep-graph or large-payload session, use
@@ -84,8 +85,8 @@ exists:
 |---|---|
 | Skill router | entire irrelevant skill catalog entering the prompt |
 | RTK | verbose shell/build/test output entering the prompt |
-| Synapse/`rg`/Tilth | whole files and repeated research entering the prompt |
-| Superweb/GHMax CLI | web/GitHub response and tool schema always loading |
+| `rg`/Tilth/local artifacts | whole files and repeated evidence entering the prompt |
+| `gh` CLI | broad GitHub response and tool schema always loading |
 | Headroom | remaining large provider messages and repeated traffic |
 
 The practical order is prevention first, reversible projection second,
