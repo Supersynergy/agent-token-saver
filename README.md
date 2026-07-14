@@ -223,8 +223,9 @@ Integration is capability-based:
 
 Hooks fail open and never change approval policy. Strict automatic routing loads
 at most one primary skill and returns nothing for trivial, low-confidence or
-ambiguous prompts. Without the companion router, a conservative built-in gate
-activates only the hidden token-saver skill for explicit token/context tasks.
+ambiguous prompts. Without the companion router, or when it returns no valid
+selection, a conservative built-in gate activates only the hidden token-saver
+skill for explicit token/context tasks.
 Codex uses agent-guided RTK CLI calls until shell-hook coverage is complete.
 
 The companion index stays out of prompt context:

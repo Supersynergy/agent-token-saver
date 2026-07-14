@@ -49,6 +49,25 @@ def test_hidden_fallback_is_gated_to_token_tasks(tmp_path: Path) -> None:
     assert str(skill) in context
 
 
+def test_empty_router_falls_back_for_token_tasks(tmp_path: Path) -> None:
+    skill = (
+        tmp_path
+        / ".agent-token-saver"
+        / "skills"
+        / "agent-token-saver"
+        / "SKILL.md"
+    )
+    skill.parent.mkdir(parents=True)
+    skill.write_text("---\nname: agent-token-saver\n---\n")
+    router = tmp_path / "router.py"
+    router.write_text("print('{\"selected\": []}')\n")
+
+    output = run_hook(tmp_path, "Compress this noisy log without wasting context tokens", router)
+
+    context = json.loads(output)["hookSpecificOutput"]["additionalContext"]
+    assert str(skill) in context
+
+
 def test_router_is_limited_to_one_primary_skill(tmp_path: Path) -> None:
     first = tmp_path / "first" / "SKILL.md"
     second = tmp_path / "second" / "SKILL.md"

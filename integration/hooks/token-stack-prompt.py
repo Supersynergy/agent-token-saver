@@ -54,6 +54,25 @@ def emit(context: str) -> None:
     )
 
 
+def emit_token_saver_fallback() -> bool:
+    fallback = (
+        Path.home()
+        / ".agent-token-saver"
+        / "skills"
+        / "agent-token-saver"
+        / "SKILL.md"
+    )
+    if not fallback.is_file():
+        return False
+    emit(
+        "<token_stack_route>"
+        f"Primary skill={fallback}. Read it completely. "
+        "Keep raw data outside model context and preserve retrieval pointers."
+        "</token_stack_route>"
+    )
+    return True
+
+
 def main() -> int:
     try:
         event = json.load(sys.stdin)
@@ -64,20 +83,8 @@ def main() -> int:
     if len(prompt) < 10 or TRIVIAL.fullmatch(prompt):
         return 0
     if not router:
-        fallback = (
-            Path.home()
-            / ".agent-token-saver"
-            / "skills"
-            / "agent-token-saver"
-            / "SKILL.md"
-        )
-        if fallback.is_file() and ATS_TRIGGER.search(prompt):
-            emit(
-                "<token_stack_route>"
-                f"Primary skill={fallback}. Read it completely. "
-                "Keep raw data outside model context and preserve retrieval pointers."
-                "</token_stack_route>"
-            )
+        if ATS_TRIGGER.search(prompt):
+            emit_token_saver_fallback()
         return 0
     try:
         result = subprocess.run(
@@ -100,21 +107,21 @@ def main() -> int:
         selected = payload.get("selected") or []
     except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError):
         return 0
-    if result.returncode != 0 or not isinstance(selected, list) or not selected:
-        return 0
-    winner = selected[0]
-    if not isinstance(winner, dict):
-        return 0
-    name = str(winner.get("name") or "").strip()
-    path = Path(str(winner.get("path") or ""))
-    if not name or not path.is_file():
-        return 0
-    emit(
-        f"<skill_route name={quoteattr(name)} path={quoteattr(str(path))}>"
-        "Read this SKILL.md completely before acting. "
-        "Do not auto-load a second skill."
-        "</skill_route>"
-    )
+    if result.returncode == 0 and isinstance(selected, list) and selected:
+        winner = selected[0]
+        if isinstance(winner, dict):
+            name = str(winner.get("name") or "").strip()
+            path = Path(str(winner.get("path") or ""))
+            if name and path.is_file():
+                emit(
+                    f"<skill_route name={quoteattr(name)} path={quoteattr(str(path))}>"
+                    "Read this SKILL.md completely before acting. "
+                    "Do not auto-load a second skill."
+                    "</skill_route>"
+                )
+                return 0
+    if ATS_TRIGGER.search(prompt):
+        emit_token_saver_fallback()
     return 0
 
 

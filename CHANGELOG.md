@@ -12,6 +12,13 @@
 - Replaced the volatile live process-table matrix arm with a deterministic 900-row fixture through the real RTK CLI.
 - Pinned Ruff to 0.14.14 (released 2026-01-22) instead of the four-day-old lock version.
 
+## 3.1.1 — 2026-07-14
+
+- Restore the hidden token-saver fallback when an installed companion router
+  returns no valid primary selection for an explicit token/context task.
+- Add a regression test for the empty-router fallback; trivial and ordinary
+  prompts remain silent unless the router selects one primary skill.
+
 ## 3.1.0 — 2026-07-13
 
 - Removed visible Codex/Claude saver skills from Lean installs; the on-demand skill now lives outside native catalogs.
