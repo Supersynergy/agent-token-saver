@@ -58,6 +58,25 @@ context window for judgment and implementation.
 **The result:** more useful agent work per token, one understandable stack, four
 workload profiles, real A/B measurements, reversible hooks and no lock-in.
 
+## Commitment and next proof
+
+The default remains zero-hot: no broad skill catalog, browser, graph, local
+model or extra MCP schema enters every request. A new layer belongs in Lean
+only after the same accepted task shows a net gain in provider usage or quota,
+latency and correctness; otherwise it remains an explicit CLI or session tool.
+
+The next evidence this project still needs is deliberately narrow:
+
+1. Fresh-host provider A/Bs for each supported agent, with model and runtime
+   pinned rather than inferred from local payload estimates.
+2. A parent-plus-children benchmark on independent coding lanes that records
+   bootstrap, retries, cache classes and final oracle—not just child speed.
+3. Native Codex shell-hook coverage before any transparent shell rewriting is
+   claimed; until then Codex uses explicit `rtk` CLI guidance.
+
+These are proof obligations, not default dependencies. Existing acceptance
+checks, artifacts and profiles stay valid while new evidence is collected.
+
 ## The measured result
 
 Local benchmark, 2026-07-13. Same accepted workload and deterministic fixtures in every arm; UTF-8 bytes / 4 for local payloads and provider-reported usage for the reused live output A/B.
@@ -197,6 +216,29 @@ backs up and merges existing Codex/Claude JSON; it does not replace settings or
 silently install third-party packages. `--agent auto` touches only detected
 agents. `--agent repo --project /path/to/repo` installs a portable
 `.agents/skills` copy.
+
+### Companion: agent-token-saver-skill-router
+
+For a large skill library, install
+[agent-token-saver-skill-router](https://github.com/Supersynergy/agent-token-saver-skill-router).
+It keeps discovery and ranking on disk, then returns zero or one primary
+`SKILL.md` path. The saver hook calls `si` when it is present; it never loads
+the router plus a second reserve skill automatically.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Supersynergy/agent-token-saver-skill-router/main/install.sh \
+  | bash -s -- all
+si index --refresh --json
+si route "fix failing tests in this repo" --max 1 --strict --json
+```
+
+Use `si resolve <exact-skill>` for an explicit named skill and `si find` only
+for manual discovery. The router is an optional CLI companion, never an MCP or
+always-hot prompt layer.
+
+The companion's [v1.2.1 release](https://github.com/Supersynergy/agent-token-saver-skill-router/releases/tag/v1.2.1)
+also keeps `context-mode` explicit-only, preventing ordinary test and small
+verification tasks from loading its heavy session handbook automatically.
 
 ### Portable public core, local host overlay
 

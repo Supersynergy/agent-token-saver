@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 3.1.3 — 2026-07-14
+
+- Add a dedicated Router companion section with install, index and strict-route
+  commands, plus a stated zero-hot integration boundary.
+- State the project's measurable commitment and the remaining fresh-host,
+  parent-plus-children and native-Codex-hook proof obligations.
+- Cross-link router v1.2.1, which keeps context-mode explicit-only for
+  automatic routing so ordinary verification tasks do not load its handbook.
+
 ## 3.1.2 — 2026-07-14
 
 - Preserve unrelated Claude Code `UserPromptSubmit` hooks when a managed

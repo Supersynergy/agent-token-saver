@@ -1,7 +1,7 @@
 ---
 name: agent-token-saver
 description: Route token-heavy context, noisy shell logs and output through the smallest measured CLI or projection before loading heavy tools; benchmark cheap subagent workflows without broad prompt bloat.
-version: 3.1.2
+version: 3.1.3
 author: Supersynergy
 license: MIT
 metadata:
@@ -33,11 +33,12 @@ python3 scripts/news_projection.py raw.jsonl --top 40 --format jsonl
 python3 scripts/token_stack_matrix_benchmark.py --help
 ```
 
-For adaptive routing across a large skill collection, install the companion
-`agent-token-saver-skill-router`. Keep the index and ranking outside model
-context; load only the selected domain skill:
+## Companion skill router
 
-https://github.com/Supersynergy/agent-token-saver-skill-router
+For adaptive routing across a large skill collection, install
+[agent-token-saver-skill-router](https://github.com/Supersynergy/agent-token-saver-skill-router).
+Keep the index and ranking outside model context; load only the selected domain
+skill:
 
 ```bash
 si route "<task>" --max 1 --strict --json  # automatic 0/1 decision
