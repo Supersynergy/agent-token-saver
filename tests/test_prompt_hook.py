@@ -68,6 +68,14 @@ def test_empty_router_falls_back_for_token_tasks(tmp_path: Path) -> None:
     assert str(skill) in context
 
 
+def test_skill_metadata_covers_token_stack_router_intents() -> None:
+    skill = (ROOT / "skills" / "agent-token-saver" / "SKILL.md").read_text()
+    tags_line = next(line for line in skill.splitlines() if "tags:" in line)
+    tags = set(tags_line.partition("[")[2].rstrip("]").replace(" ", "").split(","))
+
+    assert {"benchmark", "compress", "log", "noisy", "output", "subagent"} <= tags
+
+
 def test_router_is_limited_to_one_primary_skill(tmp_path: Path) -> None:
     first = tmp_path / "first" / "SKILL.md"
     second = tmp_path / "second" / "SKILL.md"

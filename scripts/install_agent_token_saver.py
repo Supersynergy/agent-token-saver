@@ -92,14 +92,22 @@ def remove_repo_rtk_hooks(entries: list[Any]) -> None:
 
 
 def remove_prompt_hooks(entries: list[Any]) -> None:
-    entries[:] = [
-        entry
-        for entry in entries
-        if not (
-            isinstance(entry, dict)
-            and has_command([entry], "token-stack-prompt.py")
-        )
-    ]
+    kept_entries: list[Any] = []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            kept_entries.append(entry)
+            continue
+        kept_hooks = []
+        for hook in entry.get("hooks", []):
+            if not isinstance(hook, dict):
+                kept_hooks.append(hook)
+                continue
+            if "token-stack-prompt.py" not in str(hook.get("command", "")):
+                kept_hooks.append(hook)
+        if kept_hooks:
+            entry["hooks"] = kept_hooks
+            kept_entries.append(entry)
+    entries[:] = kept_entries
 
 
 def merge_hooks(path: Path, agent: str, profile: str, dry_run: bool) -> None:

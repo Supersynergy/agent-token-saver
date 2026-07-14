@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 3.1.2 — 2026-07-14
+
+- Preserve unrelated Claude Code `UserPromptSubmit` hooks when a managed
+  token-saver hook shares their entry; repeated installs remain idempotent.
+- Add router metadata for noisy output compression, CLI benchmarks and bounded
+  subagent work so strict `si` routing selects the token-saver skill when it
+  is the best match.
 - Removed retired adaptive-model, MCP, Hyperstack, Rust, local-ML and legacy installer trees from the active checkout.
 - Removed the unused Anthropic runtime dependency and obsolete `cts`/`ats` package entrypoints.
 - Kept one canonical v3 installer/runtime surface and pruned its retired managed RTK rewrite file on upgrade.

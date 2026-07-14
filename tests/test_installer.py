@@ -158,6 +158,50 @@ def test_claude_uses_native_rtk_hook(tmp_path: Path) -> None:
     assert commands == ["rtk hook claude"]
 
 
+def test_claude_prompt_merge_preserves_shared_user_hook_and_stays_idempotent(
+    tmp_path: Path,
+) -> None:
+    settings_path = tmp_path / "home" / ".claude" / "settings.json"
+    settings_path.parent.mkdir(parents=True)
+    managed_hook = (
+        f"{tmp_path}/home/.agent-token-saver/hooks/token-stack-prompt.py"
+    )
+    settings_path.write_text(
+        json.dumps(
+            {
+                "hooks": {
+                    "UserPromptSubmit": [
+                        {
+                            "matcher": ".*",
+                            "hooks": [
+                                {
+                                    "type": "command",
+                                    "command": "~/bin/user-prompt-audit",
+                                    "timeout": 9,
+                                },
+                                {
+                                    "type": "command",
+                                    "command": managed_hook,
+                                    "timeout": 6,
+                                },
+                            ],
+                        }
+                    ]
+                }
+            }
+        )
+    )
+
+    first = run_installer(tmp_path, "--agent", "claude")
+    second = run_installer(tmp_path, "--agent", "claude")
+
+    assert first.returncode == second.returncode == 0
+    entries = json.loads(settings_path.read_text())["hooks"]["UserPromptSubmit"]
+    commands = [hook["command"] for entry in entries for hook in entry["hooks"]]
+    assert commands.count("~/bin/user-prompt-audit") == 1
+    assert commands.count(managed_hook) == 1
+
+
 def test_minimal_profile_has_no_visible_skills_or_prompt_hooks(tmp_path: Path) -> None:
     result = run_installer(tmp_path, "--agent", "all", "--profile", "minimal")
     assert result.returncode == 0, result.stderr

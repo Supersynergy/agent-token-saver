@@ -1,12 +1,12 @@
 ---
 name: agent-token-saver
-description: Route context through the smallest measured CLI or projection before loading heavy tools.
-version: 3.1.1
+description: Route token-heavy context, noisy shell logs and output through the smallest measured CLI or projection before loading heavy tools; benchmark cheap subagent workflows without broad prompt bloat.
+version: 3.1.2
 author: Supersynergy
 license: MIT
 metadata:
   hermes:
-    tags: [tokens, context, cli, codex, claude-code, hermes, ggcoder]
+    tags: [tokens, context, cli, benchmark, compress, log, noisy, output, subagent, codex, claude-code, hermes, ggcoder]
 ---
 
 # Agent Token Saver
