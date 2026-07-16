@@ -8,6 +8,10 @@
 - Document host-specific child bootstrap (~44k Claude vs ~11k Codex), staggered
   spawn for shared-prefix cache reuse, and model-tier rules (cheap workers,
   expensive controller/verifier, no self-grading) in the subagent protocol.
+- Probe four engine lanes on the same fixture and oracle (free-tier capsule
+  verifier, sandboxed Codex worker, council-driven executor, local free CLI)
+  and record the cheapest viable team structure as an ADR.
+- Link every operating guide from the README layout section.
 
 - Add `agent-token-audit`, an isolated fail-closed comparison gate for pinned
   Splitrail, Tokscale, CodeBurn and normalized aiusage exports.

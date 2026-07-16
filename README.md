@@ -224,6 +224,13 @@ data/          dated, reproducible benchmark evidence
 docs/          operating and measurement guides
 ```
 
+Key guides: [CLI-first policy](docs/CLI_FIRST_POLICY.md) ·
+[subagent context protocol](docs/SUBAGENT_CONTEXT_PROTOCOL.md) ·
+[full-context measurement](docs/FULL_CONTEXT_MEASUREMENT.md) ·
+[hooks and agents](docs/HOOKS_AND_AGENTS.md) ·
+[news pipeline](docs/NEWS_PIPELINE.md) ·
+[research notes 2026-07-13](docs/TOKEN_SAVER_RESEARCH_2026-07-13.md)
+
 Older adapters, MCP servers, ML routers, Hyperstack prototypes and release
 campaign files remain available in Git history, not in the active tree.
 
