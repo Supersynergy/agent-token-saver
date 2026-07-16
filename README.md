@@ -75,6 +75,10 @@ The next evidence this project still needs is deliberately narrow:
    provider A/Bs for Claude, Hermes and GG Coder with model/runtime pinned.
 2. A parent-plus-children benchmark on independent coding lanes that records
    bootstrap, retries, cache classes and final oracle—not just child speed.
+   A first Claude-side datapoint exists
+   ([claude-team-ab-2026-07-16](data/benchmarks/claude-team-ab-2026-07-16.md):
+   team = 3.0x a single projection worker, raw read = 14.2x and wrong);
+   Codex, Hermes and GG Coder lanes are still open.
 3. Native Codex shell-hook coverage before any transparent shell rewriting is
    claimed; until then Codex uses explicit `rtk` CLI guidance.
 

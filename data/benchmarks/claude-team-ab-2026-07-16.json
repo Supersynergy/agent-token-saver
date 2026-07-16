@@ -1,0 +1,47 @@
+{
+  "date": "2026-07-16",
+  "method": "Claude Code subagents (read-only profile, cheapest model tier); usage summed from provider usage fields in each child transcript (subagents/agent-*.jsonl); one run per arm; fixture 4000-line log; oracle = 100 ERROR lines + CRITICAL-MARKER line 3777 verbatim",
+  "arms": {
+    "projection_child": {
+      "requests": 4,
+      "uncached_input": 36,
+      "cache_write": 43886,
+      "cache_read": 85914,
+      "gross_input": 129836,
+      "output": 825,
+      "oracle": "pass"
+    },
+    "team_three_workers": {
+      "requests": 12,
+      "uncached_input": 108,
+      "cache_write": 131912,
+      "cache_read": 257990,
+      "gross_input": 390010,
+      "output": 1470,
+      "oracle": "pass",
+      "note": "33+33+34 errors summed by controller; marker found by worker 3"
+    },
+    "raw_full_read_child": {
+      "requests": 30,
+      "uncached_input": 290,
+      "cache_write": 435611,
+      "cache_read": 1412670,
+      "gross_input": 1848571,
+      "output": 6668,
+      "oracle": "fail",
+      "note": "counted 99 of 100 ERROR lines and broke the return format"
+    }
+  },
+  "findings": [
+    "child bootstrap ~44k cache-write on this host vs ~11k Codex assumption",
+    "simultaneous fan-out: four identical prefixes paid four separate cache writes; stagger spawn for reuse",
+    "team = 3.0x gross input of single projection child for the same oracle",
+    "raw read = 14.2x gross input and wrong answer",
+    "marginal uncached input per worker: 36 tokens"
+  ],
+  "caveats": [
+    "one run per arm, no confidence interval",
+    "usage fields are provider token classes, not billing claims",
+    "single host, single provider, cheapest model tier"
+  ]
+}

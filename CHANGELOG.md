@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Record the first Claude parent-plus-children A/B (projection worker vs
+  three-worker team vs raw full-read child) with cache classes and oracle
+  results: team = 3.0x a single worker, raw read = 14.2x and wrong.
+- Document host-specific child bootstrap (~44k Claude vs ~11k Codex), staggered
+  spawn for shared-prefix cache reuse, and model-tier rules (cheap workers,
+  expensive controller/verifier, no self-grading) in the subagent protocol.
+
 - Add `agent-token-audit`, an isolated fail-closed comparison gate for pinned
   Splitrail, Tokscale, CodeBurn and normalized aiusage exports.
 - Add lossless `agent-token-ledger --format json-compact` and publish the dated

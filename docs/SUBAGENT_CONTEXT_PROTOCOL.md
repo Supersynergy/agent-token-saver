@@ -15,8 +15,18 @@ future parent turns × (raw context - compact result)
 > child base input + task packet + child output
 ```
 
+The child bootstrap is host- and runtime-specific; measure it before assuming
+break-even. Measured 2026-07-16 on one host, one command per worker lane:
+
+| Child runtime | First-request cache write | Requests per one-command lane | Gross input |
+|---|---:|---:|---:|
+| Codex CLI, clean base (assumed) | ~11k | — | — |
+| Claude Code subagent, cheapest tier | ~44k | 4 | ~130k |
+
 With a clean Codex base near 11k input tokens, a small two-file read almost
-never breaks even. A 40k-token log or independent research corpus can.
+never breaks even; a Claude Code child pays roughly four times that bootstrap,
+so its break-even point is correspondingly higher. A 40k-token log or an
+independent research corpus can qualify. A two-file read almost never does.
 
 ## Team profile
 
@@ -33,6 +43,34 @@ contract explicit.
    in at most 500 tokens.
 5. The controller sums parent, children, retries, fallbacks and compactions;
    it accepts the team only when the same oracle passes.
+
+Measured Claude datapoint (2026-07-16, same fixture and oracle): one projection
+worker used 129,836 gross input tokens and passed; a three-worker team used
+390,010 (3.0x) and passed; a raw full-read child used 1,848,571 (14.2x) and
+**failed** — it miscounted. Fan-out buys wall time, never tokens, and raw reads
+also lose correctness. Artifact:
+[claude-team-ab-2026-07-16](../data/benchmarks/claude-team-ab-2026-07-16.md).
+
+### Cache-aware fan-out
+
+Workers spawned simultaneously with an identical prompt prefix each paid their
+own ~44k cache write (measured: four Claude children, four separate writes for
+one shared prefix). Stagger the spawn — start one worker, let its prefix land
+in the provider cache, then start the rest so they read instead of write. The
+expected saving is one cache write per additional worker; verify per provider
+with the ledger, because cache keys and TTLs differ.
+
+### Model tiers inside a team
+
+Run every worker on the cheapest model that passes the lane's oracle; reserve
+the expensive model for the controller and for verification. The measured
+three-worker team ran entirely on the cheapest tier and passed the same oracle
+as the single-worker arm. Two rules keep this honest:
+
+1. No self-grading: a worker's claim is checked by a deterministic oracle or a
+   different model, never by the worker itself.
+2. Escalate a lane's model only after the oracle fails on the cheap tier, and
+   record the escalation in the ledger as a retry, not a new task.
 
 When an existing ACP workflow already uses `acpx`, use `--format quiet` for the
 worker return and keep JSON/NDJSON as an artifact. The pinned mock transport
