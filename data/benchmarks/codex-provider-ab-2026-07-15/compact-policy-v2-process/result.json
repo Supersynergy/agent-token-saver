@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "date": "2026-07-15 16:11:34 CEST",
+  "codex_version": "codex-cli 0.144.3",
+  "model": "gpt-5.6-sol",
+  "fixture_head": "721f7e218bd5baae794cf8bca4edccb6d7f2f352",
+  "order": "alternating AB/BA; fresh HOME and persisted non-ephemeral run per arm",
+  "tasks": [
+    {
+      "name": "process-table",
+      "prompt": "Minimize token/context bloat. Inspect the full current process table with a ps shell command. If its output contains both PID and COMMAND headings, reply exactly ATS_PS_OK and nothing else.",
+      "expected": "ATS_PS_OK",
+      "accepted": false,
+      "arms": {
+        "baseline": {
+          "arm": "baseline",
+          "return_code": 1,
+          "timed_out": false,
+          "elapsed_ms": 7992,
+          "usage": {
+            "input_tokens": 0,
+            "cached_input_tokens": 0,
+            "uncached_input_tokens": 0,
+            "output_tokens": 0,
+            "total_tokens": 0
+          },
+          "answer": "",
+          "commands": [],
+          "rtk_observed": false,
+          "accepted": false,
+          "oracle": {
+            "exact_answer": false,
+            "command_terms": false,
+            "provider_usage": false
+          },
+          "stderr_tail": "",
+          "raw_jsonl": "/Users/master/BASE/projects/agent-token-saver/data/benchmarks/codex-provider-ab-2026-07-15/compact-policy-v2-process/runs/process-table-baseline.jsonl"
+        },
+        "lean": {
+          "arm": "lean",
+          "return_code": 0,
+          "timed_out": false,
+          "elapsed_ms": 7992,
+          "usage": {
+            "input_tokens": 25319,
+            "cached_input_tokens": 22016,
+            "uncached_input_tokens": 3303,
+            "output_tokens": 127,
+            "total_tokens": 25446
+          },
+          "answer": "ATS_PS_OK",
+          "commands": [
+            "/bin/zsh -c \"ps -ef | awk 'NR==1 {print (\"'$0 ~ /PID/ && $0 ~ /COMMAND/) ? \"yes\" : \"no\"; exit}'\"'\""
+          ],
+          "rtk_observed": false,
+          "accepted": true,
+          "oracle": {
+            "exact_answer": true,
+            "command_terms": true,
+            "provider_usage": true
+          },
+          "stderr_tail": "",
+          "raw_jsonl": "/Users/master/BASE/projects/agent-token-saver/data/benchmarks/codex-provider-ab-2026-07-15/compact-policy-v2-process/runs/process-table-lean.jsonl"
+        }
+      },
+      "provider_delta": {
+        "input_tokens": 25319,
+        "uncached_input_tokens": 3303,
+        "output_tokens": 127,
+        "total_tokens": 25446,
+        "input_saved_percent": null,
+        "total_saved_percent": null
+      }
+    }
+  ],
+  "aggregate": {
+    "accepted": false,
+    "baseline": {
+      "input_tokens": 0,
+      "cached_input_tokens": 0,
+      "uncached_input_tokens": 0,
+      "output_tokens": 0,
+      "total_tokens": 0
+    },
+    "lean": {
+      "input_tokens": 25319,
+      "cached_input_tokens": 22016,
+      "uncached_input_tokens": 3303,
+      "output_tokens": 127,
+      "total_tokens": 25446
+    },
+    "provider_savings_claim_valid": false,
+    "input_saved_percent": null,
+    "total_saved_percent": null,
+    "ninety_nine_percent_provider_saving": false
+  }
+}

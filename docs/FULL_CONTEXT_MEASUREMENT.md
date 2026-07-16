@@ -40,13 +40,16 @@ Capture the agent's machine-readable usage and every visible context layer you
 can export:
 
 ```bash
-codex exec --json --ephemeral "your real task" > run.jsonl
+codex exec --json "your real task" > run.jsonl
 
 agent-token-ledger \
   --usage parent=run.jsonl \
   --usage child-review=child-review.jsonl \
   --usage child-research=child-research.jsonl \
   --provider codex \
+  --expected-workers 2 \
+  --require-complete-team \
+  --require-within-guard \
   --component system-rules=/path/to/AGENTS.md \
   --component tool-schemas=/path/to/tools.json \
   --component hook-output=/path/to/hook-output.json \
@@ -62,10 +65,24 @@ OpenAI-style usage fields. Codex `cached_input_tokens` is treated as a subset of
 input. Claude `cache_creation_input_tokens` and `cache_read_input_tokens` are
 separate input classes and are added.
 
-Each usage file contributes its final provider usage object. Repeat `--usage`
-for every parent, child, retry, fallback and compaction request. The ledger sums
-them and shows the individual sources. Visible components carry SHA-256
+For Codex JSONL, the parser prefers the newest cumulative
+`payload.info.total_token_usage` over `last_token_usage`. Other formats use the
+last recognized provider usage object. Repeat `--usage` for every parent,
+child, retry and fallback run. The ledger sums them, rejects duplicate paths or
+labels and shows the individual sources. Visible components carry SHA-256
 fingerprints; repeated payloads are reported as duplicate visible input.
+
+Spawn calls found in the parent transcript increase the expected usage-source
+count. `--require-complete-team` exits 2 if any worker source is missing.
+`--require-within-guard` exits 3 when the cumulative total reaches 25M tokens,
+the transcript contains two compactions or team accounting is incomplete.
+Warnings start at 10M tokens or 5MB of captured tool output. Threshold flags
+are available for deliberately smaller or larger environments.
+
+The Lean and Teams installer profiles register a fail-open Stop hook around
+the same ledger. It reads only owner-controlled transcripts under the agent's
+home, stores mode-0600 state, warns once per severity and never returns a Stop
+continuation decision.
 
 Do not use `fork all` as an invisible shortcut. A worker should receive a small
 task capsule: objective, exact input pointers, constraints, oracle, allowed
@@ -104,3 +121,10 @@ difference end-to-end savings.
 
 The release gate is simple: no optimization becomes a default unless task
 success stays equal and full provider tokens improve on the same workload.
+
+The 2026-07-15 three-task Codex probe is an example of that boundary. The
+compact automatic policy saved 19.67% provider total in aggregate while one
+process task regressed. The earlier automatic full-skill-read policy regressed
+29.24% and was removed. Neither result is a 99% claim; both remain in
+`data/benchmarks/codex-provider-ab-2026-07-15/` with failed runs in the
+denominator.

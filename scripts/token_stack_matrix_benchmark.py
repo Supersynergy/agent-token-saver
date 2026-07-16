@@ -181,6 +181,31 @@ class Component:
         return round((1 - self.optimized_tokens / self.baseline_tokens) * 100, 2)
 
 
+def build_matrix_row(
+    name: str,
+    estimated_visible_input_tokens: int,
+    observed_output_tokens: int,
+    *,
+    output_is_provider_reported: bool,
+    accepted: bool,
+    note: str,
+) -> dict[str, Any]:
+    combined = estimated_visible_input_tokens + observed_output_tokens
+    return {
+        "name": name,
+        "estimated_visible_input_tokens": estimated_visible_input_tokens,
+        "input_measurement": "utf8_bytes_div_4_proxy",
+        "observed_output_tokens": observed_output_tokens,
+        "output_measurement": (
+            "provider_reported_average" if output_is_provider_reported else "not_measured_zero"
+        ),
+        "combined_payload_tokens": combined,
+        "accepted": accepted,
+        "payload_index_vs_none": 0.0,
+        "note": note,
+    }
+
+
 def mcp_exchange(
     command: list[str],
     *,
@@ -324,7 +349,7 @@ def main() -> int:
     components: list[Component] = []
 
     # Skill catalog vs adaptive router.
-    router_intent = "Benchmark Ponytail context-mode Headroom RTK Tilth"
+    router_intent = "Create a PowerPoint presentation with slides and speaker notes"
     bench_rc, bench_out, _, _ = run(
         [
             "python3",
@@ -532,7 +557,6 @@ def main() -> int:
         "tool_search_tokens_saved": 0,
         "tool_search_requests": 0,
     }
-    headroom_ratio = 1.0
     ponytail_skill_tokens = est_tokens(PONYTAIL.read_text(errors="ignore"))
     live = live_ponytail_cases() if args.live_codex else []
     if args.reuse_live:
@@ -577,81 +601,66 @@ def main() -> int:
         + ponytail_skill_tokens
     )
 
-    def matrix_row(
-        name: str,
-        input_tokens: int,
-        output_tokens: int,
-        *,
-        apply_headroom: bool,
-        accepted: bool,
-        note: str,
-    ) -> dict[str, Any]:
-        provider_input = round(input_tokens * headroom_ratio) if apply_headroom else input_tokens
-        total = provider_input + output_tokens
-        return {
-            "name": name,
-            "workload_input_tokens": input_tokens,
-            "provider_input_tokens": provider_input,
-            "output_tokens": output_tokens,
-            "total_tokens": total,
-            "accepted": accepted,
-            "cost_index_vs_none": 0.0,
-            "note": note,
-        }
-
     all_components_ok = all(component.accepted for component in components)
     matrix = [
-        matrix_row(
+        build_matrix_row(
             "none/raw",
             raw_total,
-            baseline_output_tokens,
-            apply_headroom=False,
+            0,
+            output_is_provider_reported=False,
             accepted=all_components_ok and baseline_live_accepted,
             note="Full skill catalog + raw shell/file/log; no schema overhead.",
         ),
-        matrix_row(
+        build_matrix_row(
             "cli-selective",
             cli_input,
-            baseline_output_tokens,
-            apply_headroom=False,
+            0,
+            output_is_provider_reported=False,
             accepted=all_components_ok and baseline_live_accepted,
             note="Router + RTK + Tilth CLI + native projection; zero MCP schema.",
         ),
-        matrix_row(
+        build_matrix_row(
             "current-lean",
             current_input,
-            baseline_output_tokens,
-            apply_headroom=False,
+            0,
+            output_is_provider_reported=False,
             accepted=all_components_ok and baseline_live_accepted and rc_hook == 0,
             note="Prompt hook + RTK + Tilth MCP + native projection; no Headroom.",
         ),
-        matrix_row(
+        build_matrix_row(
             "context-on-demand",
             context_input,
-            baseline_output_tokens,
-            apply_headroom=False,
+            0,
+            output_is_provider_reported=False,
             accepted=all_components_ok and baseline_live_accepted,
             note="Router + RTK + Tilth CLI + context-mode schema/call; no Headroom.",
         ),
-        matrix_row(
+        build_matrix_row(
             "max-all+ponytail",
             max_input,
-            ponytail_output_tokens,
-            apply_headroom=False,
+            0,
+            output_is_provider_reported=False,
             accepted=all_components_ok and ponytail_live_accepted,
             note="Current + context-mode MCP + full Ponytail skill; cold-schema cost.",
         ),
     ]
-    none_total = matrix[0]["total_tokens"] or 1
+    none_total = matrix[0]["combined_payload_tokens"] or 1
     for row in matrix:
-        row["cost_index_vs_none"] = round(row["total_tokens"] / none_total * 100, 2)
+        row["payload_index_vs_none"] = round(
+            row["combined_payload_tokens"] / none_total * 100, 2
+        )
     accepted_matrix = sorted(
-        (row for row in matrix if row["accepted"]), key=lambda row: row["total_tokens"]
+        (row for row in matrix if row["accepted"]),
+        key=lambda row: row["combined_payload_tokens"],
     )
 
     payload = {
         "date": time.strftime("%Y-%m-%d %H:%M:%S %Z"),
-        "method": "local real CLIs/MCP schemas; bytes/4 token proxy; optional Codex provider usage for Ponytail A/B",
+        "method": {
+            "visible_input": "local real CLIs/MCP schemas; UTF-8 bytes / 4 proxy",
+            "provider_usage": "present only inside ponytail.live_cases arms",
+            "matrix_boundary": "visible-input profile comparison only; Ponytail live output stays separate and is not combined with unrelated component fixtures",
+        },
         "versions": {
             "context_mode": context_mode_version(),
             "headroom": command_version(["headroom", "--version"]),
@@ -678,9 +687,9 @@ def main() -> int:
         "matrix": matrix,
         "top3": [row["name"] for row in accepted_matrix[:3]],
         "monetary_cost": {
-            "marginal_eur": 0,
-            "reason": "Codex uses subscription/OAuth quota and gpt-5.6-sol has no public list price in Headroom stats.",
-            "comparison": "cost_index_vs_none is the measured token/quota index; none/raw = 100.",
+            "status": "not_measured",
+            "reason": "Local payload estimates and subscription quota do not establish monetary cost.",
+            "comparison": "payload_index_vs_none compares only the measured fixture payload; none/raw = 100.",
         },
     }
     OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -693,13 +702,14 @@ def main() -> int:
         "",
         "## Stack ranking",
         "",
-        "| Stack | Input tok | Provider input | Output tok | Total | Cost index | Accepted |",
-        "|---|---:|---:|---:|---:|---:|:--:|",
+        "| Stack | Est. visible input | Observed output | Combined payload | Payload index | Accepted |",
+        "|---|---:|---:|---:|---:|:--:|",
     ]
-    for row in sorted(matrix, key=lambda item: item["total_tokens"]):
+    for row in sorted(matrix, key=lambda item: item["combined_payload_tokens"]):
         lines.append(
-            f"| {row['name']} | {row['workload_input_tokens']:,} | {row['provider_input_tokens']:,} | "
-            f"{row['output_tokens']:,} | {row['total_tokens']:,} | {row['cost_index_vs_none']:.2f} | "
+            f"| {row['name']} | {row['estimated_visible_input_tokens']:,} | "
+            f"{row['observed_output_tokens']:,} | {row['combined_payload_tokens']:,} | "
+            f"{row['payload_index_vs_none']:.2f} | "
             f"{'yes' if row['accepted'] else 'no'} |"
         )
     lines += [
@@ -723,7 +733,7 @@ def main() -> int:
         f"- context-mode MCP: {len(ctx_tools)} tools / {context_schema_tokens:,} tokens.",
         f"- Ponytail full skill: {ponytail_skill_tokens:,} input tokens.",
         "- Headroom: optional provider/proxy; excluded from Lean totals and never loaded as MCP.",
-        "- Monetary marginal cost: EUR 0 inside the current subscription; cost index measures quota/token load.",
+        "- Monetary cost: not measured; payload index is not billing or quota cost.",
         "",
         "## Notes",
         "",

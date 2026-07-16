@@ -4,8 +4,10 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
+import re
 import shutil
 import stat
 import tempfile
@@ -20,6 +22,7 @@ INSTALL_HOME = HOME / ".agent-token-saver"
 OBSOLETE_INSTALL_FILES = (
     INSTALL_HOME / "hooks" / "rtk-rewrite.sh",
 )
+SKILL_VERSION = re.compile(r"^version:\s*([^\s]+)", re.MULTILINE)
 
 
 def atomic_json(path: Path, data: dict[str, Any], dry_run: bool) -> None:
@@ -28,7 +31,9 @@ def atomic_json(path: Path, data: dict[str, Any], dry_run: bool) -> None:
         return
     path.parent.mkdir(parents=True, exist_ok=True)
     if path.exists():
-        backup = path.with_name(f"{path.name}.bak-{time.strftime('%Y%m%d-%H%M%S')}")
+        backup = path.with_name(
+            f"{path.name}.bak-{time.strftime('%Y%m%d-%H%M%S')}-{time.time_ns()}"
+        )
         shutil.copy2(path, backup)
         print(f"backup {backup}")
     with tempfile.NamedTemporaryFile("w", dir=path.parent, delete=False) as handle:
@@ -110,12 +115,33 @@ def remove_prompt_hooks(entries: list[Any]) -> None:
     entries[:] = kept_entries
 
 
+def remove_session_guard_hooks(entries: list[Any]) -> None:
+    kept_entries: list[Any] = []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            kept_entries.append(entry)
+            continue
+        kept_hooks = []
+        for hook in entry.get("hooks", []):
+            if not isinstance(hook, dict):
+                kept_hooks.append(hook)
+                continue
+            if "token-session-guard.py" not in str(hook.get("command", "")):
+                kept_hooks.append(hook)
+        if kept_hooks:
+            entry["hooks"] = kept_hooks
+            kept_entries.append(entry)
+    entries[:] = kept_entries
+
+
 def merge_hooks(path: Path, agent: str, profile: str, dry_run: bool) -> None:
     data = load_json(path)
     hooks = data.setdefault("hooks", {})
     pre = hooks.setdefault("PreToolUse", [])
     prompt = hooks.setdefault("UserPromptSubmit", [])
+    stop = hooks.setdefault("Stop", [])
     prompt_command = str(INSTALL_HOME / "hooks" / "token-stack-prompt.py")
+    guard_command = str(INSTALL_HOME / "hooks" / "token-session-guard.py")
     matcher = (
         "Bash"
         if agent == "claude"
@@ -123,10 +149,12 @@ def merge_hooks(path: Path, agent: str, profile: str, dry_run: bool) -> None:
     )
     remove_repo_rtk_hooks(pre)
     remove_prompt_hooks(prompt)
+    remove_session_guard_hooks(stop)
     if agent == "claude" and shutil.which("rtk") and not has_command(pre, "rtk hook claude"):
         pre.append(hook_entry(matcher, "rtk hook claude", 5))
     if profile != "minimal":
         prompt.append(hook_entry(None, prompt_command, 6))
+        stop.append(hook_entry(None, guard_command, 8))
     atomic_json(path, data, dry_run)
 
 
@@ -160,9 +188,15 @@ def install_files(dry_run: bool) -> None:
         ROOT / "scripts" / "full_context_ledger.py": INSTALL_HOME
         / "bin"
         / "agent-token-ledger",
+        ROOT / "scripts" / "external_usage_gate.py": INSTALL_HOME
+        / "bin"
+        / "agent-token-audit",
         ROOT / "integration" / "hooks" / "token-stack-prompt.py": INSTALL_HOME
         / "hooks"
         / "token-stack-prompt.py",
+        ROOT / "integration" / "hooks" / "token-session-guard.py": INSTALL_HOME
+        / "hooks"
+        / "token-session-guard.py",
         ROOT / "skills" / "agent-token-saver" / "SKILL.md": INSTALL_HOME
         / "skills"
         / "agent-token-saver"
@@ -189,6 +223,14 @@ def install_files(dry_run: bool) -> None:
         ledger_launcher.unlink(missing_ok=True)
         ledger_launcher.symlink_to(ledger_target)
         print(f"linked {ledger_launcher}")
+    audit_launcher = HOME / ".local" / "bin" / "agent-token-audit"
+    audit_target = copies[ROOT / "scripts" / "external_usage_gate.py"]
+    if dry_run:
+        print(f"would link {audit_launcher} -> {audit_target}")
+    else:
+        audit_launcher.unlink(missing_ok=True)
+        audit_launcher.symlink_to(audit_target)
+        print(f"linked {audit_launcher}")
     heavy_launcher = HOME / ".local" / "bin" / "codex-heavy-context"
     heavy_target = copies[ROOT / "integration" / "cli" / "codex-heavy-context"]
     if heavy_launcher.exists() or heavy_launcher.is_symlink():
@@ -200,27 +242,23 @@ def install_files(dry_run: bool) -> None:
         print(f"linked {heavy_launcher}")
 
 
-def install_skill(agent: str, project: Path, dry_run: bool) -> None:
-    source = ROOT / "skills" / "agent-token-saver" / "SKILL.md"
-    targets = {
+def skill_targets(project: Path) -> dict[str, Path]:
+    return {
         "codex": HOME / ".codex" / "skills" / "agent-token-saver" / "SKILL.md",
         "claude": HOME / ".claude" / "skills" / "agent-token-saver" / "SKILL.md",
         "hermes": HOME / ".hermes" / "skills" / "agent-token-saver" / "SKILL.md",
         "ggcoder": HOME / ".gg" / "skills" / "agent-token-saver.md",
         "repo": project / ".agents" / "skills" / "agent-token-saver" / "SKILL.md",
     }
-    install_copy(source, targets[agent], dry_run)
+
+
+def install_skill(agent: str, project: Path, dry_run: bool) -> None:
+    source = ROOT / "skills" / "agent-token-saver" / "SKILL.md"
+    install_copy(source, skill_targets(project)[agent], dry_run)
 
 
 def remove_visible_skill(agent: str, project: Path, dry_run: bool) -> None:
-    targets = {
-        "codex": HOME / ".codex" / "skills" / "agent-token-saver" / "SKILL.md",
-        "claude": HOME / ".claude" / "skills" / "agent-token-saver" / "SKILL.md",
-        "hermes": HOME / ".hermes" / "skills" / "agent-token-saver" / "SKILL.md",
-        "ggcoder": HOME / ".gg" / "skills" / "agent-token-saver.md",
-        "repo": project / ".agents" / "skills" / "agent-token-saver" / "SKILL.md",
-    }
-    target = targets[agent]
+    target = skill_targets(project)[agent]
     if not target.exists():
         return
     try:
@@ -260,10 +298,54 @@ def detected_agents(requested: str, project: Path) -> list[str]:
     return found or ["repo"]
 
 
-def write_config(profile: str, agents: list[str], dry_run: bool) -> None:
+def write_config(profile: str, agents: list[str], project: Path, dry_run: bool) -> None:
+    source = ROOT / "skills" / "agent-token-saver" / "SKILL.md"
+    content = source.read_text(errors="replace")
+    version_match = SKILL_VERSION.search(content)
+    targets = skill_targets(project)
+    managed_skill_paths = [
+        str(targets[agent].resolve())
+        for agent in agents
+        if profile != "minimal" and agent in {"hermes", "ggcoder", "repo"}
+    ]
+    managed_asset_sources = {
+        "doctor": ROOT / "scripts" / "stack_doctor.py",
+        "ledger": ROOT / "scripts" / "full_context_ledger.py",
+        "audit": ROOT / "scripts" / "external_usage_gate.py",
+        "prompt_hook": ROOT / "integration" / "hooks" / "token-stack-prompt.py",
+        "session_guard": ROOT / "integration" / "hooks" / "token-session-guard.py",
+    }
+    managed_asset_targets = {
+        "doctor": INSTALL_HOME / "bin" / "agent-token-saver",
+        "ledger": INSTALL_HOME / "bin" / "agent-token-ledger",
+        "audit": INSTALL_HOME / "bin" / "agent-token-audit",
+        "prompt_hook": INSTALL_HOME / "hooks" / "token-stack-prompt.py",
+        "session_guard": INSTALL_HOME / "hooks" / "token-session-guard.py",
+    }
     atomic_json(
         INSTALL_HOME / "config.json",
-        {"schema_version": 1, "profile": profile, "agents": agents},
+        {
+            "schema_version": 2,
+            "profile": profile,
+            "agents": agents,
+            "project_root": str(project.resolve()),
+            "canonical_skill": {
+                "path": str(
+                    (INSTALL_HOME / "skills" / "agent-token-saver" / "SKILL.md").resolve()
+                ),
+                "version": version_match.group(1) if version_match else "unknown",
+                "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+            },
+            "managed_skill_paths": managed_skill_paths,
+            "managed_assets": [
+                {
+                    "name": name,
+                    "path": str(managed_asset_targets[name].resolve()),
+                    "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                }
+                for name, path in managed_asset_sources.items()
+            ],
+        },
         dry_run,
     )
 
@@ -298,7 +380,7 @@ def main() -> int:
             install_skill(agent, args.project.resolve(), args.dry_run)
         if agent in targets:
             merge_hooks(targets[agent], agent, args.profile, args.dry_run)
-    write_config(args.profile, agents, args.dry_run)
+    write_config(args.profile, agents, args.project.resolve(), args.dry_run)
     print(f"profile={args.profile}")
     print(f"agents={','.join(agents)}")
     print(

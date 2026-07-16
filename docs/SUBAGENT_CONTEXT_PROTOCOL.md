@@ -34,6 +34,14 @@ contract explicit.
 5. The controller sums parent, children, retries, fallbacks and compactions;
    it accepts the team only when the same oracle passes.
 
+When an existing ACP workflow already uses `acpx`, use `--format quiet` for the
+worker return and keep JSON/NDJSON as an artifact. The pinned mock transport
+measured 6 output bytes in quiet mode versus 1,013 in JSON mode. Do not add ACP
+only for this formatting win: it does not remove the child model's bootstrap.
+
+Use `agent-token-ledger --format json-compact` when the full ledger must cross
+an agent boundary; keep the pretty JSON/Markdown copy for humans.
+
 The router remains a separate optional skill. The main installer detects an
 existing `si` launcher but never downloads, clones or silently installs it.
 
@@ -48,7 +56,7 @@ Send only:
   "inputs": [{"uri": "artifact path or memory id", "sha256": "..."}],
   "constraints": ["must-preserve rules"],
   "oracle": ["exact command or output schema"],
-  "skills": ["zero to three exact SKILL.md paths"],
+  "skills": ["zero or one exact primary SKILL.md path"],
   "limits": {"tries": 3, "return_tokens": 500},
   "return": "status, evidence references, checks, blockers"
 }
@@ -91,4 +99,5 @@ Ttotal = sum(parent requests)
 
 Report total input, uncached input, cache classes, output, reasoning, latency,
 oracle pass/fail and duplicate visible context. Use one named `--usage` argument
-per parent or child with `agent-token-ledger`.
+per parent or child with `agent-token-ledger --require-complete-team`; missing
+worker usage is a failed done gate, not an estimate.

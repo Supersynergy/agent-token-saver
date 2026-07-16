@@ -14,5 +14,6 @@ HOME="$TMP_ROOT/home" ATS_REPO_URL="$ROOT" \
 
 test -x "$TMP_ROOT/home/.agent-token-saver/bin/agent-token-saver"
 test -x "$TMP_ROOT/home/.agent-token-saver/bin/agent-token-ledger"
+test -x "$TMP_ROOT/home/.agent-token-saver/bin/agent-token-audit"
 test -f "$TMP_ROOT/project/.agents/skills/agent-token-saver/SKILL.md"
 printf '%s\n' '{"remote_bootstrap":"PASS"}'

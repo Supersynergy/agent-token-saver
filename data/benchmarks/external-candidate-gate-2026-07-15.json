@@ -1,0 +1,206 @@
+{
+  "schema_version": 1,
+  "method": "isolated external auditor comparison against agent-token-ledger",
+  "provider": "codex",
+  "usage_sources": 3,
+  "canonical": {
+    "input_total": 7768418,
+    "input_uncached": 599394,
+    "cache_read": 7169024,
+    "cache_write": 0,
+    "output": 76884,
+    "reasoning": 30986
+  },
+  "candidates": [
+    {
+      "name": "splitrail",
+      "normalized": {
+        "input_uncached": 599394,
+        "cache_read": 7169024,
+        "output": 76884,
+        "reasoning": 30986,
+        "cache_write": 0,
+        "input_total": 7768418
+      },
+      "comparison": {
+        "exact": true,
+        "missing_core_fields": [],
+        "delta": {
+          "input_total": 0,
+          "input_uncached": 0,
+          "cache_read": 0,
+          "output": 0,
+          "cache_write": 0,
+          "reasoning": 0
+        }
+      },
+      "policy": {
+        "status": "optional",
+        "reason": "fast global audit; ledger remains team truth"
+      },
+      "warnings": [],
+      "execution": {
+        "command": [
+          "/tmp/ats-candidates-20260715-root/bin/splitrail",
+          "stats"
+        ],
+        "version": "splitrail 3.5.8",
+        "runs": 5,
+        "cold_wall_ms": 12.33,
+        "median_wall_ms": 10.79,
+        "warm_median_wall_ms": 10.72,
+        "samples_wall_ms": [
+          12.33,
+          14.1,
+          10.79,
+          10.66,
+          10.48
+        ],
+        "stdout_bytes": 1040
+      }
+    },
+    {
+      "name": "tokscale",
+      "normalized": {
+        "input_total": 7768418,
+        "input_uncached": 599394,
+        "cache_read": 7169024,
+        "cache_write": 0,
+        "output": 76884,
+        "reasoning": 30986
+      },
+      "comparison": {
+        "exact": true,
+        "missing_core_fields": [],
+        "delta": {
+          "input_total": 0,
+          "input_uncached": 0,
+          "cache_read": 0,
+          "output": 0,
+          "cache_write": 0,
+          "reasoning": 0
+        }
+      },
+      "policy": {
+        "status": "optional",
+        "reason": "session/model cross-check"
+      },
+      "warnings": [],
+      "execution": {
+        "command": [
+          "bunx",
+          "--bun",
+          "tokscale@4.0.6",
+          "--home",
+          "$ATS_FIXTURE_HOME",
+          "--client",
+          "codex",
+          "--json",
+          "--group-by",
+          "session,model",
+          "--no-spinner"
+        ],
+        "version": "tokscale 4.0.6",
+        "runs": 5,
+        "cold_wall_ms": 2377.92,
+        "median_wall_ms": 50.27,
+        "warm_median_wall_ms": 49.88,
+        "samples_wall_ms": [
+          2377.92,
+          51.16,
+          49.49,
+          49.27,
+          50.27
+        ],
+        "stdout_bytes": 1999
+      }
+    },
+    {
+      "name": "codeburn",
+      "normalized": {
+        "input_total": 7768418,
+        "input_uncached": 599394,
+        "cache_read": 7169024,
+        "cache_write": 0,
+        "output": 76884,
+        "reasoning": null
+      },
+      "comparison": {
+        "exact": true,
+        "missing_core_fields": [],
+        "delta": {
+          "input_total": 0,
+          "input_uncached": 0,
+          "cache_read": 0,
+          "output": 0,
+          "cache_write": 0,
+          "reasoning": null
+        }
+      },
+      "policy": {
+        "status": "optional",
+        "reason": "read-only optimizer; savings claims need separate proof"
+      },
+      "warnings": [
+        "reasoning-token coverage unavailable"
+      ],
+      "execution": {
+        "command": [
+          "bunx",
+          "--bun",
+          "codeburn@0.9.14",
+          "report",
+          "--period",
+          "all",
+          "--format",
+          "json"
+        ],
+        "version": "0.9.14",
+        "runs": 5,
+        "cold_wall_ms": 424.09,
+        "median_wall_ms": 267.49,
+        "warm_median_wall_ms": 265.27,
+        "samples_wall_ms": [
+          424.09,
+          259.93,
+          288.76,
+          267.49,
+          263.06
+        ],
+        "stdout_bytes": 3208
+      }
+    },
+    {
+      "name": "aiusage",
+      "normalized": {
+        "input_total": 7768418,
+        "input_uncached": 599394,
+        "cache_read": 7169024,
+        "cache_write": 0,
+        "output": 76884,
+        "reasoning": 30986
+      },
+      "comparison": {
+        "exact": true,
+        "missing_core_fields": [],
+        "delta": {
+          "input_total": 0,
+          "input_uncached": 0,
+          "cache_read": 0,
+          "output": 0,
+          "cache_write": 0,
+          "reasoning": 0
+        }
+      },
+      "policy": {
+        "status": "normalized-only",
+        "reason": "native summary double-counts cache and thinking"
+      },
+      "warnings": [
+        "native summary is not additive; consume normalized raw export only"
+      ],
+      "execution": null
+    }
+  ],
+  "gate_passed": true
+}

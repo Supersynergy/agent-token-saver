@@ -1,0 +1,237 @@
+{
+  "schema_version": 1,
+  "date": "2026-07-15 16:09:47 CEST",
+  "codex_version": "codex-cli 0.144.3",
+  "model": "gpt-5.6-sol",
+  "fixture_head": "02f3639447b212a0df1d8f9b92a8b030f884c9f3",
+  "order": "alternating AB/BA; fresh HOME and persisted non-ephemeral run per arm",
+  "tasks": [
+    {
+      "name": "process-table",
+      "prompt": "Minimize token/context bloat. Inspect the full current process table with a ps shell command. If its output contains both PID and COMMAND headings, reply exactly ATS_PS_OK and nothing else.",
+      "expected": "ATS_PS_OK",
+      "accepted": true,
+      "arms": {
+        "baseline": {
+          "arm": "baseline",
+          "return_code": 0,
+          "timed_out": false,
+          "elapsed_ms": 7796,
+          "usage": {
+            "input_tokens": 29250,
+            "cached_input_tokens": 22016,
+            "uncached_input_tokens": 7234,
+            "output_tokens": 109,
+            "total_tokens": 29359
+          },
+          "answer": "ATS_PS_OK",
+          "commands": [
+            "/bin/zsh -lc 'ps -ef'"
+          ],
+          "rtk_observed": false,
+          "accepted": true,
+          "oracle": {
+            "exact_answer": true,
+            "command_terms": true,
+            "provider_usage": true
+          },
+          "stderr_tail": "",
+          "raw_jsonl": "/Users/master/BASE/projects/agent-token-saver/data/benchmarks/codex-provider-ab-2026-07-15/compact-policy/runs/process-table-baseline.jsonl"
+        },
+        "lean": {
+          "arm": "lean",
+          "return_code": 0,
+          "timed_out": false,
+          "elapsed_ms": 25910,
+          "usage": {
+            "input_tokens": 38418,
+            "cached_input_tokens": 32000,
+            "uncached_input_tokens": 6418,
+            "output_tokens": 382,
+            "total_tokens": 38800
+          },
+          "answer": "ATS_PS_OK",
+          "commands": [
+            "/bin/zsh -c 'ps aux'",
+            "/bin/zsh -c \"ps aux | awk 'NR == 1 { print ((\"'$0 ~ /(''^|[[:space:]])PID([[:space:]]|$)/) && ($0 ~ /(''^|[[:space:]])COMMAND([[:space:]]|$)/)) ? \"yes\" : \"no\" }'\"'\""
+          ],
+          "rtk_observed": false,
+          "accepted": true,
+          "oracle": {
+            "exact_answer": true,
+            "command_terms": true,
+            "provider_usage": true
+          },
+          "stderr_tail": "",
+          "raw_jsonl": "/Users/master/BASE/projects/agent-token-saver/data/benchmarks/codex-provider-ab-2026-07-15/compact-policy/runs/process-table-lean.jsonl"
+        }
+      },
+      "provider_delta": {
+        "input_tokens": 9168,
+        "uncached_input_tokens": -816,
+        "output_tokens": 273,
+        "total_tokens": 9441,
+        "input_saved_percent": -31.34,
+        "total_saved_percent": -32.16
+      }
+    },
+    {
+      "name": "large-git-diff",
+      "prompt": "Minimize token/context bloat. Inspect the repository's full uncommitted change with git diff. Confirm exactly 6000 removed lines, 6000 added lines, and the added marker FIXED-06000. If all are true, reply exactly ATS_DIFF_OK and nothing else.",
+      "expected": "ATS_DIFF_OK",
+      "accepted": true,
+      "arms": {
+        "lean": {
+          "arm": "lean",
+          "return_code": 0,
+          "timed_out": false,
+          "elapsed_ms": 9707,
+          "usage": {
+            "input_tokens": 25691,
+            "cached_input_tokens": 19968,
+            "uncached_input_tokens": 5723,
+            "output_tokens": 195,
+            "total_tokens": 25886
+          },
+          "answer": "ATS_DIFF_OK",
+          "commands": [
+            "/bin/zsh -lc \"git diff --numstat && git diff --unified=0 | awk 'BEGIN{a=0;d=0;m=0} /\"'^'\"\\\\+\\\\+\\\\+|\"'^---/{next} /''^'\"\\\\+/{a++; if(index(\"'$0,\"FIXED-06000\")) m++} /''^-/{d++} END{print \"added=\" a, \"removed=\" d, \"marker=\" m}'\"'\""
+          ],
+          "rtk_observed": false,
+          "accepted": true,
+          "oracle": {
+            "exact_answer": true,
+            "command_terms": true,
+            "provider_usage": true
+          },
+          "stderr_tail": "",
+          "raw_jsonl": "/Users/master/BASE/projects/agent-token-saver/data/benchmarks/codex-provider-ab-2026-07-15/compact-policy/runs/large-git-diff-lean.jsonl"
+        },
+        "baseline": {
+          "arm": "baseline",
+          "return_code": 0,
+          "timed_out": false,
+          "elapsed_ms": 8274,
+          "usage": {
+            "input_tokens": 44496,
+            "cached_input_tokens": 22016,
+            "uncached_input_tokens": 22480,
+            "output_tokens": 133,
+            "total_tokens": 44629
+          },
+          "answer": "ATS_DIFF_OK",
+          "commands": [
+            "/bin/zsh -lc 'git diff --no-ext-diff --unified=0 && git diff --no-ext-diff --numstat'"
+          ],
+          "rtk_observed": false,
+          "accepted": true,
+          "oracle": {
+            "exact_answer": true,
+            "command_terms": true,
+            "provider_usage": true
+          },
+          "stderr_tail": "",
+          "raw_jsonl": "/Users/master/BASE/projects/agent-token-saver/data/benchmarks/codex-provider-ab-2026-07-15/compact-policy/runs/large-git-diff-baseline.jsonl"
+        }
+      },
+      "provider_delta": {
+        "input_tokens": -18805,
+        "uncached_input_tokens": -16757,
+        "output_tokens": 62,
+        "total_tokens": -18743,
+        "input_saved_percent": 42.26,
+        "total_saved_percent": 42.0
+      }
+    },
+    {
+      "name": "git-history",
+      "prompt": "Minimize token/context bloat. Inspect the repository history with git log. Confirm there are exactly 121 commits and the oldest subject is ATS seed. Compute the count and oldest subject inside the shell command before output reaches the model. If both are true, reply exactly ATS_HISTORY_OK and nothing else.",
+      "expected": "ATS_HISTORY_OK",
+      "accepted": true,
+      "arms": {
+        "baseline": {
+          "arm": "baseline",
+          "return_code": 0,
+          "timed_out": false,
+          "elapsed_ms": 13719,
+          "usage": {
+            "input_tokens": 38136,
+            "cached_input_tokens": 34048,
+            "uncached_input_tokens": 4088,
+            "output_tokens": 364,
+            "total_tokens": 38500
+          },
+          "answer": "ATS_HISTORY_OK",
+          "commands": [
+            "/bin/zsh -lc 'set -- $(git rev-list --count HEAD) \"$(git log --reverse --format=%s | sed -n '\"'1p')\\\"; if [ \\\"\"'$1\" = 121 ] && [ \"$2 $3\" = '\"'ATS seed' ]; then echo OK; else echo FAIL; fi\"",
+            "/bin/zsh -lc 'count=$(git rev-list --count HEAD 2>/dev/null); oldest=$(git log --reverse --format=%s 2>/dev/null | sed -n '\"'1p'); if [ \\\"\"'$count\" = 121 ] && [ \"$oldest\" = '\"'ATS seed' ]; then printf 'OK\\\\n'; else printf 'FAIL\\\\n'; fi\""
+          ],
+          "rtk_observed": false,
+          "accepted": true,
+          "oracle": {
+            "exact_answer": true,
+            "command_terms": true,
+            "provider_usage": true
+          },
+          "stderr_tail": "",
+          "raw_jsonl": "/Users/master/BASE/projects/agent-token-saver/data/benchmarks/codex-provider-ab-2026-07-15/compact-policy/runs/git-history-baseline.jsonl"
+        },
+        "lean": {
+          "arm": "lean",
+          "return_code": 0,
+          "timed_out": false,
+          "elapsed_ms": 8806,
+          "usage": {
+            "input_tokens": 25476,
+            "cached_input_tokens": 19968,
+            "uncached_input_tokens": 5508,
+            "output_tokens": 202,
+            "total_tokens": 25678
+          },
+          "answer": "ATS_HISTORY_OK",
+          "commands": [
+            "/bin/zsh -c 'n=$(git rev-list --count HEAD) && s=$(git log --reverse --format=%s | sed -n '\"'1p') && if [ \\\"\"'$n\" -eq 121 ] && [ \"$s\" = '\"'ATS seed' ]; then printf ATS_HISTORY_OK; else printf 'count=%s oldest=%s' \\\"\"'$n\" \"$s\"; fi'"
+          ],
+          "rtk_observed": false,
+          "accepted": true,
+          "oracle": {
+            "exact_answer": true,
+            "command_terms": true,
+            "provider_usage": true
+          },
+          "stderr_tail": "",
+          "raw_jsonl": "/Users/master/BASE/projects/agent-token-saver/data/benchmarks/codex-provider-ab-2026-07-15/compact-policy/runs/git-history-lean.jsonl"
+        }
+      },
+      "provider_delta": {
+        "input_tokens": -12660,
+        "uncached_input_tokens": 1420,
+        "output_tokens": -162,
+        "total_tokens": -12822,
+        "input_saved_percent": 33.2,
+        "total_saved_percent": 33.3
+      }
+    }
+  ],
+  "aggregate": {
+    "accepted": true,
+    "baseline": {
+      "input_tokens": 111882,
+      "cached_input_tokens": 78080,
+      "uncached_input_tokens": 33802,
+      "output_tokens": 606,
+      "total_tokens": 112488
+    },
+    "lean": {
+      "input_tokens": 89585,
+      "cached_input_tokens": 71936,
+      "uncached_input_tokens": 17649,
+      "output_tokens": 779,
+      "total_tokens": 90364
+    },
+    "provider_savings_claim_valid": true,
+    "input_saved_percent": 19.93,
+    "total_saved_percent": 19.67,
+    "ninety_nine_percent_provider_saving": false
+  }
+}

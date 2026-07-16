@@ -1,0 +1,8 @@
+{"type":"thread.started","thread_id":"019f661e-4400-7fe0-9ac8-993dbca0e097"}
+{"type":"item.completed","item":{"id":"item_0","type":"error","message":"`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation."}}
+{"type":"item.completed","item":{"id":"item_1","type":"error","message":"`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation."}}
+{"type":"turn.started"}
+{"type":"item.started","item":{"id":"item_2","type":"command_execution","command":"/bin/zsh -c \"ps -ef | awk 'NR==1 {print (\"'$0 ~ /PID/ && $0 ~ /COMMAND/) ? \"yes\" : \"no\"; exit}'\"'\"","aggregated_output":"","exit_code":null,"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_2","type":"command_execution","command":"/bin/zsh -c \"ps -ef | awk 'NR==1 {print (\"'$0 ~ /PID/ && $0 ~ /COMMAND/) ? \"yes\" : \"no\"; exit}'\"'\"","aggregated_output":"yes\n","exit_code":0,"status":"completed"}}
+{"type":"item.completed","item":{"id":"item_3","type":"agent_message","text":"ATS_PS_OK"}}
+{"type":"turn.completed","usage":{"input_tokens":25319,"cached_input_tokens":22016,"output_tokens":127,"reasoning_output_tokens":41}}

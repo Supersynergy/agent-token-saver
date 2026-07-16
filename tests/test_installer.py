@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import subprocess
@@ -51,21 +52,50 @@ def test_all_agents_install_without_overwriting_existing_settings(tmp_path: Path
     assert (home / ".gg" / "skills" / "agent-token-saver.md").is_file()
     assert (project / ".agents" / "skills" / "agent-token-saver" / "SKILL.md").is_file()
     assert (home / ".local" / "bin" / "agent-token-ledger").is_symlink()
+    assert (home / ".local" / "bin" / "agent-token-audit").is_symlink()
     config = json.loads((home / ".agent-token-saver" / "config.json").read_text())
-    assert config == {
-        "schema_version": 1,
-        "profile": "lean",
-        "agents": ["codex", "claude", "hermes", "ggcoder", "repo"],
+    assert config["schema_version"] == 2
+    assert config["profile"] == "lean"
+    assert config["agents"] == ["codex", "claude", "hermes", "ggcoder", "repo"]
+    assert config["project_root"] == str(project.resolve())
+    assert config["canonical_skill"]["version"] == "3.2.0"
+    assert config["canonical_skill"]["sha256"] == hashlib.sha256(
+        (ROOT / "skills" / "agent-token-saver" / "SKILL.md").read_bytes()
+    ).hexdigest()
+    assert set(config["managed_skill_paths"]) == {
+        str((home / ".hermes" / "skills" / "agent-token-saver" / "SKILL.md").resolve()),
+        str((home / ".gg" / "skills" / "agent-token-saver.md").resolve()),
+        str((project / ".agents" / "skills" / "agent-token-saver" / "SKILL.md").resolve()),
     }
+    assert {asset["name"] for asset in config["managed_assets"]} == {
+        "doctor",
+        "ledger",
+        "audit",
+        "prompt_hook",
+        "session_guard",
+    }
+    for asset in config["managed_assets"]:
+        assert Path(asset["path"]).is_file()
+        assert hashlib.sha256(Path(asset["path"]).read_bytes()).hexdigest() == asset["sha256"]
 
     claude = json.loads(claude_settings.read_text())
     assert claude["theme"] == "dark"
     assert "Stop" in claude["hooks"]
+    assert any(
+        "token-session-guard.py" in hook["command"]
+        for entry in claude["hooks"]["Stop"]
+        for hook in entry["hooks"]
+    )
     assert claude["hooks"]["PreToolUse"] == [existing_rtk]
     assert claude["hooks"]["UserPromptSubmit"]
     codex = json.loads((home / ".codex" / "hooks.json").read_text())
     assert codex["hooks"]["PreToolUse"] == []
     assert codex["hooks"]["UserPromptSubmit"]
+    assert any(
+        "token-session-guard.py" in hook["command"]
+        for entry in codex["hooks"]["Stop"]
+        for hook in entry["hooks"]
+    )
 
 
 def test_repeated_install_deduplicates_hooks(tmp_path: Path) -> None:
@@ -75,6 +105,7 @@ def test_repeated_install_deduplicates_hooks(tmp_path: Path) -> None:
     hooks = json.loads((tmp_path / "home" / ".codex" / "hooks.json").read_text())["hooks"]
     assert len(hooks["PreToolUse"]) == 0
     assert len(hooks["UserPromptSubmit"]) == 1
+    assert len(hooks["Stop"]) == 1
 
 
 def test_existing_host_heavy_launcher_is_preserved(tmp_path: Path) -> None:
@@ -217,6 +248,8 @@ def test_minimal_profile_has_no_visible_skills_or_prompt_hooks(tmp_path: Path) -
     claude = json.loads((home / ".claude" / "settings.json").read_text())
     assert codex["hooks"]["UserPromptSubmit"] == []
     assert claude["hooks"]["UserPromptSubmit"] == []
+    assert codex["hooks"]["Stop"] == []
+    assert claude["hooks"]["Stop"] == []
 
 
 def test_team_profile_is_a_supported_lean_runtime(tmp_path: Path) -> None:

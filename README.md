@@ -7,12 +7,12 @@
 [![MIT](https://img.shields.io/badge/license-MIT-1c7c54.svg)](LICENSE)
 [![CI](https://github.com/Supersynergy/agent-token-saver/actions/workflows/ci.yml/badge.svg)](https://github.com/Supersynergy/agent-token-saver/actions/workflows/ci.yml)
 ![verified agents](https://img.shields.io/badge/verified-Codex%20%7C%20Claude%20%7C%20Hermes%20%7C%20GG%20Coder-f2c14e.svg)
-![measured](https://img.shields.io/badge/measured-up%20to%20196.4x%20payload%20capacity-e8f1f2.svg)
+![measured](https://img.shields.io/badge/measured-up%20to%20199.1x%20payload%20capacity-e8f1f2.svg)
 
 > **Imagine getting 100x more context-heavy work from Codex, Claude Code,
 > Hermes or GG Coder before hitting the same token budget. In the included
-> accepted-workload benchmark, you can: 376,626 tokens became 1,918 tokens --
-> 99.49% less, or 196.4x more payload capacity.**
+> accepted-workload fixture, 375,673 estimated visible-input units became
+> 1,887 -- 99.50% less payload, or 199.1x more comparable payload capacity.**
 
 `agent-token-saver` stops wasted tokens before they reach your model. It sends
 the smallest context that can still produce the correct result: the relevant
@@ -34,16 +34,16 @@ Without routing, a coding agent may receive 460 skill descriptions, a complete
 process table, a full README and a 20,000-line log before it starts solving the
 task. Most of those tokens never help the answer.
 
-With `agent-token-saver`, the same accepted workload used:
+With `agent-token-saver`, the same accepted fixture carried:
 
-- **1,918 instead of 376,626 tokens** in the CLI-selective profile.
-- **3,734 instead of 376,626 tokens** in the automatic Lean profile.
-- **Up to 99.49% fewer tokens** across the measured workload.
-- **Up to 196 comparable payloads** inside the token budget previously used by one raw payload.
+- **1,887 instead of 375,673 estimated visible-input units** in the CLI-selective profile.
+- **3,782 instead of 375,673 estimated visible-input units** in the automatic Lean profile.
+- **Up to 99.50% less visible input** across the measured fixture.
+- **Up to 199 comparable payloads** inside the payload budget previously used by one raw fixture.
 
-That can mean more Codex or Claude work from the same subscription/API budget,
-longer useful sessions before compaction, fewer quota interruptions and more
-room for the model to reason about the code that actually matters.
+That leaves more visible context-window room. It does not by itself prove the
+same reduction in provider input, billing or subscription quota; use the
+provider ledger and an accepted A/B for that claim.
 
 It does **not** make the model cheaper by making it dumber. It removes context
 the task did not need while keeping required evidence, errors, approvals and
@@ -59,8 +59,8 @@ evidence needed for a good answer and keeps heavy tools one command away. Your
 agent reads less irrelevant text, consumes fewer tokens and keeps more of its
 context window for judgment and implementation.
 
-**The result:** more useful agent work per token, one understandable stack, four
-workload profiles, real A/B measurements, reversible hooks and no lock-in.
+**The result:** one understandable stack, four workload profiles, explicitly
+labelled payload and provider measurements, reversible hooks and no lock-in.
 
 ## Commitment and next proof
 
@@ -71,8 +71,8 @@ latency and correctness; otherwise it remains an explicit CLI or session tool.
 
 The next evidence this project still needs is deliberately narrow:
 
-1. Fresh-host provider A/Bs for each supported agent, with model and runtime
-   pinned rather than inferred from local payload estimates.
+1. Repeat the current Codex provider tasks in ABBA order and add fresh-host
+   provider A/Bs for Claude, Hermes and GG Coder with model/runtime pinned.
 2. A parent-plus-children benchmark on independent coding lanes that records
    bootstrap, retries, cache classes and final oracle—not just child speed.
 3. Native Codex shell-hook coverage before any transparent shell rewriting is
@@ -83,33 +83,36 @@ checks, artifacts and profiles stay valid while new evidence is collected.
 
 ## The measured result
 
-Local benchmark, 2026-07-13. Same accepted workload and deterministic fixtures in every arm; UTF-8 bytes / 4 for local payloads and provider-reported usage for the reused live output A/B.
+Local benchmark, 2026-07-15. Same accepted workload and deterministic fixtures
+in every arm. Visible input is a UTF-8 bytes / 4 proxy. Reused Ponytail output
+counts remain a separate A/B and are not combined with these unrelated
+component fixtures; the matrix is not provider billing.
 
 This is a **profile payload benchmark**, not a claim that a brand-new host will
-immediately reduce its complete provider bill by 196.4x. The full profile used
+immediately reduce its complete provider bill by 199.1x. The full profile used
 the named Router, RTK and Tilth components. Clean-host portability and complete
 provider context are measured separately below.
 
-| Stack | Tokens per workload | Tokens saved | Payload capacity in the same raw budget |
+| Stack | Estimated payload per workload | Payload reduction | Capacity in the same raw payload budget |
 |---|---:|---:|---:|
-| **CLI selective** | **1,918** | **99.49%** | **196.4x** |
-| Lean automatic | 3,734 | 99.01% | 100.9x |
-| Context-mode on demand | 9,452 | 97.49% | 39.8x |
-| Everything + Ponytail | 12,567 | 96.66% | 30.0x |
-| No saver | 376,626 | 0% | 1.0x |
+| **CLI selective** | **1,887** | **99.50%** | **199.1x** |
+| Lean automatic | 3,782 | 98.99% | 99.3x |
+| Context-mode on demand | 9,420 | 97.49% | 39.9x |
+| Everything + Ponytail | 12,614 | 96.64% | 29.8x |
+| No saver | 375,673 | 0% | 1.0x |
 
-### What "100x more usage" actually means
+### What "100x more payload capacity" actually means
 
-Take the token budget consumed by one raw benchmark workload: **376,626
-tokens**.
+Take the estimated visible payload carried by one raw benchmark workload:
+**375,673 units**.
 
 - Raw approach: that budget carries **1** comparable workload.
-- CLI-selective profile: that budget carries **196 full comparable payloads**.
-- Automatic Lean profile: that budget carries **100 full comparable payloads**.
-- Across 100 comparable workloads: **37,662,600 raw tokens vs 191,800 CLI-selective tokens**.
+- CLI-selective profile: that budget carries **199 full comparable payloads**.
+- Automatic Lean profile: that budget carries **99 full comparable payloads**.
+- Across 100 comparable fixtures: **37,567,300 raw payload units vs 188,700 CLI-selective units**.
 
 The multiplier is `raw tokens / optimized tokens`. It measures useful payload
-capacity, not a promise of 196x more provider calls: subscription rate limits,
+capacity, not a promise of 196x more provider calls or fewer billed tokens: subscription rate limits,
 cache accounting, model output, tool calls and task mix still matter. If tokens
 or quota are your bottleneck and your workload resembles this one, however,
 the practical gain can be enormous.
@@ -137,10 +140,32 @@ Reproduce it:
 
 ```bash
 python3 scripts/token_stack_matrix_benchmark.py \
-  --reuse-live data/benchmarks/token-stack-matrix-2026-07-13.json
+  --reuse-live data/benchmarks/token-stack-matrix-2026-07-15.json
 ```
 
-Raw result: [data/benchmarks/token-stack-matrix-2026-07-13.md](data/benchmarks/token-stack-matrix-2026-07-13.md).
+Raw result: [data/benchmarks/token-stack-matrix-2026-07-15.md](data/benchmarks/token-stack-matrix-2026-07-15.md).
+
+## Current provider-boundary result
+
+Codex CLI 0.144.3 with `gpt-5.6-sol`, fresh HOME per arm, identical task
+prompts and executable answer/command oracles. One baseline and one compact
+Lean run were accepted for each of three tasks:
+
+| Task | Baseline total | Lean total | Provider total change |
+|---|---:|---:|---:|
+| Process fixture | 29,359 | 38,800 | **32.16% more** |
+| Large Git diff | 44,629 | 25,886 | **42.00% less** |
+| Git history | 38,500 | 25,678 | **33.30% less** |
+| **Aggregate** | **112,488** | **90,364** | **19.67% less** |
+
+All three oracles passed. The automatic route uses a compact inline policy;
+an explicit `$agent-token-saver` still loads the full canonical skill. This is
+real provider usage, but one run per arm is not a confidence interval and it
+does **not** prove 99% end-to-end savings. An attempted follow-up was retained
+as invalid after the account usage limit interrupted its baseline.
+
+Artifacts and raw JSONL:
+[data/benchmarks/codex-provider-ab-2026-07-15/README.md](data/benchmarks/codex-provider-ab-2026-07-15/README.md).
 
 ## Does it work on a neutral machine?
 
@@ -320,12 +345,15 @@ explain becomes `unattributed_input_tokens` instead of disappearing from the
 benchmark.
 
 ```bash
-codex exec --json --ephemeral "your real task" > run.jsonl
+codex exec --json "your real task" > run.jsonl
 
 agent-token-ledger \
   --usage parent=run.jsonl \
   --usage child-review=child.jsonl \
   --provider codex \
+  --expected-workers 1 \
+  --require-complete-team \
+  --require-within-guard \
   --component project-rules=AGENTS.md \
   --component active-skill=.agents/skills/agent-token-saver/SKILL.md \
   --format markdown \
@@ -339,11 +367,45 @@ treated as a subset, while Claude cache-create/cache-read fields are added as
 separate input classes.
 
 Repeated `--usage [NAME=]PATH` inputs are summed, so parent, child, retry and
-compaction runs remain in the total. Repeated visible components are fingerprinted
-and reported as duplicate-context tax.
+fallback runs remain in the total. The ledger prefers Codex's cumulative
+`total_token_usage`, rejects duplicate source paths, detects spawned workers
+without matching usage files and exits non-zero when a requested team or guard
+gate fails. Repeated visible components are fingerprinted and reported as
+duplicate-context tax.
+
+Lean and Teams profiles also install a fail-open `Stop` guard. At 10M provider
+tokens or 5MB captured tool output it warns once; at 25M provider tokens, two
+compactions or incomplete worker accounting it requests a durable checkpoint.
+It emits no continuation decision, so the human remains the owner of STOP.
+
+For machine or worker handoffs, `--format json-compact` preserves the complete
+ledger schema without pretty-print whitespace. The measured three-session
+ledger fell from 4,097 to 3,185 bytes (22.26%) and decoded identically.
+
+The installed `agent-token-audit` can compare optional usage dashboards without
+letting them replace provider truth. It copies the named sessions into a
+temporary home, strips inherited credentials, runs only caller-supplied commands
+and exits non-zero when their normalized token fields differ from
+`agent-token-ledger`:
+
+```bash
+agent-token-audit \
+  --usage parent=run.jsonl \
+  --candidate splitrail=/path/to/splitrail \
+  --candidate 'tokscale=/path/to/tokscale' \
+  --runs 5
+```
+
+It installs nothing. Package runners must use exact versions; `@latest` is
+rejected. The temporary home and scrubbed environment are write/credential
+guards, not an OS or network sandbox; execute only reviewed candidates. Full
+candidate and combination matrix:
+[data/benchmarks/external-stack-matrix-2026-07-15.md](data/benchmarks/external-stack-matrix-2026-07-15.md).
 
 Full method, limitations and optimization ladder:
 [docs/FULL_CONTEXT_MEASUREMENT.md](docs/FULL_CONTEXT_MEASUREMENT.md).
+Current ten-session audit:
+[data/benchmarks/recent-codex-session-audit-2026-07-15.md](data/benchmarks/recent-codex-session-audit-2026-07-15.md).
 
 The original visible saver skill cost **0.68% more** on a trivial warm Codex
 turn. The zero-hot layout removes that regression: an ABBA clean-HOME probe now
@@ -419,15 +481,15 @@ Exact task packet, break-even rule, memory tiers and parent/child accounting:
 
 ## Benchmark details
 
-Measured component reductions:
+Estimated visible component reductions (UTF-8 bytes / 4):
 
 | Component | Raw | Optimized | Saved |
 |---|---:|---:|---:|
-| Skill catalog -> router | 37,157 | 98 | 99.74% |
+| Skill catalog -> router | 36,107 | 68 | 99.81% |
 | process fixture -> RTK | 32,210 | 887 | 97.25% |
-| source file -> Tilth budget | 6,785 | 748 | 88.98% |
+| source file -> Tilth budget | 6,882 | 747 | 89.15% |
 | 20k-line log -> native projection | 300,474 | 185 | 99.94% |
-| same log -> context-mode | 300,474 | 261 | 99.91% |
+| same log -> context-mode | 300,474 | 260 | 99.91% |
 
 Fixed cold overhead in that run:
 
@@ -444,13 +506,14 @@ uv run ruff check scripts integration tests
 bash -n install-universal.sh integration/cli/codex-heavy-context \
   scripts/neutral_install_smoke.sh scripts/remote_bootstrap_smoke.sh
 bash scripts/neutral_install_smoke.sh
+python3 scripts/codex_provider_ab.py --live --model <PINNED_MODEL>
 ```
 
 ## What this repository does not claim
 
 - Token proxies are not provider billing meters.
 - A component's best-case reduction is not the whole session reduction.
-- The 196.4x payload result is not a clean-host or provider-billing multiplier.
+- The 199.1x payload result is not a clean-host or provider-billing multiplier.
 - Popularity is not proof of savings.
 - “Installed” is not “active”; verify hooks, MCP startup and real usage.
 - Optional local models can add latency and storage while saving almost nothing after deterministic filtering.

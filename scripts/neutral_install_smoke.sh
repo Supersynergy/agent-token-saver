@@ -27,6 +27,7 @@ assert report["status"] in {"core-ready", "full"}, report
 required = [
     home / ".local/bin/agent-token-saver",
     home / ".local/bin/agent-token-ledger",
+    home / ".local/bin/agent-token-audit",
     home / ".agent-token-saver/skills/agent-token-saver/SKILL.md",
     home / ".codex/hooks.json",
     home / ".claude/settings.json",
@@ -51,3 +52,4 @@ print(
 PY
 
 "$HOME/.local/bin/agent-token-ledger" --help >/dev/null
+"$HOME/.local/bin/agent-token-audit" --help >/dev/null

@@ -1,0 +1,198 @@
+{
+  "schema_version": 1,
+  "date": "2026-07-15",
+  "method": "pinned releases, isolated HOME, accepted-output and exact-token gates",
+  "usage_fixture": {
+    "provider": "codex",
+    "sessions": 3,
+    "bytes": 1812281,
+    "canonical": {
+      "input_total": 7768418,
+      "input_uncached": 599394,
+      "cache_read": 7169024,
+      "output": 76884,
+      "reasoning": 30986
+    }
+  },
+  "discovery_snapshot": [
+    {"repo": "getagentseal/codeburn", "stars": 8667},
+    {"repo": "junhoyeo/tokscale", "stars": 4468},
+    {"repo": "microsoft/apm", "stars": 3245},
+    {"repo": "openclaw/acpx", "stars": 2975},
+    {"repo": "glommer/cachebro", "stars": 213},
+    {"repo": "Piebald-AI/splitrail", "stars": 210},
+    {"repo": "Green-PT/honey-for-devs", "stars": 165},
+    {"repo": "juliantanx/aiusage", "stars": 106},
+    {"repo": "atlassian-labs/mcp-compressor", "stars": 97},
+    {"repo": "evantahler/mcpx", "stars": 32}
+  ],
+  "usage_auditors": [
+    {
+      "name": "agent-token-ledger",
+      "role": "canonical team and guard truth",
+      "exact": true,
+      "median_wall_ms": 113.4,
+      "max_rss_bytes": 29065216,
+      "decision": "default"
+    },
+    {
+      "name": "splitrail",
+      "version": "3.5.8",
+      "commit": "3a3a565b64286c04072453faa2dea94b9527bcdd",
+      "exact": true,
+      "cold_wall_ms": 12.33,
+      "warm_median_wall_ms": 10.72,
+      "max_rss_bytes": 16154624,
+      "decision": "optional fast global audit"
+    },
+    {
+      "name": "tokscale",
+      "version": "4.0.6",
+      "commit": "61b24d99987401b33dbc236fdb41df87e7159d65",
+      "exact": true,
+      "cold_wall_ms": 2377.92,
+      "warm_median_wall_ms": 49.88,
+      "max_rss_bytes": 32669696,
+      "decision": "optional session-model cross-check"
+    },
+    {
+      "name": "codeburn",
+      "version": "0.9.14",
+      "commit": "69eee2c1f49ec2205cffb706882ad0fa934c9a3d",
+      "exact": true,
+      "cold_wall_ms": 424.09,
+      "warm_median_wall_ms": 265.27,
+      "max_rss_bytes": 116506624,
+      "reasoning_coverage": false,
+      "decision": "optional read-only optimizer"
+    },
+    {
+      "name": "aiusage",
+      "version": "1.5.7",
+      "commit": "cabe5a2e2c07217633147edc6076d1c66bf358f4",
+      "normalized_export_exact": true,
+      "native_summary_total": 15045312,
+      "canonical_reported_total": 7845302,
+      "decision": "normalized export only; reject native total"
+    }
+  ],
+  "combinations": [
+    {
+      "name": "mcpc + cachebro unchanged read",
+      "versions": {"mcpc": "0.4.0", "cachebro": "0.2.2"},
+      "first_bytes": 20831,
+      "repeat_bytes": 361,
+      "reduction_percent": 98.27,
+      "warm_wall_ms": 341.14,
+      "persistent_rss_kib": 217600,
+      "close_left_orphan": true,
+      "decision": "reject default; cache win does not pay process and cleanup cost"
+    },
+    {
+      "name": "mcpc + cachebro changed read",
+      "first_bytes": 20831,
+      "diff_bytes": 633,
+      "reduction_percent": 96.96,
+      "decision": "useful mechanism, unsuitable runtime combination"
+    },
+    {
+      "name": "mcpx + cachebro",
+      "version": "0.22.2",
+      "first_bytes": 20896,
+      "repeat_bytes": 20896,
+      "wall_seconds": [2.22, 2.21],
+      "max_rss_bytes": [104103936, 103596032],
+      "decision": "reject; per-call process loses cache state"
+    },
+    {
+      "name": "mcp-compressor high + cachebro",
+      "version": "0.31.2 source tag; binary reports 0.1.0",
+      "raw_schema_bytes": 3234,
+      "compressed_schema_bytes": 1294,
+      "selected_tool_schema_bytes": 1696,
+      "net_discovery_reduction_percent": 7.54,
+      "decision": "reject for four-tool server"
+    },
+    {
+      "name": "mcp-compressor high + tilth",
+      "raw_schema_bytes": 9540,
+      "compressed_schema_bytes": 1549,
+      "search_plus_read_total_bytes": 6246,
+      "search_plus_read_reduction_percent": 34.53,
+      "all_tools_total_bytes": 11468,
+      "all_tools_change_percent": 20.21,
+      "decision": "workload-gated only; no Lean default before provider A/B"
+    },
+    {
+      "name": "mcpx keyword discovery + tilth",
+      "index_seconds": 8.1,
+      "index_peak_rss_mib": 170,
+      "index_bytes": 80323,
+      "search_seconds": 0.07,
+      "search_max_rss_bytes": 61685760,
+      "result_bytes": 1660,
+      "decision": "optional only for broad MCP catalogs"
+    },
+    {
+      "name": "mcpx semantic discovery + tilth",
+      "search_seconds": 0.62,
+      "search_max_rss_bytes": 823296000,
+      "result_bytes": 1708,
+      "decision": "reject default; keyword result was equivalent"
+    },
+    {
+      "name": "acpx one-shot output formats",
+      "version": "0.11.0",
+      "text_bytes": 85,
+      "quiet_bytes": 6,
+      "json_bytes": 1013,
+      "quiet_vs_json_reduction_percent": 99.41,
+      "one_shot_median_ms": 139.29,
+      "max_rss_bytes": 99352576,
+      "decision": "quiet output only when ACP transport is already required"
+    },
+    {
+      "name": "acpx persistent mock session",
+      "prompt_seconds": [1.26, 1.09],
+      "persistent_rss_kib": 177616,
+      "decision": "reject default; real Codex adapter lacked a reproducible lock"
+    },
+    {
+      "name": "agent-token-ledger compact JSON",
+      "pretty_bytes": 4097,
+      "compact_bytes": 3185,
+      "reduction_percent": 22.26,
+      "lossless": true,
+      "decision": "integrate"
+    }
+  ],
+  "packaging_and_prompt_layers": [
+    {
+      "name": "microsoft/apm",
+      "version": "0.23.1",
+      "init_seconds": 0.67,
+      "init_max_rss_bytes": 62062592,
+      "compile_seconds": 0.35,
+      "compile_max_rss_bytes": 57556992,
+      "decision": "portable packaging option, not a token-saving runtime layer"
+    },
+    {
+      "name": "honey-for-devs",
+      "version": "1.1.0",
+      "commit_date": "2026-07-03",
+      "decision": "not executed; 12 days old and blocked by 14-day dependency gate"
+    }
+  ],
+  "integrated": [
+    "agent-token-audit isolated external auditor gate",
+    "agent-token-ledger json-compact output",
+    "optional Splitrail, Tokscale, CodeBurn and normalized aiusage adapters"
+  ],
+  "not_integrated": [
+    "new always-on MCPs",
+    "semantic model discovery",
+    "persistent ACP agent sessions",
+    "automatic team fan-out",
+    "unlocked or younger-than-14-day packages"
+  ]
+}

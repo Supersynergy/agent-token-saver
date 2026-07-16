@@ -1,0 +1,229 @@
+{
+  "date": "2026-07-14 16:15:04 CEST",
+  "method": "local real CLIs/MCP schemas; bytes/4 token proxy; optional Codex provider usage for Ponytail A/B",
+  "versions": {
+    "context_mode": "1.0.169",
+    "headroom": "0.31.0",
+    "rtk": "0.43.0",
+    "tilth": "0.9.0",
+    "codex": "0.144.3"
+  },
+  "headroom_codex_observed": {
+    "counted_in_profiles": false,
+    "requests": 0,
+    "before_tokens": 0,
+    "after_tokens": 0,
+    "tokens_saved": 0,
+    "savings_percent": 0.0,
+    "tool_search_tokens_saved": 0,
+    "tool_search_requests": 0
+  },
+  "schemas": {
+    "tilth": {
+      "tools": 6,
+      "tokens": 1836,
+      "ms": 28,
+      "error": ""
+    },
+    "context_mode": {
+      "tools": 11,
+      "tokens": 7458
+    }
+  },
+  "ponytail": {
+    "type": "behavior/output shaper skill, not a lossless compressor",
+    "full_skill_tokens": 1299,
+    "live_cases": [
+      {
+        "name": "ttl-cache",
+        "arms": {
+          "baseline": {
+            "rc": 0,
+            "elapsed_ms": 26912,
+            "usage": {
+              "input_tokens": 17881,
+              "cached_input_tokens": 10496,
+              "output_tokens": 423,
+              "reasoning_output_tokens": 0
+            },
+            "answer_est_tokens": 401,
+            "answer_chars": 1607,
+            "accepted": true,
+            "missing": [],
+            "answer": "```python\nimport time\nfrom collections import OrderedDict\nfrom threading import RLock\n\n\nclass TTLCache:\n    def __init__(self, maxsize: int, ttl: float):\n        if maxsize <= 0 or ttl <= 0:\n            raise ValueError(\"maxsize and ttl must be positive\")\n        self.maxsize = maxsize\n        self.ttl = ttl\n        self._data = OrderedDict()\n        self._lock = RLock()\n\n    def get(self, key, default=None):\n        now = time.monotonic()\n        with self._lock:\n            item = self._data.get(key)\n            if item is None:\n                return default\n\n            value, expires_at = item\n            if expires_at <= now:\n                del self._data[key]\n                return default\n\n            self._data.move_to_end(key)\n            return value\n\n    def set(self, key, value):\n        expires_at = time.monotonic() + self.ttl\n        with self._lock:\n            self._data.pop(key, None)\n            self._data[key] = (value, expires_at)\n\n            while len(self._data) > self.maxsize:\n                self._data.popitem(last=False)\n\n    def invalidate(self, key):\n        with self._lock:\n            return self._data.pop(key, None) is not None\n\n\nif __name__ == \"__main__\":\n    cache = TTLCache(maxsize=2, ttl=0.03)\n    cache.set(\"a\", 1)\n    assert cache.get(\"a\") == 1\n    assert cache.invalidate(\"a\")\n    assert cache.get(\"a\") is None\n\n    cache.set(\"a\", 1)\n    cache.set(\"b\", 2)\n    cache.set(\"c\", 3)\n    assert cache.get(\"a\") is None  # LRU evicted\n    assert cache.get(\"b\") == 2\n\n    time.sleep(0.04)\n    assert cache.get(\"b\") is None  # TTL expired\n    print(\"OK\")\n```",
+            "stderr": ""
+          },
+          "ponytail_full": {
+            "rc": 0,
+            "elapsed_ms": 28927,
+            "usage": {
+              "input_tokens": 19165,
+              "cached_input_tokens": 10496,
+              "output_tokens": 449,
+              "reasoning_output_tokens": 98
+            },
+            "answer_est_tokens": 319,
+            "answer_chars": 1277,
+            "accepted": true,
+            "missing": [],
+            "answer": "```python\nfrom collections import OrderedDict\nfrom threading import RLock\nfrom time import monotonic\n\n\nclass TTLCache:\n    def __init__(self, ttl, maxsize=128):\n        if ttl <= 0 or maxsize <= 0:\n            raise ValueError(\"ttl and maxsize must be positive\")\n        self.ttl, self.maxsize, self._data, self._lock = ttl, maxsize, OrderedDict(), RLock()\n\n    def get(self, key, default=None):\n        with self._lock:\n            item = self._data.get(key)\n            if item is None or item[0] <= monotonic():\n                self._data.pop(key, None)\n                return default\n            self._data.move_to_end(key)\n            return item[1]\n\n    def set(self, key, value):\n        with self._lock:\n            self._data[key] = (monotonic() + self.ttl, value)\n            self._data.move_to_end(key)\n            while len(self._data) > self.maxsize:\n                self._data.popitem(last=False)\n\n    def invalidate(self, key):\n        with self._lock:\n            self._data.pop(key, None)\n\n\nif __name__ == \"__main__\":\n    import time\n    c = TTLCache(.01, 1)\n    c.set(\"a\", 1); assert c.get(\"a\") == 1\n    c.set(\"b\", 2); assert c.get(\"a\") is None\n    time.sleep(.02); assert c.get(\"b\") is None\n    c.set(\"x\", 3); c.invalidate(\"x\"); assert c.get(\"x\") is None\n```",
+            "stderr": ""
+          }
+        }
+      },
+      {
+        "name": "jsonl-cli-design",
+        "arms": {
+          "baseline": {
+            "rc": 0,
+            "elapsed_ms": 26996,
+            "usage": {
+              "input_tokens": 17885,
+              "cached_input_tokens": 10496,
+              "output_tokens": 258,
+              "reasoning_output_tokens": 0
+            },
+            "answer_est_tokens": 235,
+            "answer_chars": 943,
+            "accepted": true,
+            "missing": [],
+            "answer": "`jsonl-filter --where 'status=active' < input.jsonl > output.jsonl`\n\n- Streams line-by-line; emits matching original JSON objects as JSONL. Constant memory.\n- Multiple filters: `--where 'status=active' --where 'score>=80'`\n- Nested key: `--where 'user.region=DE'`\n- Operators: `=`, `!=`, `>`, `>=`, `<`, `<=`, `~` (string contains).\n\nExit codes:\n\n- `0` success, including zero matches\n- `2` invalid CLI syntax/filter expression\n- `3` invalid JSON input line\n- `4` missing key or incompatible comparison type\n- `5` read/write I/O failure\n\nStreaming behavior:\n\n- Read stdin incrementally, one JSON object per newline.\n- Write each match immediately; preserve input order.\n- Stop at first malformed line; write error with line number to stderr.\n- Never buffer the full file.\n\nTest:\n\n```sh\nprintf '%s\\n' '{\"id\":1,\"status\":\"active\"}' '{\"id\":2,\"status\":\"inactive\"}' |\n  jsonl-filter --where 'status=active'\n# expected: {\"id\":1,\"status\":\"active\"}\n```",
+            "stderr": ""
+          },
+          "ponytail_full": {
+            "rc": 0,
+            "elapsed_ms": 20342,
+            "usage": {
+              "input_tokens": 19169,
+              "cached_input_tokens": 10496,
+              "output_tokens": 81,
+              "reasoning_output_tokens": 0
+            },
+            "answer_est_tokens": 80,
+            "answer_chars": 323,
+            "accepted": true,
+            "missing": [],
+            "answer": "`jsonl-filter --key status --value active < in.jsonl > out.jsonl`\n\nStreams line-by-line; emits matching JSON objects unchanged.\n\nExit codes: `0` success, `1` invalid arguments, `2` malformed JSONL input, `3` unreadable input/write failure.\n\nTest: pipe two records with different `status`; assert only matching line outputs.",
+            "stderr": ""
+          }
+        }
+      }
+    ],
+    "baseline_avg_output_tokens": 340,
+    "ponytail_avg_output_tokens": 265
+  },
+  "components": [
+    {
+      "name": "skill-routing",
+      "baseline_tokens": 37157,
+      "optimized_tokens": 98,
+      "baseline_ms": 0,
+      "optimized_ms": 47,
+      "accepted": true,
+      "detail": "460 skills -> 1 selected (strict)",
+      "saved_pct": 99.74
+    },
+    {
+      "name": "rtk-ps",
+      "baseline_tokens": 32210,
+      "optimized_tokens": 887,
+      "baseline_ms": 18,
+      "optimized_ms": 29,
+      "accepted": true,
+      "detail": "Stable 900-row process fixture through real RTK.",
+      "saved_pct": 97.25
+    },
+    {
+      "name": "tilth-read",
+      "baseline_tokens": 6785,
+      "optimized_tokens": 747,
+      "baseline_ms": 0,
+      "optimized_ms": 3,
+      "accepted": true,
+      "detail": "Full benchmark source vs 800-token structural budget.",
+      "saved_pct": 88.99
+    },
+    {
+      "name": "native-log-projection",
+      "baseline_tokens": 300474,
+      "optimized_tokens": 185,
+      "baseline_ms": 0,
+      "optimized_ms": 1,
+      "accepted": true,
+      "detail": "20k-line log -> exact error count + last 10 errors.",
+      "saved_pct": 99.94
+    },
+    {
+      "name": "context-mode-log",
+      "baseline_tokens": 300474,
+      "optimized_tokens": 260,
+      "baseline_ms": 0,
+      "optimized_ms": 272,
+      "accepted": true,
+      "detail": "Same exact oracle through ctx_execute_file; excludes schema overhead.",
+      "saved_pct": 99.91
+    }
+  ],
+  "matrix": [
+    {
+      "name": "none/raw",
+      "workload_input_tokens": 376626,
+      "provider_input_tokens": 376626,
+      "output_tokens": 340,
+      "total_tokens": 376966,
+      "accepted": true,
+      "cost_index_vs_none": 100.0,
+      "note": "Full skill catalog + raw shell/file/log; no schema overhead."
+    },
+    {
+      "name": "cli-selective",
+      "workload_input_tokens": 1917,
+      "provider_input_tokens": 1917,
+      "output_tokens": 340,
+      "total_tokens": 2257,
+      "accepted": true,
+      "cost_index_vs_none": 0.6,
+      "note": "Router + RTK + Tilth CLI + native projection; zero MCP schema."
+    },
+    {
+      "name": "current-lean",
+      "workload_input_tokens": 3733,
+      "provider_input_tokens": 3733,
+      "output_tokens": 340,
+      "total_tokens": 4073,
+      "accepted": true,
+      "cost_index_vs_none": 1.08,
+      "note": "Prompt hook + RTK + Tilth MCP + native projection; no Headroom."
+    },
+    {
+      "name": "context-on-demand",
+      "workload_input_tokens": 9450,
+      "provider_input_tokens": 9450,
+      "output_tokens": 340,
+      "total_tokens": 9790,
+      "accepted": true,
+      "cost_index_vs_none": 2.6,
+      "note": "Router + RTK + Tilth CLI + context-mode schema/call; no Headroom."
+    },
+    {
+      "name": "max-all+ponytail",
+      "workload_input_tokens": 12565,
+      "provider_input_tokens": 12565,
+      "output_tokens": 265,
+      "total_tokens": 12830,
+      "accepted": true,
+      "cost_index_vs_none": 3.4,
+      "note": "Current + context-mode MCP + full Ponytail skill; cold-schema cost."
+    }
+  ],
+  "top3": [
+    "cli-selective",
+    "current-lean",
+    "context-on-demand"
+  ],
+  "monetary_cost": {
+    "marginal_eur": 0,
+    "reason": "Codex uses subscription/OAuth quota and gpt-5.6-sol has no public list price in Headroom stats.",
+    "comparison": "cost_index_vs_none is the measured token/quota index; none/raw = 100."
+  }
+}

@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+- Add `agent-token-audit`, an isolated fail-closed comparison gate for pinned
+  Splitrail, Tokscale, CodeBurn and normalized aiusage exports.
+- Add lossless `agent-token-ledger --format json-compact` and publish the dated
+  audit/MCP/cache/ACP combination matrix without adding a hot runtime layer.
+
+## 3.2.0 — 2026-07-15
+
+- Prefer cumulative Codex `total_token_usage`, reject duplicate usage sources
+  and fail closed when spawned-worker ledgers are missing.
+- Add configurable context-rot thresholds plus a fail-open Stop hook that
+  warns without automatically continuing or blocking the user's STOP.
+- Pin token-saver routing to an owner-controlled canonical skill; validate
+  roots, ownership, modes, frontmatter names and symlink containment.
+- Add a hashed install manifest and an end-to-end doctor that detects stale
+  skills, altered managed assets and broken prompt/guard hook wiring.
+- Rename local bytes/4 benchmark fields to payload estimates and separate them
+  from provider usage, quota and monetary-cost claims.
+- Replace the automatic full-skill read after a valid -29.24% provider
+  regression; the compact policy's three-task Codex probe passes every oracle
+  and saves 19.67% aggregate provider total, while explicitly rejecting a 99%
+  end-to-end claim.
+
 ## 3.1.5 — 2026-07-14
 
 - Add the `teams` profile: the Lean runtime plus an explicit bounded

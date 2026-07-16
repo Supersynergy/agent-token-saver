@@ -5,8 +5,8 @@ Hermes Agent 0.18.2 and GG Coder 5.15.1.
 
 | Agent | Stable integration | What the installer does |
 |---|---|---|
-| Codex CLI | zero-hot prompt gate + CLI | hidden skill; no visible catalog entry; removes obsolete repo RTK rewrite hooks |
-| Claude Code | native RTK + zero-hot prompt gate | `rtk hook claude` when present; hidden skill activates only on demand |
+| Codex CLI | zero-hot prompt gate + Stop guard + CLI | hidden canonical skill; no visible catalog entry; removes obsolete repo RTK rewrite hooks |
+| Claude Code | native RTK + prompt gate + Stop guard | `rtk hook claude` when present; hidden canonical skill activates only on demand |
 | Hermes Agent | Agent Skills standard | installs under `~/.hermes/skills/` |
 | GG Coder | global Markdown skill | installs under `~/.gg/skills/` |
 | Other agents | repo skill + CLI/JSON | installs `.agents/skills/`; call projections directly |
@@ -39,6 +39,11 @@ its public CLI does not expose.
 - Claude shell rewrites use RTK's own `rtk hook claude`; missing RTK means no rewrite.
 - Codex shell compression is agent-guided until its unified shell hook coverage is complete.
 - Automatic fuzzy routing is strict and limited to one primary skill; ambiguity returns no skill.
+- Explicit `$SkillName` routing wins over context triggers.
+- The token-saver route is pinned to the installed canonical skill, not a stale router copy.
+- Automatic token tasks receive only the compact projection policy; the full canonical skill is read only for explicit `$agent-token-saver` use.
+- Routed files must stay inside an allowed skill root, match their frontmatter name, be owned by the current user and reject group/world-writable or escaping symlink paths.
+- The Stop guard validates the transcript path, delegates accounting to the installed ledger, stores private mode-0600 state and emits warnings without auto-continuing or blocking STOP.
 - Existing settings are loaded, merged, backed up and atomically replaced.
 - Repeated installation deduplicates agent-token-saver commands.
 - Approval, sandbox and permission decisions remain owned by the host agent.

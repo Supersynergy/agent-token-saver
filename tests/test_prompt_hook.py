@@ -12,6 +12,7 @@ HOOK = ROOT / "integration" / "hooks" / "token-stack-prompt.py"
 def run_hook(home: Path, prompt: str, router: Path | None = None) -> str:
     env = os.environ.copy()
     env["HOME"] = str(home)
+    env["ATS_SKILL_ROOTS"] = str(home)
     env.pop("ATS_ROUTER", None)
     if router is not None:
         env["ATS_ROUTER"] = str(router)
@@ -47,6 +48,26 @@ def test_hidden_fallback_is_gated_to_token_tasks(tmp_path: Path) -> None:
     payload = json.loads(output)
     context = payload["hookSpecificOutput"]["additionalContext"]
     assert str(skill) in context
+    assert "do not read SKILL.md" in context
+    assert "Read it completely" not in context
+
+
+def test_explicit_token_saver_loads_canonical_skill(tmp_path: Path) -> None:
+    skill = (
+        tmp_path
+        / ".agent-token-saver"
+        / "skills"
+        / "agent-token-saver"
+        / "SKILL.md"
+    )
+    skill.parent.mkdir(parents=True)
+    skill.write_text("---\nname: agent-token-saver\n---\n")
+
+    output = run_hook(tmp_path, "$agent-token-saver audit token context")
+    context = json.loads(output)["hookSpecificOutput"]["additionalContext"]
+
+    assert str(skill) in context
+    assert "Read it completely" in context
 
 
 def test_empty_router_falls_back_for_token_tasks(tmp_path: Path) -> None:
@@ -66,6 +87,56 @@ def test_empty_router_falls_back_for_token_tasks(tmp_path: Path) -> None:
 
     context = json.loads(output)["hookSpecificOutput"]["additionalContext"]
     assert str(skill) in context
+
+
+def test_token_saver_router_result_is_pinned_to_canonical_copy(tmp_path: Path) -> None:
+    canonical = (
+        tmp_path
+        / ".agent-token-saver"
+        / "skills"
+        / "agent-token-saver"
+        / "SKILL.md"
+    )
+    stale = tmp_path / ".agents" / "skills" / "agent-token-saver" / "SKILL.md"
+    canonical.parent.mkdir(parents=True)
+    stale.parent.mkdir(parents=True)
+    canonical.write_text("---\nname: agent-token-saver\nversion: 3.1.5\n---\n")
+    stale.write_text("---\nname: agent-token-saver\nversion: 3.1.4\n---\n")
+    router = tmp_path / "router.py"
+    router.write_text(
+        f"print({json.dumps({'selected': [{'name': 'agent-token-saver', 'path': str(stale)}]})!r})\n"
+    )
+
+    output = run_hook(tmp_path, "Benchmark agent team token usage", router)
+    context = json.loads(output)["hookSpecificOutput"]["additionalContext"]
+
+    assert str(canonical) in context
+    assert str(stale) not in context
+
+
+def test_explicit_skill_override_wins_even_for_context_prompt(tmp_path: Path) -> None:
+    canonical = (
+        tmp_path
+        / ".agent-token-saver"
+        / "skills"
+        / "agent-token-saver"
+        / "SKILL.md"
+    )
+    selected = tmp_path / ".agents" / "skills" / "youtube-trends" / "SKILL.md"
+    canonical.parent.mkdir(parents=True)
+    selected.parent.mkdir(parents=True)
+    canonical.write_text("---\nname: agent-token-saver\n---\n")
+    selected.write_text("---\nname: youtube-trends\n---\n")
+    router = tmp_path / "router.py"
+    router.write_text(
+        f"print({json.dumps({'selected': [{'name': 'youtube-trends', 'path': str(selected)}]})!r})\n"
+    )
+
+    output = run_hook(tmp_path, "$youtube-trends compress this channel context", router)
+    context = json.loads(output)["hookSpecificOutput"]["additionalContext"]
+
+    assert str(selected.resolve()) in context
+    assert str(canonical) not in context
 
 
 def test_skill_metadata_covers_token_stack_router_intents() -> None:
@@ -103,6 +174,63 @@ def test_router_is_limited_to_one_primary_skill(tmp_path: Path) -> None:
     assert str(first) in context
     assert str(second) not in context
     assert "Do not auto-load a second skill" in context
+
+
+def test_world_writable_routed_skill_is_rejected(tmp_path: Path) -> None:
+    selected = tmp_path / ".agents" / "skills" / "unsafe" / "SKILL.md"
+    selected.parent.mkdir(parents=True)
+    selected.write_text("---\nname: unsafe\n---\n")
+    selected.chmod(0o666)
+    router = tmp_path / "router.py"
+    router.write_text(
+        f"print({json.dumps({'selected': [{'name': 'unsafe', 'path': str(selected)}]})!r})\n"
+    )
+
+    assert run_hook(tmp_path, "Build and test this project", router) == ""
+
+
+def test_frontmatter_name_mismatch_is_rejected(tmp_path: Path) -> None:
+    selected = tmp_path / ".agents" / "skills" / "expected" / "SKILL.md"
+    selected.parent.mkdir(parents=True)
+    selected.write_text("---\nname: different\n---\n")
+    router = tmp_path / "router.py"
+    router.write_text(
+        f"print({json.dumps({'selected': [{'name': 'expected', 'path': str(selected)}]})!r})\n"
+    )
+
+    assert run_hook(tmp_path, "Build and test this project", router) == ""
+
+
+def test_name_outside_frontmatter_is_rejected(tmp_path: Path) -> None:
+    selected = tmp_path / ".agents" / "skills" / "expected" / "SKILL.md"
+    selected.parent.mkdir(parents=True)
+    selected.write_text("---\ndescription: missing name\n---\nname: expected\n")
+    router = tmp_path / "router.py"
+    router.write_text(
+        f"print({json.dumps({'selected': [{'name': 'expected', 'path': str(selected)}]})!r})\n"
+    )
+
+    assert run_hook(tmp_path, "Build and test this project", router) == ""
+    state = tmp_path / ".local" / "state" / "agent-token-saver"
+    assert state.stat().st_mode & 0o077 == 0
+    assert (state / "hook-events.jsonl").stat().st_mode & 0o077 == 0
+
+
+def test_symlink_escape_from_allowed_root_is_rejected(tmp_path: Path) -> None:
+    outside = tmp_path.parent / f"{tmp_path.name}-outside-SKILL.md"
+    outside.write_text("---\nname: escaped\n---\n")
+    selected = tmp_path / ".agents" / "skills" / "escaped" / "SKILL.md"
+    selected.parent.mkdir(parents=True)
+    selected.symlink_to(outside)
+    router = tmp_path / "router.py"
+    router.write_text(
+        f"print({json.dumps({'selected': [{'name': 'escaped', 'path': str(selected)}]})!r})\n"
+    )
+
+    try:
+        assert run_hook(tmp_path, "Build and test this project", router) == ""
+    finally:
+        outside.unlink(missing_ok=True)
 
 
 def test_invalid_router_json_fails_open(tmp_path: Path) -> None:
