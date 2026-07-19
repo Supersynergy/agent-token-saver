@@ -38,5 +38,10 @@ team used 66,213 gross input — **16%** of the Claude team's 411,938, with
 identical slice answers. Reproducibility check: today's simultaneous Claude
 team (411,938) sits within 5.6% of the 2026-07-16 team (390,010).
 
+Addendum, same day: a slice-1 probe through a tool-restricted custom agent
+type (read-only investigator profile, cheapest tier) cost 137,338 gross —
+identical to the default child. Agent-type restriction does not shrink the
+child bootstrap either; runtime choice is the only measured lever.
+
 One run per arm; token classes are provider usage fields, not billing
 claims. Raw JSON: `claude-stagger-ab-2026-07-19.json`.
