@@ -27,7 +27,11 @@ break-even. Measured 2026-07-16 on one host, one command per worker lane:
 
 Kimi loads the user skills index (83% of its system prompt) into every child;
 an empty `--skills-dir` removes it and cuts uncached input by 91%
-([kimi-lane-2026-07-19](../data/benchmarks/kimi-lane-2026-07-19.md)).
+([kimi-lane-2026-07-19](../data/benchmarks/kimi-lane-2026-07-19.md)). For
+Kimi worker lanes: `--quiet` returns only the final message, exit code 75
+(and only 75) means retry, and a per-team `KIMI_SHARE_DIR` keeps swarm usage
+accounting separable
+([research 2026-07-19](TOKEN_SAVER_RESEARCH_2026-07-19.md)).
 
 With a clean Codex base near 11k input tokens, a small two-file read almost
 never breaks even; a Claude Code child pays roughly four times that bootstrap,

@@ -17,6 +17,11 @@
   oracle at 16% of the measured Claude team's gross input.
 - Make the log fixture reproducible: `scripts/make_log_fixture.py` (4,000
   lines, 100 `ERROR`, `CRITICAL-MARKER` at 3777, seeded).
+- Distill external research into `docs/TOKEN_SAVER_RESEARCH_2026-07-19.md`:
+  cache mechanics behind the retired stagger rule, child-effort and hard
+  budget-cap levers, Kimi CLI operational facts (`--quiet`, exit 75 =
+  retryable, `KIMI_SHARE_DIR` per swarm), and a reported upstream
+  cache-counter inflation issue scoping all token claims.
 
 - Add `scripts/headroom_provider_ab.py` and the first accepted Headroom
   provider A/B: routing Codex through the proxy saved `54.44%` provider total
