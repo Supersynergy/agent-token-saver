@@ -1,0 +1,30 @@
+{
+  "date": "2026-07-19",
+  "host": "darwin 24.5.0, Claude Code subagents, cheapest tier (haiku)",
+  "fixture": "scripts/make_log_fixture.py (4000 lines, 100 ERROR, CRITICAL-MARKER at 3777)",
+  "task": "3 disjoint awk slices (1-1333, 1334-2666, 2667-4000), ground truth 40/32/28, controller sums",
+  "usage_source": "subagent transcripts ~/.claude/projects/<project>/<session>/subagents/agent-*.jsonl, provider usage fields",
+  "arms": {
+    "simultaneous": {
+      "spawn": "3 Agent calls in one message (starts observed 2.5s apart)",
+      "children": [
+        {"slice": 1, "requests": 4, "uncached": 36, "cache_write": 54112, "cache_read": 83020, "gross": 137168, "output": 631, "answer_ok": true},
+        {"slice": 2, "requests": 4, "uncached": 36, "cache_write": 47402, "cache_read": 89802, "gross": 137240, "output": 571, "answer_ok": true},
+        {"slice": 3, "requests": 4, "uncached": 36, "cache_write": 47648, "cache_read": 89846, "gross": 137530, "output": 706, "answer_ok": true}
+      ],
+      "total": {"uncached": 108, "cache_write": 149162, "cache_read": 262668, "gross": 411938, "output": 1908},
+      "oracle": "PASS (40+32+28=100, marker 3777)"
+    },
+    "staggered": {
+      "spawn": "1 child to completion, then 2 in parallel (~35s later)",
+      "children": [
+        {"slice": 1, "requests": 4, "uncached": 36, "cache_write": 47194, "cache_read": 89822, "gross": 137052, "output": 464, "answer_ok": true},
+        {"slice": 2, "requests": 4, "uncached": 36, "cache_write": 47488, "cache_read": 89836, "gross": 137360, "output": 611, "answer_ok": true},
+        {"slice": 3, "requests": 4, "uncached": 36, "cache_write": 47616, "cache_read": 89882, "gross": 137534, "output": 674, "answer_ok": true}
+      ],
+      "total": {"uncached": 108, "cache_write": 142298, "cache_read": 269540, "gross": 411946, "output": 1749},
+      "oracle": "PASS (40+32+28=100, marker 3777)"
+    }
+  },
+  "verdict": "staggering saved 0 gross input tokens (411,946 vs 411,938) and 6,864 cache-write tokens (4.6%, first-child variance); every child reads ~89.8k shared prefix from cache and writes ~47k child-unique suffix regardless of spawn timing"
+}

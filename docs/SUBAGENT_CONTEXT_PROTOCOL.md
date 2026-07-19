@@ -18,10 +18,16 @@ future parent turns × (raw context - compact result)
 The child bootstrap is host- and runtime-specific; measure it before assuming
 break-even. Measured 2026-07-16 on one host, one command per worker lane:
 
-| Child runtime | First-request cache write | Requests per one-command lane | Gross input |
+| Child runtime | First-request bootstrap | Requests per one-command lane | Gross input |
 |---|---:|---:|---:|
 | Codex CLI, clean base (assumed) | ~11k | — | — |
-| Claude Code subagent, cheapest tier | ~44k | 4 | ~130k |
+| Claude Code subagent, cheapest tier | ~44k cache write | 4 | ~130k–137k |
+| Kimi CLI `--print`, default | ~31.8k (22.6k uncached) | 2 | ~64k |
+| Kimi CLI `--print --skills-dir <empty>` | ~10.8k (2.1k uncached) | 2 | ~22k |
+
+Kimi loads the user skills index (83% of its system prompt) into every child;
+an empty `--skills-dir` removes it and cuts uncached input by 91%
+([kimi-lane-2026-07-19](../data/benchmarks/kimi-lane-2026-07-19.md)).
 
 With a clean Codex base near 11k input tokens, a small two-file read almost
 never breaks even; a Claude Code child pays roughly four times that bootstrap,
@@ -53,12 +59,20 @@ also lose correctness. Artifact:
 
 ### Cache-aware fan-out
 
-Workers spawned simultaneously with an identical prompt prefix each paid their
-own ~44k cache write (measured: four Claude children, four separate writes for
-one shared prefix). Stagger the spawn — start one worker, let its prefix land
-in the provider cache, then start the rest so they read instead of write. The
-expected saving is one cache write per additional worker; verify per provider
-with the ledger, because cache keys and TTLs differ.
+Measured 2026-07-19 (A/B, same fixture and oracle): **staggering the spawn
+saves nothing on Claude Code subagents** — 411,946 gross staggered vs 411,938
+simultaneous. Every child already reads the shared ~90k prefix from cache in
+both arms; the ~47k per-child cache write is child-unique suffix (per-agent
+context, task packet, the child's own conversation) that no spawn schedule can
+convert. Fan out simultaneously: same tokens, less wall time. Artifact:
+[claude-stagger-ab-2026-07-19](../data/benchmarks/claude-stagger-ab-2026-07-19.md).
+
+Moonshot/Kimi behaves the same way for scheduling but cheaper in kind: caching
+is implicit with no write premium (`input_cache_creation` = 0 in every
+measured request), so simultaneous Kimi fan-out is also free of cache penalty.
+Cut team cost by shrinking per-child suffix and requests per lane, or by
+routing shell-projection lanes to a cheaper runtime — a lean Kimi three-child
+team ran the same oracle at 16% of the Claude team's gross input.
 
 ### Model tiers inside a team
 

@@ -1,0 +1,60 @@
+{
+  "date": "2026-07-19",
+  "host": "darwin 24.5.0, kimi-cli 1.48.0, model kimi-code/kimi-for-coding",
+  "fixture": "scripts/make_log_fixture.py (4000 lines, 100 ERROR, CRITICAL-MARKER at 3777)",
+  "oracle": "total_errors=100 and marker_line=3777 in exact one-line JSON",
+  "usage_source": "~/.kimi/sessions/<proj>/<session>/wire.jsonl token_usage per request",
+  "single_lane": [
+    {
+      "arm": "default-skills-run1",
+      "requests": [
+        {"input_other": 22563, "input_cache_read": 9216, "input_cache_creation": 0, "output": 215},
+        {"input_other": 288, "input_cache_read": 31744, "input_cache_creation": 0, "output": 38}
+      ],
+      "gross_input": 63811, "uncached_input": 22851, "output": 253,
+      "wall_s": 17.03, "oracle": "PASS"
+    },
+    {
+      "arm": "default-skills-run2",
+      "requests": [
+        {"input_other": 22576, "input_cache_read": 9216, "input_cache_creation": 0, "output": 210},
+        {"input_other": 289, "input_cache_read": 31744, "input_cache_creation": 0, "output": 41}
+      ],
+      "gross_input": 63825, "uncached_input": 22865, "output": 251,
+      "wall_s": 14.94, "oracle": "PASS"
+    },
+    {
+      "arm": "lean-skills-dir-empty",
+      "requests": [
+        {"input_other": 1563, "input_cache_read": 9216, "input_cache_creation": 0, "output": 451},
+        {"input_other": 516, "input_cache_read": 10752, "input_cache_creation": 0, "output": 27}
+      ],
+      "gross_input": 22047, "uncached_input": 2079, "output": 478,
+      "wall_s": 13.28, "oracle": "PASS"
+    }
+  ],
+  "system_prompt_dissection_bytes": {
+    "total": 103308,
+    "user_skills_index": 85960,
+    "note": "83% of the child system prompt is the user skills index; --skills-dir <empty> removes it"
+  },
+  "swarm_ab": {
+    "task": "3 disjoint line-range slices (1-1333, 1334-2666, 2667-4000), controller sums; ground truth 40/32/28",
+    "simultaneous": {
+      "children": [
+        {"slice": 1, "uncached_input": 2107, "cache_read": 19968, "cache_creation": 0, "output": 394, "wall_s": 13.08, "answer_ok": true},
+        {"slice": 2, "uncached_input": 2148, "cache_read": 19968, "cache_creation": 0, "output": 427, "wall_s": 13.09, "answer_ok": true},
+        {"slice": 3, "uncached_input": 2054, "cache_read": 19968, "cache_creation": 0, "output": 337, "wall_s": 12.99, "answer_ok": true}
+      ],
+      "total_uncached": 6309, "total_gross_input": 66213, "wall_s": 13.1, "oracle": "PASS (40+32+28=100, marker 3777)"
+    },
+    "staggered": {
+      "children": [
+        {"slice": 1, "uncached_input": 1986, "cache_read": 19968, "cache_creation": 0, "output": 231, "wall_s": 10.91, "answer_ok": true},
+        {"slice": 2, "uncached_input": 2203, "cache_read": 19968, "cache_creation": 0, "output": 399, "wall_s": 10.82, "answer_ok": true},
+        {"slice": 3, "uncached_input": 2156, "cache_read": 19968, "cache_creation": 0, "output": 348, "wall_s": 10.73, "answer_ok": true}
+      ],
+      "total_uncached": 6345, "total_gross_input": 66249, "wall_s": 21.7, "oracle": "PASS (40+32+28=100, marker 3777)"
+    }
+  }
+}

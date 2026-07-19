@@ -77,8 +77,13 @@ The next evidence this project still needs is deliberately narrow:
    bootstrap, retries, cache classes and final oracle—not just child speed.
    A first Claude-side datapoint exists
    ([claude-team-ab-2026-07-16](data/benchmarks/claude-team-ab-2026-07-16.md):
-   team = 3.0x a single projection worker, raw read = 14.2x and wrong);
-   Codex, Hermes and GG Coder lanes are still open.
+   team = 3.0x a single projection worker, raw read = 14.2x and wrong), the
+   stagger-vs-simultaneous follow-up is measured and refuted
+   ([claude-stagger-ab-2026-07-19](data/benchmarks/claude-stagger-ab-2026-07-19.md)),
+   and a Kimi CLI lane exists
+   ([kimi-lane-2026-07-19](data/benchmarks/kimi-lane-2026-07-19.md): lean
+   child = 16% of the Claude child's gross input on the same lane); Codex,
+   Hermes and GG Coder lanes are still open.
 3. Native Codex shell-hook coverage before any transparent shell rewriting is
    claimed; until then Codex uses explicit `rtk` CLI guidance.
 

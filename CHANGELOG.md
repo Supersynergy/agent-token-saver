@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+- Refute the staggered-spawn cache hypothesis with a measured A/B
+  (`data/benchmarks/claude-stagger-ab-2026-07-19`): staggered = 411,946 gross
+  vs simultaneous = 411,938 on the same three-slice oracle. Children share the
+  ~90k prefix via cache read in both arms; the ~47k per-child write is
+  child-unique suffix. Protocol now says: fan out simultaneously, cut suffix
+  or switch runtime to save.
+- Add the Kimi CLI engine lane (`data/benchmarks/kimi-lane-2026-07-19`):
+  default child ≈ 63.8k gross per lane, `--skills-dir <empty>` cuts uncached
+  input 91% (22.9k → 2.1k, gross 22.0k) — 83% of the Kimi system prompt is
+  the user skills index. Moonshot caching is implicit and write-free
+  (`input_cache_creation` = 0 everywhere), so simultaneous Kimi fan-out
+  carries no cache penalty; a lean three-child Kimi team passed the same
+  oracle at 16% of the measured Claude team's gross input.
+- Make the log fixture reproducible: `scripts/make_log_fixture.py` (4,000
+  lines, 100 `ERROR`, `CRITICAL-MARKER` at 3777, seeded).
+
+- Add `scripts/headroom_provider_ab.py` and the first accepted Headroom
+  provider A/B: routing Codex through the proxy saved `54.44%` provider total
+  (`45,206` vs `20,598`) on the `large-git-diff` oracle, proxy arm run first
+  (bias against Headroom). Per-arm `agent-token-ledger` entries and ADR
+  `2026-07-18-headroom-proxy-provider-ab` record the numbers; Headroom stays
+  optional pending an ABBA repeat and a low-tool-output task.
 - Record the first Claude parent-plus-children A/B (projection worker vs
   three-worker team vs raw full-read child) with cache classes and oracle
   results: team = 3.0x a single worker, raw read = 14.2x and wrong.
