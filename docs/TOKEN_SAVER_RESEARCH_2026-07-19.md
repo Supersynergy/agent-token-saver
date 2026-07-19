@@ -12,6 +12,11 @@ benchmarks. Claims below are external unless marked measured-here.
   shows the harness already shares the child prefix as cache reads in both
   spawn schedules — the naive "stagger to convert writes" advice is dead on
   this harness, measured-here.
+- Two cache-bust traps worth guarding anyway: an idle gap over the 5-minute
+  TTL (a blocking question mid-team) re-writes the full accumulated prefix at
+  1.25x, and any tool-schema change invalidates the prefix from that point
+  (arxiv 2601.06007v2 ablation: cache benefit is linear in prefix size after
+  the provider minimum — 54–89% at 50k-token prompts).
 - Reported upstream issue (Claude Code #46917): `cache_creation_input_tokens`
   inflated per request via a User-Agent header change in v2.1.100+. Unverified
   here; our per-child write ratio (~12k/request) did not obviously match the
@@ -32,6 +37,14 @@ benchmarks. Claims below are external unless marked measured-here.
    child. Matches our capsule/task-packet contract (300–700 tokens).
 4. **Cold-start multiple** — external metering puts naive subagent fan-out at
    ~4.2x a solo run (121K → 513K), same shape as our measured 3.0x team.
+5. **File-based evidence passing** — a final-summary-only contract loses the
+   whole child run if the parent's tool dispatch hiccups (documented 14.8-min
+   subagent loss, oh-my-hermes). Children should write findings to a file and
+   return the path; this also matches the protocol's evidence-path rule.
+6. **Per-chain budget + ratio alarm** — OWASP AISVS C09: enforce a cumulative
+   per-chain token counter with a circuit breaker (per-call limits missed a
+   documented $47K four-agent run) and watch the input:output ratio — 5:1 to
+   15:1 is normal for coding agents; a client bug surfaced at 74:1 and 175:1.
 
 ## Kimi CLI operational facts (official docs sweep)
 
@@ -46,3 +59,10 @@ benchmarks. Claims below are external unless marked measured-here.
   per-team usage accounting.
 - Quota is subscription-shared across devices and keys; the
   `kimi-for-coding` slug reports $0 in ccusage-style tools (slug not priced).
+- More headless surface: `echo "..." | kimi --print` (stdin),
+  `--final-message-only`, `--input-format stream-json` (JSONL backend mode),
+  resume via `-C`/`-S <id>`, `kimi export [id]` for artifacts.
+- Kimi CLI 1.49.0 (2026-07-16, one minor above the 1.48.0 we benchmarked)
+  adds a built-in swarm mode (`/swarm`), sub-agent tools, background tasks
+  and cron, plus an adaptive completion-token budget — the built-in swarm is
+  an obvious next lane to bench against our shell-orchestrated team.
