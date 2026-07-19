@@ -41,5 +41,10 @@ prompt.
   projection) for the Kimi lean child, and whether `--agent` selection trims
   the remaining ~8.7k cached bootstrap further.
 
+Shipped same day as `kimi-worker` (installer-managed CLI); the system
+benchmark on kimi-cli 1.49.0 confirms the lane in production shape and beats
+Kimi's own built-in `Agent` swarm by 27% gross and 3.6x wall
+([kimi-worker-system-2026-07-19](../../data/benchmarks/kimi-worker-system-2026-07-19.md)).
+
 Artifacts: [kimi-lane-2026-07-19](../../data/benchmarks/kimi-lane-2026-07-19.md),
 [claude-stagger-ab-2026-07-19](../../data/benchmarks/claude-stagger-ab-2026-07-19.md).

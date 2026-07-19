@@ -68,6 +68,13 @@ Do not spawn for a small overlapping check. Sum parent, children, retries,
 fallbacks and compactions in `agent-token-ledger`; parallelism saves wall time,
 not automatically provider tokens. Default maximum: three independent workers.
 
+Spawn workers simultaneously — a measured A/B (2026-07-19) shows staggering
+saves zero input tokens on Claude children and Moonshot caching is implicit.
+Route shell-projection lanes to the cheapest passing runtime: `kimi-worker`
+(lean Kimi child, empty skills dir, exit-75 retry, per-team `KIMI_SHARE_DIR`,
+optional evidence file) ran the same oracle at 16% of a Claude team's gross
+input. Keep the expensive model for the controller and verification.
+
 ## Done gate
 
 - Same accepted result before and after optimization.

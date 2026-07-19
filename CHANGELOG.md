@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Ship `kimi-worker` (`integration/cli/kimi-worker`, installed to
+  `~/.agent-token-saver/bin` + `~/.local/bin`): lean Kimi child with empty
+  skills dir, `--quiet` final-message contract, exit-75-only retry, and
+  seeded per-worker `KIMI_SHARE_DIR` isolation. System benchmark
+  (`data/benchmarks/kimi-worker-system-2026-07-19`): three-worker team =
+  67,514 gross input, **−83.6%** vs the same-day Claude team and **−27.2%** /
+  3.6x faster vs Kimi 1.49's built-in `Agent` swarm on the same oracle;
+  single lane = 22,268 gross (−82.8% vs a single Claude projection child).
+  kimi-cli upgraded 1.48.0 → 1.49.0 (lean-lane regression +1.0%, stable;
+  rollback `uv tool install kimi-cli==1.48.0`). Skill team guidance now
+  routes shell-projection lanes through `kimi-worker`.
+
 - Refute the staggered-spawn cache hypothesis with a measured A/B
   (`data/benchmarks/claude-stagger-ab-2026-07-19`): staggered = 411,946 gross
   vs simultaneous = 411,938 on the same three-slice oracle. Children share the

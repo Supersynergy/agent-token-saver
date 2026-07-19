@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# Lean Kimi worker lane. Measured 2026-07-19: an empty --skills-dir removes the
+# user skills index (83% of the child system prompt) and cuts uncached input
+# 91% on the same oracle (data/benchmarks/kimi-lane-2026-07-19.md).
+#
+# Contract: one bounded task packet on stdin or as arguments; the worker's
+# final message is the only stdout. Exit 75 (retryable per Kimi CLI docs) is
+# retried up to KIMI_WORKER_RETRIES times; other codes pass through.
+#
+# Env:
+#   KIMI_WORKER_SHARE_DIR  per-team state root (default: mktemp, discarded)
+#   KIMI_WORKER_RETRIES    retries on exit 75 (default: 2)
+#   KIMI_WORKER_MODEL      optional model alias for -m
+#   KIMI_WORKER_EVIDENCE   optional file path; worker is told to write
+#                          findings there and return only claim + path
+set -uo pipefail
+
+retries="${KIMI_WORKER_RETRIES:-2}"
+skills_dir="$(mktemp -d)"
+trap 'rm -rf "$skills_dir"' EXIT
+
+if [ -n "${KIMI_WORKER_SHARE_DIR:-}" ]; then
+  export KIMI_SHARE_DIR="$KIMI_WORKER_SHARE_DIR"
+  # A fresh share dir has no model/credentials; seed both from the default
+  # root so isolation only separates sessions/accounting, not identity.
+  default_root="${KIMI_WORKER_SEED_FROM:-$HOME/.kimi}"
+  mkdir -p "$KIMI_SHARE_DIR"
+  for item in config.toml kimi.json device_id credentials; do
+    if [ ! -e "$KIMI_SHARE_DIR/$item" ] && [ -e "$default_root/$item" ]; then
+      cp -R "$default_root/$item" "$KIMI_SHARE_DIR/$item"
+    fi
+  done
+fi
+
+prompt="${*:-$(cat)}"
+if [ -n "${KIMI_WORKER_EVIDENCE:-}" ]; then
+  prompt="$prompt
+Write full findings to the file $KIMI_WORKER_EVIDENCE; your final message is only the one-line claim and that path."
+fi
+
+args=(--quiet -y --skills-dir "$skills_dir")
+if [ -n "${KIMI_WORKER_MODEL:-}" ]; then
+  args+=(-m "$KIMI_WORKER_MODEL")
+fi
+
+attempt=0
+while :; do
+  kimi-cli "${args[@]}" -p "$prompt"
+  code=$?
+  if [ "$code" -ne 75 ] || [ "$attempt" -ge "$retries" ]; then
+    exit "$code"
+  fi
+  attempt=$((attempt + 1))
+  sleep $((attempt * 2))
+done

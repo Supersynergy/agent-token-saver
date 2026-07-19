@@ -1,0 +1,41 @@
+{
+  "date": "2026-07-19",
+  "host": "darwin 24.5.0, kimi-cli 1.49.0, model kimi-code/kimi-for-coding",
+  "fixture": "scripts/make_log_fixture.py (4000 lines, 100 ERROR, CRITICAL-MARKER at 3777)",
+  "oracle": "total_errors=100 and marker_line=3777 (team arms: slices 40/32/28 summed deterministically)",
+  "usage_source": "wire.jsonl token_usage per request, isolated KIMI_WORKER_SHARE_DIR per worker",
+  "arms": {
+    "kimi_worker_single": {
+      "invocation": "kimi-worker (lean skills dir, seeded isolated share dir)",
+      "requests": [
+        {"input_other": 1715, "input_cache_read": 9216, "input_cache_creation": 0, "output": 368},
+        {"input_other": 585, "input_cache_read": 10752, "input_cache_creation": 0, "output": 27}
+      ],
+      "gross_input": 22268, "uncached_input": 2300, "output": 395, "wall_s": 9.67,
+      "oracle": "PASS", "regression_vs_148_lean": "gross 22047 -> 22268 (+1.0%)"
+    },
+    "kimi_worker_team_3x": {
+      "invocation": "3x kimi-worker simultaneous, disjoint slices, isolated share dirs",
+      "children_gross": [22519, 22477, 22518],
+      "total": {"uncached_input": 6842, "cache_read": 60672, "cache_creation": 0, "gross_input": 67514, "output": 1160},
+      "wall_s": 10.83, "oracle": "PASS (40+32+28=100, marker 3777)"
+    },
+    "kimi_builtin_swarm": {
+      "invocation": "single kimi-cli --print parent, 3 parallel built-in Agent tool calls (CLI 1.49.0)",
+      "sessions": 1, "requests": 11,
+      "total": {"uncached_input": 10627, "cache_read": 82176, "cache_creation": 0, "gross_input": 92803, "output": 4503},
+      "wall_s": 39.05, "oracle": "PASS"
+    }
+  },
+  "baselines_same_fixture_oracle": {
+    "claude_team_3x_haiku_2026_07_19": {"gross_input": 411938, "cache_write": 149162, "output": 1908},
+    "claude_single_projection_child_2026_07_16": {"gross_input": 129836}
+  },
+  "real_savings": {
+    "team_vs_claude_team_gross": "-83.6% (411938 -> 67514)",
+    "team_vs_kimi_builtin_swarm_gross": "-27.2% (92803 -> 67514)",
+    "single_vs_claude_single_child_gross": "-82.8% (129836 -> 22268)",
+    "wall_team_vs_builtin_swarm": "10.8s vs 39.1s (3.6x faster)",
+    "billing_note": "token classes are provider usage fields; Claude=Anthropic subscription, Kimi=Moonshot membership quota (kimi-for-coding slug prices as $0 in ccusage-style tools) - no cross-provider dollar claim"
+  }
+}

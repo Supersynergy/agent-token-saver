@@ -19,9 +19,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 HOME = Path.home()
 INSTALL_HOME = HOME / ".agent-token-saver"
-OBSOLETE_INSTALL_FILES = (
-    INSTALL_HOME / "hooks" / "rtk-rewrite.sh",
-)
+OBSOLETE_INSTALL_FILES = (INSTALL_HOME / "hooks" / "rtk-rewrite.sh",)
 SKILL_VERSION = re.compile(r"^version:\s*([^\s]+)", re.MULTILINE)
 
 
@@ -185,12 +183,8 @@ def install_files(dry_run: bool) -> None:
     copies = {
         ROOT / "stack" / "catalog.json": INSTALL_HOME / "stack" / "catalog.json",
         ROOT / "scripts" / "stack_doctor.py": INSTALL_HOME / "bin" / "agent-token-saver",
-        ROOT / "scripts" / "full_context_ledger.py": INSTALL_HOME
-        / "bin"
-        / "agent-token-ledger",
-        ROOT / "scripts" / "external_usage_gate.py": INSTALL_HOME
-        / "bin"
-        / "agent-token-audit",
+        ROOT / "scripts" / "full_context_ledger.py": INSTALL_HOME / "bin" / "agent-token-ledger",
+        ROOT / "scripts" / "external_usage_gate.py": INSTALL_HOME / "bin" / "agent-token-audit",
         ROOT / "integration" / "hooks" / "token-stack-prompt.py": INSTALL_HOME
         / "hooks"
         / "token-stack-prompt.py",
@@ -204,6 +198,7 @@ def install_files(dry_run: bool) -> None:
         ROOT / "integration" / "cli" / "codex-heavy-context": INSTALL_HOME
         / "bin"
         / "codex-heavy-context",
+        ROOT / "integration" / "cli" / "kimi-worker": INSTALL_HOME / "bin" / "kimi-worker",
     }
     for source, target in copies.items():
         install_copy(source, target, dry_run, executable=True)
@@ -240,6 +235,15 @@ def install_files(dry_run: bool) -> None:
     else:
         heavy_launcher.symlink_to(heavy_target)
         print(f"linked {heavy_launcher}")
+    kimi_launcher = HOME / ".local" / "bin" / "kimi-worker"
+    kimi_target = copies[ROOT / "integration" / "cli" / "kimi-worker"]
+    if kimi_launcher.exists() or kimi_launcher.is_symlink():
+        print(f"kept user-owned host override {kimi_launcher}")
+    elif dry_run:
+        print(f"would link {kimi_launcher} -> {kimi_target}")
+    else:
+        kimi_launcher.symlink_to(kimi_target)
+        print(f"linked {kimi_launcher}")
 
 
 def skill_targets(project: Path) -> dict[str, Path]:
@@ -330,9 +334,7 @@ def write_config(profile: str, agents: list[str], project: Path, dry_run: bool) 
             "agents": agents,
             "project_root": str(project.resolve()),
             "canonical_skill": {
-                "path": str(
-                    (INSTALL_HOME / "skills" / "agent-token-saver" / "SKILL.md").resolve()
-                ),
+                "path": str((INSTALL_HOME / "skills" / "agent-token-saver" / "SKILL.md").resolve()),
                 "version": version_match.group(1) if version_match else "unknown",
                 "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
             },
