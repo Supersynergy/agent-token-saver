@@ -46,4 +46,15 @@ dollar claim is made here.
 5. Retry only exit 75 (retryable per Kimi docs), capped by
    `KIMI_WORKER_RETRIES`.
 
-One run per arm; raw JSON: `kimi-worker-system-2026-07-19.json`.
+## Repeat + ledger integration (2026-07-20)
+
+Second team run on the production path (now with `KIMI_WORKER_USAGE_OUT`):
+68,474 gross input, oracle PASS, wall 12.3 s — **+1.4%** vs run one, so the
+−83.6% figure reproduces. The wrapper now exports one summed
+Anthropic-field usage record per run (the ledger reads a source's last
+snapshot as cumulative); `agent-token-ledger --usage worker1=... --provider
+kimi` reports exactly the wire-log totals (68,474 / 1,247). Contract tests:
+`tests/test_kimi_worker.py` (stubbed `kimi-cli`; retry-75, seed, evidence,
+lean args, usage export).
+
+One run per arm unless stated; raw JSON: `kimi-worker-system-2026-07-19.json`.

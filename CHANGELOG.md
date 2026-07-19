@@ -13,6 +13,12 @@
   kimi-cli upgraded 1.48.0 → 1.49.0 (lean-lane regression +1.0%, stable;
   rollback `uv tool install kimi-cli==1.48.0`). Skill team guidance now
   routes shell-projection lanes through `kimi-worker`.
+- Harden `kimi-worker` to production: contract tests against a stubbed
+  `kimi-cli` (retry-75 semantics, share-dir seeding, evidence suffix, lean
+  args) and a `KIMI_WORKER_USAGE_OUT` export that feeds
+  `agent-token-ledger` one summed usage record per run — ledger totals now
+  match the wire log exactly (verified 68,474/1,247 on a repeat team run,
+  +1.4% vs the first, oracle PASS).
 
 - Refute the staggered-spawn cache hypothesis with a measured A/B
   (`data/benchmarks/claude-stagger-ab-2026-07-19`): staggered = 411,946 gross

@@ -13,6 +13,10 @@
 #   KIMI_WORKER_MODEL      optional model alias for -m
 #   KIMI_WORKER_EVIDENCE   optional file path; worker is told to write
 #                          findings there and return only claim + path
+#   KIMI_WORKER_USAGE_OUT  optional JSONL path; per-request usage from the
+#                          session wire log is appended in the Anthropic
+#                          field names agent-token-ledger reads
+#                          (requires KIMI_WORKER_SHARE_DIR)
 set -uo pipefail
 
 retries="${KIMI_WORKER_RETRIES:-2}"
@@ -43,11 +47,40 @@ if [ -n "${KIMI_WORKER_MODEL:-}" ]; then
   args+=(-m "$KIMI_WORKER_MODEL")
 fi
 
+export_usage() {
+  [ -n "${KIMI_WORKER_USAGE_OUT:-}" ] || return 0
+  [ -n "${KIMI_WORKER_SHARE_DIR:-}" ] || return 0
+  python3 - "$KIMI_WORKER_SHARE_DIR" "$KIMI_WORKER_USAGE_OUT" <<'PY' || true
+import json, re, sys
+from pathlib import Path
+
+share, out = Path(sys.argv[1]), Path(sys.argv[2])
+wires = sorted(share.glob("sessions/*/*/wire.jsonl"), key=lambda p: p.stat().st_mtime)
+if not wires:
+    sys.exit(0)
+text = wires[-1].read_text(errors="replace")
+total = {"input_tokens": 0, "cache_creation_input_tokens": 0,
+         "cache_read_input_tokens": 0, "output_tokens": 0}
+for raw in re.findall(r'"token_usage": (\{[^}]*\})', text):
+    u = json.loads(raw)
+    total["input_tokens"] += u.get("input_other", 0)
+    total["cache_creation_input_tokens"] += u.get("input_cache_creation", 0)
+    total["cache_read_input_tokens"] += u.get("input_cache_read", 0)
+    total["output_tokens"] += u.get("output", 0)
+if any(total.values()):
+    # One summed record per run: the ledger reads a source's last usage
+    # snapshot as cumulative, so per-request rows would undercount.
+    with out.open("a") as handle:
+        handle.write(json.dumps({"usage": total}) + "\n")
+PY
+}
+
 attempt=0
 while :; do
   kimi-cli "${args[@]}" -p "$prompt"
   code=$?
   if [ "$code" -ne 75 ] || [ "$attempt" -ge "$retries" ]; then
+    export_usage
     exit "$code"
   fi
   attempt=$((attempt + 1))
