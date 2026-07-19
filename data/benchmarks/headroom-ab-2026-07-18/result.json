@@ -1,0 +1,212 @@
+{
+  "schema_version": 1,
+  "date": "2026-07-18 02:41:29 CEST",
+  "codex_version": "codex-cli 0.144.3",
+  "headroom_version": "0.31.0",
+  "model": "gpt-5.6-sol",
+  "fixture_head": "2ec9bc7f598cd9a5699c5da69915fb44ae9c9dbd",
+  "order": "on first, then off; fresh HOME per arm; provider cache reuse favors off",
+  "task": {
+    "name": "large-git-diff",
+    "prompt": "Minimize token/context bloat. Inspect the repository's full uncommitted change with git diff. Confirm exactly 6000 removed lines, 6000 added lines, and the added marker FIXED-06000. If all are true, reply exactly ATS_DIFF_OK and nothing else.",
+    "expected": "ATS_DIFF_OK",
+    "accepted": true,
+    "arms": {
+      "on": {
+        "arm": "on",
+        "command": "codex --disable hooks exec --ignore-rules --skip-git-repo-check --sandbox read-only --model gpt-5.6-sol -c model_reasoning_effort=\"low\" -C /var/folders/bm/0dt5fcdn56vg7pnkkzptmlkh0000gn/T/ats-headroom-ab-9v5ebg3c/fixture --json -",
+        "return_code": 0,
+        "timed_out": false,
+        "elapsed_ms": 14699,
+        "usage": {
+          "input_tokens": 20244,
+          "cached_input_tokens": 8960,
+          "uncached_input_tokens": 11284,
+          "output_tokens": 354,
+          "total_tokens": 20598
+        },
+        "answer": "ATS_DIFF_OK",
+        "commands": [
+          "/bin/zsh -lc \"git diff --no-ext-diff --no-color HEAD | awk 'BEGIN {a=0; d=0; m=0} /\"'^'\"\\\\+\\\\+\\\\+ / {next} /\"'^--- / {next} /''^'\"\\\\+/ {a++; if (index(substr(\"'$0,2), \"FIXED-06000\")) m=1; next} /''^-/ {d++; next} END {printf \"added=%d removed=%d marker=%d'\"\\\\n\\\", a, d, m}'\""
+        ],
+        "accepted": true,
+        "oracle": {
+          "exact_answer": true,
+          "command_terms": true,
+          "provider_usage": true
+        },
+        "stderr_tail": "",
+        "raw_jsonl": "/Users/master/BASE/projects/agent-token-saver/data/benchmarks/headroom-ab-2026-07-18/runs/large-git-diff-headroom-on.jsonl"
+      },
+      "off": {
+        "arm": "off",
+        "command": "codex --disable hooks exec --ignore-rules --skip-git-repo-check --sandbox read-only --model gpt-5.6-sol -c model_reasoning_effort=\"low\" -C /var/folders/bm/0dt5fcdn56vg7pnkkzptmlkh0000gn/T/ats-headroom-ab-9v5ebg3c/fixture --json -",
+        "return_code": 0,
+        "timed_out": false,
+        "elapsed_ms": 16603,
+        "usage": {
+          "input_tokens": 45058,
+          "cached_input_tokens": 22016,
+          "uncached_input_tokens": 23042,
+          "output_tokens": 148,
+          "total_tokens": 45206
+        },
+        "answer": "ATS_DIFF_OK",
+        "commands": [
+          "/bin/zsh -lc 'git diff --no-ext-diff --unified=0 && git diff --no-ext-diff --numstat'"
+        ],
+        "accepted": true,
+        "oracle": {
+          "exact_answer": true,
+          "command_terms": true,
+          "provider_usage": true
+        },
+        "stderr_tail": "",
+        "raw_jsonl": "/Users/master/BASE/projects/agent-token-saver/data/benchmarks/headroom-ab-2026-07-18/runs/large-git-diff-headroom-off.jsonl"
+      }
+    },
+    "provider_delta": {
+      "input_tokens": -24814,
+      "uncached_input_tokens": -11758,
+      "output_tokens": 206,
+      "total_tokens": -24608,
+      "input_saved_percent": 55.07,
+      "uncached_input_saved_percent": 51.03,
+      "total_saved_percent": 54.44
+    }
+  },
+  "proxy_delta": {
+    "requests_total": 3,
+    "savings_total_tokens": 0,
+    "before": {
+      "requests_total": 2,
+      "requests_by_provider": {
+        "openai": 2
+      },
+      "savings_total_tokens": 16717,
+      "savings_by_layer": {
+        "cli_filtering": {
+          "tool": "rtk",
+          "label": "RTK",
+          "available": true,
+          "tokens": 16717,
+          "tokens_saved": 16717,
+          "session": {
+            "commands": 31,
+            "input_tokens": 41267,
+            "output_tokens": 24559,
+            "tokens_saved": 16717,
+            "savings_pct": 40.5094,
+            "total_time_ms": 7235,
+            "avg_time_ms": 233.39
+          },
+          "lifetime": {
+            "commands": 32503,
+            "input_tokens": 1483306897,
+            "output_tokens": 34868083,
+            "tokens_saved": 1448473619,
+            "savings_pct": 97.65164727067267,
+            "total_time_ms": 243843596
+          },
+          "session_savings_pct": 40.5094,
+          "lifetime_savings_pct": 97.65164727067267,
+          "refresh_interval_seconds": 60.0,
+          "included_in": "tokens.saved",
+          "description": "Tokens avoided by CLI output filtering (RTK) before reaching context. Included in dashboard token savings, but not in dollar savings."
+        },
+        "compression": {
+          "tokens": 0,
+          "proxy_tokens": 0,
+          "cli_filtering_tokens": 16717,
+          "rtk_tokens": 16717,
+          "lean_ctx_tokens": 0,
+          "all_layers_tokens": 16717,
+          "description": "Tokens removed by Headroom proxy compression. Dashboard token savings also includes CLI context-tool filtering."
+        },
+        "prefix_cache": {
+          "discount_usd": 0.0,
+          "description": "Cost discount from provider prefix caching. Headroom's CacheAligner improves hit rates; baseline caching is provider-native."
+        },
+        "output_shaping": {
+          "available": false,
+          "description": "OUTPUT tokens the model didn't emit because the shaper steered verbosity / routed effort down. Counterfactual — shown as an estimate (vs a learned baseline) or measured (A/B holdout), always with a confidence band."
+        },
+        "tool_search": {
+          "tokens": 0,
+          "tokens_saved": 0,
+          "requests": 0,
+          "window": 4,
+          "description": "Tool-definition tokens kept out of the model's context by deferring heavy tool schemas until they're searched for. Counted only when Headroom performed the deferral — not when the client (e.g. Claude Code / Codex) already had tool search enabled. Aggregated over the recent request window."
+        }
+      }
+    },
+    "after_on_arm": {
+      "requests_total": 5,
+      "requests_by_provider": {
+        "openai": 5
+      },
+      "savings_total_tokens": 16717,
+      "savings_by_layer": {
+        "cli_filtering": {
+          "tool": "rtk",
+          "label": "RTK",
+          "available": true,
+          "tokens": 16717,
+          "tokens_saved": 16717,
+          "session": {
+            "commands": 31,
+            "input_tokens": 41267,
+            "output_tokens": 24559,
+            "tokens_saved": 16717,
+            "savings_pct": 40.5094,
+            "total_time_ms": 7235,
+            "avg_time_ms": 233.39
+          },
+          "lifetime": {
+            "commands": 32503,
+            "input_tokens": 1483306897,
+            "output_tokens": 34868083,
+            "tokens_saved": 1448473619,
+            "savings_pct": 97.65164727067267,
+            "total_time_ms": 243843596
+          },
+          "session_savings_pct": 40.5094,
+          "lifetime_savings_pct": 97.65164727067267,
+          "refresh_interval_seconds": 60.0,
+          "included_in": "tokens.saved",
+          "description": "Tokens avoided by CLI output filtering (RTK) before reaching context. Included in dashboard token savings, but not in dollar savings."
+        },
+        "compression": {
+          "tokens": 0,
+          "proxy_tokens": 0,
+          "cli_filtering_tokens": 16717,
+          "rtk_tokens": 16717,
+          "lean_ctx_tokens": 0,
+          "all_layers_tokens": 16717,
+          "description": "Tokens removed by Headroom proxy compression. Dashboard token savings also includes CLI context-tool filtering."
+        },
+        "prefix_cache": {
+          "discount_usd": 0.0,
+          "description": "Cost discount from provider prefix caching. Headroom's CacheAligner improves hit rates; baseline caching is provider-native."
+        },
+        "output_shaping": {
+          "available": false,
+          "description": "OUTPUT tokens the model didn't emit because the shaper steered verbosity / routed effort down. Counterfactual — shown as an estimate (vs a learned baseline) or measured (A/B holdout), always with a confidence band."
+        },
+        "tool_search": {
+          "tokens": 0,
+          "tokens_saved": 0,
+          "requests": 0,
+          "window": 7,
+          "description": "Tool-definition tokens kept out of the model's context by deferring heavy tool schemas until they're searched for. Counted only when Headroom performed the deferral — not when the client (e.g. Claude Code / Codex) already had tool search enabled. Aggregated over the recent request window."
+        }
+      }
+    }
+  },
+  "ledgers": {
+    "on-json": "/Users/master/BASE/projects/agent-token-saver/data/benchmarks/headroom-ab-2026-07-18/ledger-headroom-on.json",
+    "on-md": "/Users/master/BASE/projects/agent-token-saver/data/benchmarks/headroom-ab-2026-07-18/ledger-headroom-on.md",
+    "off-json": "/Users/master/BASE/projects/agent-token-saver/data/benchmarks/headroom-ab-2026-07-18/ledger-headroom-off.json",
+    "off-md": "/Users/master/BASE/projects/agent-token-saver/data/benchmarks/headroom-ab-2026-07-18/ledger-headroom-off.md"
+  }
+}

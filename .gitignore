@@ -6,3 +6,4 @@ __pycache__/
 catboost_info/
 *.duckdb
 .fastembed_cache/
+.tokensave
