@@ -29,6 +29,7 @@ def run_worker(tmp_path: Path, stub_body: str, env_extra: dict[str, str], *args:
     env.pop("KIMI_WORKER_SHARE_DIR", None)
     env.pop("KIMI_WORKER_USAGE_OUT", None)
     env.pop("KIMI_WORKER_EVIDENCE", None)
+    env.pop("KIMI_WORKER_NO_THINKING", None)
     env.update(env_extra)
     return subprocess.run(
         [str(WORKER), *args],
@@ -118,6 +119,19 @@ def test_evidence_suffix_appended(tmp_path):
     argv = args_text.splitlines()
     assert argv[argv.index("-p") + 1] == "base task"
     assert "/tmp/ev.md" in args_text
+
+
+def test_no_thinking_flag_passthrough(tmp_path):
+    result = run_worker(
+        tmp_path,
+        CAPTURE_ARGS + "exit 0\n",
+        {"KIMI_WORKER_NO_THINKING": "1"},
+        "task",
+    )
+    assert result.returncode == 0
+    argv = (tmp_path / "state-args").read_text().splitlines()
+    assert "--no-thinking" in argv
+    assert "--config" not in argv
 
 
 def test_usage_export_normalizes_wire_log(tmp_path):

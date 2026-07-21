@@ -33,6 +33,14 @@ Kimi worker lanes: `--quiet` returns only the final message, exit code 75
 accounting separable
 ([research 2026-07-19](TOKEN_SAVER_RESEARCH_2026-07-19.md)).
 
+K3 facts ([kimi-k3-lane-2026-07-21](../data/benchmarks/kimi-k3-lane-2026-07-21.md)):
+a lean three-worker team beats the CLI's built-in `Agent` swarm on the same
+model by **−65.3%** gross (73,710 vs 212,310; the swarm arm costs 2.3x its
+K2.7 value). The PARL-trained Swarm Max is app-only with no documented
+API/CLI access, so the built-in `Agent` tool remains the headless comparand.
+`--no-thinking` is **not** a saving on shallow lanes: output drops 4% but the
+changed prompt prefix shifts +71% into uncached input — measured and refuted.
+
 With a clean Codex base near 11k input tokens, a small two-file read almost
 never breaks even; a Claude Code child pays roughly four times that bootstrap,
 so its break-even point is correspondingly higher. A 40k-token log or an

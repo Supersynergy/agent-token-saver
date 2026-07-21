@@ -1,0 +1,182 @@
+{
+ "date": "2026-07-21",
+ "host": "darwin 24.5.0, kimi-cli 1.49.0, models kimi-code/kimi-for-coding / kimi-code/k3",
+ "fixture": "scripts/make_log_fixture.py (4000 lines, 100 ERROR, CRITICAL-MARKER at 3777; team slices 1-1333/1334-2666/2667-4000 = 40/32/28)",
+ "oracle": "single/swarm: total_errors=100, marker_line=3777 and errors_2001_4000=44; team: slice counts sum to 100 and exactly one slice reports 3777",
+ "fixture_sha256": "4ed0052b9c5f57d760a93dbb268a428663ce4ab6b777e869a73485c6f4b80bf4",
+ "packets": {
+  "single": "Log file: <fixture> (exactly 4000 lines). Using only shell/read tools, answer for the WHOLE file: how many lines contain the substring ERROR, and which line number contains CRITICAL-MARKER, and how many of the ERROR lines fall within lines 2001 to 4000 inclusive. Do not guess; verify by command. Reply with only compact JSON: {\"total_errors\": <int>, \"marker_line\": <int>, \"errors_2001_4000\": <int>}",
+  "slice": "Log file: <fixture> (exactly 4000 lines). Consider ONLY lines 1 to 1333 inclusive. Using only shell/read tools: count lines containing the substring ERROR inside that range, and check whether the line containing CRITICAL-MARKER falls inside it. Do not guess; verify by command. Reply with only compact JSON: {\"errors\": <int>, \"marker_line\": <int or null>}",
+  "swarm": "Log file: <fixture> (exactly 4000 lines). Immediately fan out THREE parallel Agent subagent calls, one per disjoint inclusive line range: 1-1333, 1334-2666, 2667-4000. Each subagent counts lines containing the substring ERROR in its range and reports whether CRITICAL-MARKER is in its range (line number if so, else null). Wait for all three, sum the counts, then run one check yourself: how many ERROR lines fall within lines 2001 to 4000 inclusive. Reply with only compact JSON: {\"total_errors\": <int>, \"marker_line\": <int>, \"errors_2001_4000\": <int>}"
+ },
+ "usage_source": "wire.jsonl token_usage per request, fresh isolated KIMI_SHARE_DIR per worker (seeded identity, isolated sessions)",
+ "baselines_2026_07_19": {
+  "k27_single_gross": 22268,
+  "k27_team_gross": 67514,
+  "builtin_swarm_k27_gross": 92803,
+  "claude_team_gross": 411938
+ },
+ "arms": {
+  "k27-single": {
+   "invocation": "kimi-worker -m kimi-code/kimi-for-coding",
+   "model": "kimi-code/kimi-for-coding",
+   "thinking": true,
+   "requests": [
+    {
+     "input_other": 2395,
+     "input_cache_read": 9216,
+     "input_cache_creation": 0,
+     "output": 289
+    },
+    {
+     "input_other": 438,
+     "input_cache_read": 11520,
+     "input_cache_creation": 0,
+     "output": 67
+    }
+   ],
+   "gross_input": 23569,
+   "uncached_input": 2833,
+   "cache_read": 20736,
+   "cache_creation": 0,
+   "output": 356,
+   "wall_s": 72.54,
+   "est_cost_usd_list": 0.0201,
+   "answer": {
+    "total_errors": 100,
+    "marker_line": 3777,
+    "errors_2001_4000": 44
+   },
+   "oracle": "PASS",
+   "exit_code": 0,
+   "run_order": 1
+  },
+  "k3-single": {
+   "invocation": "kimi-worker -m kimi-code/k3",
+   "model": "kimi-code/k3",
+   "thinking": true,
+   "requests": [
+    {
+     "input_other": 2218,
+     "input_cache_read": 9984,
+     "input_cache_creation": 0,
+     "output": 184
+    },
+    {
+     "input_other": 457,
+     "input_cache_read": 12032,
+     "input_cache_creation": 0,
+     "output": 43
+    }
+   ],
+   "gross_input": 24691,
+   "uncached_input": 2675,
+   "cache_read": 22016,
+   "cache_creation": 0,
+   "output": 227,
+   "wall_s": 13.87,
+   "est_cost_usd_list": 0.018,
+   "answer": {
+    "total_errors": 100,
+    "marker_line": 3777,
+    "errors_2001_4000": 44
+   },
+   "oracle": "PASS",
+   "exit_code": 0,
+   "run_order": 2
+  },
+  "k3-single-nothink": {
+   "invocation": "kimi-worker -m kimi-code/k3 --no-thinking",
+   "model": "kimi-code/k3",
+   "thinking": false,
+   "requests": [
+    {
+     "input_other": 4198,
+     "input_cache_read": 7936,
+     "input_cache_creation": 0,
+     "output": 181
+    },
+    {
+     "input_other": 386,
+     "input_cache_read": 12032,
+     "input_cache_creation": 0,
+     "output": 37
+    }
+   ],
+   "gross_input": 24552,
+   "uncached_input": 4584,
+   "cache_read": 19968,
+   "cache_creation": 0,
+   "output": 218,
+   "wall_s": 13.69,
+   "est_cost_usd_list": 0.023,
+   "answer": {
+    "total_errors": 100,
+    "marker_line": 3777,
+    "errors_2001_4000": 44
+   },
+   "oracle": "PASS",
+   "exit_code": 0,
+   "run_order": 3
+  },
+  "k3-team": {
+   "invocation": "3x kimi-worker simultaneous, -m kimi-code/k3, disjoint thirds",
+   "model": "kimi-code/k3",
+   "children_gross": [
+    24541,
+    24600,
+    24569
+   ],
+   "children_answers": [
+    {
+     "errors": 40,
+     "marker_line": null
+    },
+    {
+     "errors": 32,
+     "marker_line": null
+    },
+    {
+     "errors": 28,
+     "marker_line": 3777
+    }
+   ],
+   "gross_input": 73710,
+   "uncached_input": 9710,
+   "cache_read": 64000,
+   "cache_creation": 0,
+   "output": 584,
+   "wall_s": 17.87,
+   "est_cost_usd_list": 0.0571,
+   "oracle": "PASS",
+   "run_order": 4
+  },
+  "k3-swarm": {
+   "invocation": "single kimi-cli parent -m kimi-code/k3, 3 parallel built-in Agent calls",
+   "model": "kimi-code/k3",
+   "requests": 24,
+   "gross_input": 212310,
+   "uncached_input": 21846,
+   "cache_read": 190464,
+   "cache_creation": 0,
+   "output": 5888,
+   "wall_s": 66.44,
+   "est_cost_usd_list": 0.211,
+   "answer": {
+    "total_errors": 100,
+    "marker_line": 3777,
+    "errors_2001_4000": 44
+   },
+   "oracle": "PASS",
+   "exit_code": 0,
+   "run_order": 5
+  }
+ },
+ "real_savings": {
+  "k3_vs_k27_single_gross": "+4.8% (23,569 -> 24,691)",
+  "k3_team_vs_k3_swarm_gross": "-65.3% (212,310 -> 73,710)",
+  "k3_team_vs_claude_team_0719": "-82.1% (411,938 -> 73,710)",
+  "k3_nothink_vs_think_output": "-4.0% output (227 -> 218)",
+  "k27_single_drift_vs_0719": "+5.8% (22,268 -> 23,569)"
+ }
+}

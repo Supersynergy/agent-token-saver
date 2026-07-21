@@ -11,6 +11,11 @@
 #   KIMI_WORKER_SHARE_DIR  per-team state root (default: mktemp, discarded)
 #   KIMI_WORKER_RETRIES    retries on exit 75 (default: 2)
 #   KIMI_WORKER_MODEL      optional model alias for -m
+#   KIMI_WORKER_NO_THINKING  set to 1 to pass --no-thinking (shallow lanes).
+#                          Deliberately NOT a generic --config passthrough:
+#                          kimi-cli 1.49 --config fully replaces the config
+#                          file (no merge), which would drop the [models.*]
+#                          aliases this wrapper relies on.
 #   KIMI_WORKER_EVIDENCE   optional file path; worker is told to write
 #                          findings there and return only claim + path
 #   KIMI_WORKER_USAGE_OUT  optional JSONL path; per-request usage from the
@@ -45,6 +50,9 @@ fi
 args=(--quiet -y --skills-dir "$skills_dir")
 if [ -n "${KIMI_WORKER_MODEL:-}" ]; then
   args+=(-m "$KIMI_WORKER_MODEL")
+fi
+if [ "${KIMI_WORKER_NO_THINKING:-0}" = "1" ]; then
+  args+=(--no-thinking)
 fi
 
 export_usage() {

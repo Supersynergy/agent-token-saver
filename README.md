@@ -221,7 +221,7 @@ Rules:
 
 ```text
 scripts/       installer, doctor, ledger, projections and benchmarks
-integration/   one prompt hook and one opt-in heavy Codex launcher
+integration/   one prompt hook, one lean Kimi worker lane and one opt-in heavy Codex launcher
 skills/        portable agent-token-saver skill
 stack/         profile catalog consumed by the doctor
 tests/         current release contracts only
@@ -352,6 +352,19 @@ tokens before task payload optimization begins. The component matrix below
 measures the task payload separately so those two effects are not mixed.
 
 Exact commands and caveats: [data/benchmarks/agent-cli-smoke-2026-07-13.md](data/benchmarks/agent-cli-smoke-2026-07-13.md).
+
+## Lean Kimi worker lane
+
+Measured 2026-07-21 on Kimi K3
+([benchmark](data/benchmarks/kimi-k3-lane-2026-07-21.md), reproducible via
+`scripts/kimi_k3_lane_benchmark.py`): three simultaneous `kimi-worker`
+children pass the hardened team oracle at **73,710 gross input — −82.1% vs
+the measured Claude team (2026-07-19, same fixture) and −65.3% vs the CLI's
+built-in `Agent` swarm on the same model** (212,310 gross). The built-in
+swarm costs 2.3x its K2.7 value on K3; K3's PARL-trained Swarm Max is
+app-only and not headless-accessible. Single lean lane: 24,691 gross,
+$0.018 list. `--no-thinking` measured and refuted for shallow lanes (−4%
+output, +71% uncached input).
 
 ## Measure the complete token bill
 

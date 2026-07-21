@@ -2,6 +2,29 @@
 
 ## Unreleased
 
+- Benchmark the kimi-worker lane on Kimi K3
+  (`data/benchmarks/kimi-k3-lane-2026-07-21`, driven by the new reproducible
+  `scripts/kimi_k3_lane_benchmark.py` with `--arm`/`--repeat`/`--dry-run`,
+  fixture SHA-256 pinning, run-order recording, K3 list-price estimates and a
+  positional-subcount hardened oracle): the K3 three-worker team passes the
+  hardened oracle at **73,710 gross input — −82.1%** vs the 2026-07-19 Claude
+  team and **−65.3%** vs the CLI's built-in `Agent` swarm on the same model
+  (212,310 gross, 2.3x its K2.7 cost), so the lean-lane advantage over the
+  built-in swarm grew from −27.2% to −65.3%. Findings: K3's PARL-trained
+  Swarm Max is app-only with no documented API/CLI access (the CLI `Agent`
+  tool stays the headless comparand); K3 single lane = 24,691 gross (+4.8%
+  vs K2.7, output 356 → 227); `--no-thinking` is **not** a win on shallow
+  lanes (−4% output but +71% uncached input via prefix change) — hypothesis
+  measured and refuted. K2.7 drift since 2026-07-19: +5.8% gross.
+- Add `KIMI_WORKER_NO_THINKING=1` to `kimi-worker` (passes `--no-thinking`);
+  deliberately not a generic `--config` passthrough — kimi-cli 1.49
+  `--config` fully replaces the config file (no merge) and would drop the
+  `[models.*]` aliases the wrapper relies on.
+- Fix swarm-arm usage accounting in benchmarks: built-in `Agent` subagents
+  write their own `wire.jsonl` beside the parent's (kimi-cli 1.49
+  `subagents/store.py`), so usage is summed over `sessions/**/wire.jsonl`
+  recursively.
+
 - Ship `kimi-worker` (`integration/cli/kimi-worker`, installed to
   `~/.agent-token-saver/bin` + `~/.local/bin`): lean Kimi child with empty
   skills dir, `--quiet` final-message contract, exit-75-only retry, and
