@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 3.3.0 — 2026-07-21
+
 - Benchmark the kimi-worker lane on Kimi K3
   (`data/benchmarks/kimi-k3-lane-2026-07-21`, driven by the new reproducible
   `scripts/kimi_k3_lane_benchmark.py` with `--arm`/`--repeat`/`--dry-run`,
