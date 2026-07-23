@@ -1,18 +1,24 @@
 {
-  "date": "2026-07-23 14:05 CEST",
-  "version": "1.2.0",
+  "date": "2026-07-23 14:05 CEST (updated 15:00 after ponytail compression)",
+  "version": "1.3.0",
   "method": "local measurement, UTF-8 bytes/4 token proxy",
-  "profile": "agent-token-saver-devin v1.2.0 (synx + goal-system + ducklake)",
-  "files": {
+  "profile": "agent-token-saver-devin v1.3.0 (synx + goal-system + ducklake + ponytail-compressed docs)",
+  "files_pre_compression": {
     "scripts/devin-token-saver.sh": {"bytes": 14714, "tokens": 3678, "lines": 410},
     "AGENTS.md Devin block": {"bytes": 4410, "tokens": 1102, "lines": 68},
     "SKILL.md": {"bytes": 13409, "tokens": 3352, "lines": 297},
     "MASTER-PLAN.md": {"bytes": 14805, "tokens": 3701, "lines": 328}
   },
-  "always_hot_per_session_tokens": 1102,
+  "files_post_compression": {
+    "scripts/devin-token-saver.sh": {"bytes": 12594, "tokens": 3148, "lines": 341, "reduction_pct": 14.4},
+    "AGENTS.md Devin block": {"bytes": 1988, "tokens": 497, "lines": 35, "reduction_pct": 54.9},
+    "SKILL.md": {"bytes": 7528, "tokens": 1882, "lines": 147, "reduction_pct": 43.9},
+    "MASTER-PLAN.md": {"bytes": 7032, "tokens": 1758, "lines": 157, "reduction_pct": 52.5}
+  },
+  "always_hot_per_session_tokens": 497,
   "zero_hot_vs_always_hot": {
-    "kb_savings_pct": 79.62,
-    "kb_savings_per_session_tokens": 3563
+    "kb_savings_pct": 88.68,
+    "kb_savings_per_session_tokens": 3968
   },
   "maximization_stack": {
     "synx": {

@@ -2,6 +2,93 @@
 
 ## Unreleased
 
+## 3.4.0 — 2026-07-23
+
+### Devin profile — goal-achievement system + ponytail compression
+
+- **feat(devin): add goal-achievement system + synx rename + master-plan**
+  (`c42ad9f`). Adds the omnigoal-pattern goal system to the Devin profile
+  (Devin has no host-native prompt hooks, so everything is wired via repo
+  instructions + shell wrapper + Knowledge Base). Four new shell functions in
+  `integration/cli/devin-token-saver.sh`:
+  - `devin-goal-init "<slug>" --oracle "<shell cmd>" --budget-tokens 50000 --deadline 2h`
+    creates `~/.synapse/goals/<slug>.json` with a machine-checkable oracle.
+    Uses `jq --arg` for safe JSON quoting of oracle/title (handles quotes and
+    special chars).
+  - `devin-goal-check <slug>` runs the oracle, prints PASS/FAIL + bottleneck
+    (first `error|fail|not found|missing|panic` line). No args = list all
+    goals with id/state/title.
+  - `devin-goal-close <slug> --summary "<text>"` refuses close while oracle
+    fails, persists summary to `synx put` (post-session RAG), marks goal
+    `closed`. `jq --arg` for safe summary quoting.
+  - `devin-goal-spawn <slug> --capsule <capsule.md> [--skill <name>]` registers
+    a bounded subagent in the goal JSON — subagent sees only capsule + goal
+    oracle, never the parent transcript.
+  Goals live in `~/.synapse/goals/*.json` so any agent (Devin, Codex, Claude)
+  can pick them up, coordinate, and ingest outcomes WITHOUT sharing transcripts.
+  Replaces "spawn workers with shared context" (burns tokens) with "spawn
+  workers with shared goal contract" (bounded). Estimated ROI: 40–60% token
+  savings on tasks >30 min or >20k tokens.
+- **feat(devin): rename `syn` → `synx`** across the Devin profile. `synx` is
+  the full CLI (init/put/verify/keygen/snap-signed/find/vec/hybrid/context/
+  remember/doctor/fallback/prime/stats/fresh-context); `syn` was the older
+  subset. New helpers: `devin-synapse-prime` (pre-session `synx hybrid`),
+  `devin-synapse-remember` (post-session `synx put`), `devin-synapse-ingest`
+  (pipes Devin JSONL through `devin-usage.py` into `synapse-ultra ingest`).
+- **feat(devin): add MASTER-PLAN.md + capsule-template.md** for the Devin
+  profile. Master plan covers 8-phase rollout (A: core wrapper, B: skill
+  router, C: SynapseUltra, D: DuckLake, E: goal system, F: VelesDB evaluated
+  but not integrated, G: benchmark, H: live test pending), ROI measurement
+  (saved = baseline − actual, target 80% cumulative), a Devin-Web test
+  prompt, maintenance, and known limitations (no native hooks; cost in `meta`
+  not `token_cost`; DuckLake JSON inlining bug; `jq` required for goals;
+  budget advisory). Capsule template defines the 300–700-token bounded
+  context for `devin-goal-spawn` (Goal/Inputs/Constraints/Output/Close +
+  filled example).
+- **feat(devin): add `devin-usage.py` ingest script** (in synapse-memory)
+  that extracts `unattributed_input_tokens` from Devin session JSONL into
+  Synapse Ultra's `meta` field. Live-validated: 2 events ingested, `replay`
+  green, `prime` returned 4 relevant chunks, doctor shows `synx` +
+  `synapse-ultra` + `duckdb` all present.
+- **test(devin): add `tests/test_devin_goal_system.sh`** — 9-check smoke
+  test (wrapper syntax, goal-init, goal-check pass/fail, goal-spawn,
+  goal-close, goal-list, doctor goals, doctor uses `synx` not `syn`). All
+  9 checks green after every compression pass.
+
+### Ponytail compression — docs and wrapper
+
+- **refactor(skill): ponytail-compress `SKILL.md`** (`3391c03`). 297 → 147
+  lines, ~3352 → ~1882 tokens (**−43.9%**). Methods: bullet density,
+  code-block elimination, section merging, reference linking, redundancy
+  removal, example minimization, table compaction, ASCII-diagram simplify.
+  Preserves all CLI commands, safety contracts, numbers/benchmarks.
+- **refactor(plan): ponytail-compress `MASTER-PLAN.md`** (`f782294`).
+  328 → 157 lines, ~3701 → ~1758 tokens (**−52.5%**). Same methods. All
+  rollout phases, ROI numbers, test prompt, known limitations, and
+  definition-of-done preserved.
+- **refactor(wrapper): ponytail-compress `devin-token-saver.sh`**
+  (`214e215`). 410 → 341 lines, ~3678 → ~3148 tokens (**−14.4%**). Methods:
+  header-comment trim, else-branch alias merge, help-text compression,
+  inline-comment removal, single-line body collapse. Preserves: all
+  function signatures, `jq --arg` quoting fixes for goal-init/goal-close,
+  fail-open contract, idempotency guard, doctor output. Bash syntax OK,
+  9/9 smoke checks green.
+- **refactor(superweb): compress Devin block in `AGENTS.md`** — 114 → 35
+  lines, ~1102 → ~497 tokens (**−54.9%**). Removed inline
+  Synapse/DuckLake/Goal examples (kept in `SKILL.md`), kept only routing
+  rules + 1-line lifecycle reference. Deep docs live in KB, `AGENTS.md`
+  stays slim.
+
+### Benchmark — `data/benchmarks/devin-profile-2026-07-23.json`
+
+- Updates `devin-profile-2026-07-23.json` to v1.3.0 with pre/post compression
+  numbers. Always-hot tokens per session: 1102 → 497 (**−54.9%**). Zero-hot
+  KB savings vs always-hot: 79.62% → **88.68%** (3968 tokens saved per
+  session). ROI projection unchanged: 80% cumulative (core wrapper + synapse
+  prime + goal system + ducklake). Maximization stack: synx integrated,
+  synapse-ultra integrated, ducklake recipes-ready, goal-system
+  live-validated, VelesDB evaluated-not-integrated.
+
 ## 3.3.0 — 2026-07-21
 
 - Benchmark the kimi-worker lane on Kimi K3
