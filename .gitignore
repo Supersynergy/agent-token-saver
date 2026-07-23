@@ -7,3 +7,4 @@ catboost_info/
 *.duckdb
 .fastembed_cache/
 .tokensave
+.gmax.json

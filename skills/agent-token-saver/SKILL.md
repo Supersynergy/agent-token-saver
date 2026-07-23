@@ -1,7 +1,7 @@
 ---
 name: agent-token-saver
 description: Route token-heavy context, noisy shell logs and output through the smallest measured CLI or projection before loading heavy tools; benchmark cheap subagent workflows without broad prompt bloat.
-version: 3.2.0
+version: 3.8.1
 author: Supersynergy
 license: MIT
 metadata:
@@ -21,6 +21,31 @@ repeated work, a broad skill catalog, or an agent team.
 3. Load zero or one primary routed skill automatically, never the whole library.
 4. Use a budgeted code reader only when exact search misses.
 5. Enable graph, browser, or large-context tooling for one session only.
+
+## Recon CLIs (v3.8.0+)
+
+Three fail-open recon tools are wrapped as `ats-*` helpers and exposed in
+`ats-doctor`. All run without MCP and without API keys (ghx uses `gh` auth).
+
+- **`ats-gmax "<question>"`** — semantic search over indexed local codebases.
+  Persistent index under `~/.gmax/`. `--agent` output is ledger-compatible
+  (single-line hits + similarity score + role tag). Subcommands: `trace`,
+  `skeleton`, `extract`, `peek`, `dead`. Replaces Cascade `code_search` for
+  indexed projects — index once with `gmax add <path>`, query from project root.
+- **`ats-ghx explore|read|inspect|search <owner/repo>`** — GitHub reconnaissance
+  sidecar. GraphQL batching (10 files/call), `--map` output ~92% token reduction
+  vs raw file reads. `inspect` ranks files by concern. Uses `gh` CLI auth, no
+  extra API key. Ideal pre-step before deep web research for repo-specific
+  questions.
+- **`ats-supacrawl scrape|map|crawl|batch <url>`** — HTTP-first web scraper,
+  markdown output. Complements heavier research tooling for quick single-page
+  pulls. No API key for scrape/map/crawl/batch. LLM-Extract with Ollama
+  currently broken (schema serialization) — pipe `supacrawl scrape` to
+  `ollama` directly as workaround. For cited multi-hop research use your
+  existing deep-research CLI.
+
+All three are optional and fail-open: missing CLI → passthrough message, never
+error. `ats-recon-doctor` shows install state + gmax indexed projects.
 
 Keep approvals, safety rules, exact evidence and error lines intact. Never claim
 provider billing savings from a local character estimate.

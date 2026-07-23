@@ -474,16 +474,17 @@ EOF
 # --- 9. goal-close (refuses if oracle failing OR refute found a hole) --------
 goal-close() {
   if [[ $# -lt 1 ]]; then
-    echo 'Usage: goal-close <slug> --summary "<text>" [--decision "<rationale>"] [--skip-refute]' >&2
+    echo 'Usage: goal-close <slug> --summary "<text>" [--decision "<rationale>"] [--skip-refute] [--require-metareview]' >&2
     return 1
   fi
   local slug="$1"; shift
-  local summary="" decision="" skip_refute=0
+  local summary="" decision="" skip_refute=0 require_mr=0
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --summary) summary="$2"; shift 2 ;;
       --decision) decision="$2"; shift 2 ;;
       --skip-refute) skip_refute=1; shift ;;
+      --require-metareview) require_mr=1; shift ;;
       *) shift ;;
     esac
   done
@@ -498,6 +499,12 @@ goal-close() {
   refuter=$(jq -r '.evidence.refuter // "SKIPPED"' "$goal_file")
   if [[ "$skip_refute" -eq 0 && "$refuter" == "FAIL" ]]; then
     echo "goal-close: refuter found a hole (FAIL) — close refused. Use --skip-refute to override." >&2
+    return 1
+  fi
+  # --require-metareview: refuse if no foreign reviewer was ever run (omnigoal hard gate #5)
+  if [[ "$require_mr" -eq 1 && "$refuter" == "SKIPPED" ]]; then
+    echo "goal-close: --require-metareview set and no metareview recorded — close refused." >&2
+    echo "  Run: ats-metareview $slug   (or goal-refute $slug --via agentmaster)" >&2
     return 1
   fi
   local now; now=$(_goal_now)

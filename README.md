@@ -206,6 +206,18 @@ Live neutral runner: [GitHub Actions](https://github.com/Supersynergy/agent-toke
 | `teams` | independent coding lanes | Lean runtime + bounded controller/worker protocol; no auto fan-out |
 | `heavy` | large logs and deep code graph | lean + context-mode/Graphify/CodeGraph only for that session |
 
+A Devin-specific sub-skill lives at `skills/agent-token-saver-devin/SKILL.md`.
+It is a strict subset of `lean`/`teams` with hook-free wiring (shell wrapper +
+repo instructions + Knowledge Base). Use it when Devin is the active runtime;
+use the canonical `agent-token-saver` skill for hook-capable agents.
+
+A universal shell wrapper `integration/cli/agent-token-saver.sh` provides
+`ats-*` helpers (`ats-token-ledger`, `ats-synapse-prime`, `ats-synapse-ingest`,
+`ats-synapse-remember`, `ats-capsule-template`, `ats-doctor`) plus the
+`goal-*` CLI for any hookless agent. The Devin wrapper
+`integration/cli/devin-token-saver.sh` sources it and adds `devin-*`
+backward-compat aliases.
+
 Rules:
 
 - RTK compresses noisy shell output. It does not clean HTML or replace a fetcher.
@@ -221,8 +233,10 @@ Rules:
 
 ```text
 scripts/       installer, doctor, ledger, projections and benchmarks
-integration/   one prompt hook, one lean Kimi worker lane and one opt-in heavy Codex launcher
-skills/        portable agent-token-saver skill
+integration/   one prompt hook, one lean Kimi worker lane, one opt-in heavy Codex launcher,
+               plus the universal agent-token-saver.sh wrapper, the Devin-specific
+               devin-token-saver.sh wrapper, and the Devin bootstrap block
+skills/        portable agent-token-saver skill (canonical) and agent-token-saver-devin sub-skill
 stack/         profile catalog consumed by the doctor
 tests/         current release contracts only
 data/          dated, reproducible benchmark evidence
@@ -313,6 +327,13 @@ Integration is capability-based:
 - **Hermes:** `~/.hermes/skills/agent-token-saver/SKILL.md`.
 - **GG Coder:** `~/.gg/skills/agent-token-saver.md`; GG Coder 5.15.1 has no equivalent public hook CLI.
 - **Any repo agent:** `.agents/skills/agent-token-saver/SKILL.md` plus the CLI.
+- **Devin (Cognition):** `.agents/skills/agent-token-saver-devin/SKILL.md` plus
+  `integration/cli/devin-token-saver.sh` (Devin-specific wrapper that sources
+  the universal `integration/cli/agent-token-saver.sh` and adds `devin-*`
+  aliases) and `integration/cli/devin-bootstrap.md` (repo-instructions block).
+  Devin has no host-native prompt hooks; the wrapper installs fail-open `rtk`
+  aliases, the bootstrap block wires the capsule protocol into `AGENTS.md`,
+  and deep docs live in Devin's Knowledge Base (RAG-gated, zero-hot).
 
 Hooks fail open and never change approval policy. Strict automatic routing loads
 at most one primary skill and returns nothing for trivial, low-confidence or

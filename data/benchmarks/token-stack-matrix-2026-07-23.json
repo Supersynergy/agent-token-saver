@@ -1,0 +1,159 @@
+{
+  "date": "2026-07-23 13:42:29 CEST",
+  "method": {
+    "visible_input": "local real CLIs/MCP schemas; UTF-8 bytes / 4 proxy",
+    "provider_usage": "present only inside ponytail.live_cases arms",
+    "matrix_boundary": "visible-input profile comparison only; Ponytail live output stays separate and is not combined with unrelated component fixtures"
+  },
+  "versions": {
+    "context_mode": "1.0.169",
+    "headroom": "0.32.1",
+    "rtk": "0.43.0",
+    "tilth": "0.9.0",
+    "codex": "0.145.0"
+  },
+  "headroom_codex_observed": {
+    "counted_in_profiles": false,
+    "requests": 0,
+    "before_tokens": 0,
+    "after_tokens": 0,
+    "tokens_saved": 0,
+    "savings_percent": 0.0,
+    "tool_search_tokens_saved": 0,
+    "tool_search_requests": 0
+  },
+  "schemas": {
+    "tilth": {
+      "tools": 6,
+      "tokens": 1836,
+      "ms": 35,
+      "error": ""
+    },
+    "context_mode": {
+      "tools": 11,
+      "tokens": 7458
+    }
+  },
+  "ponytail": {
+    "type": "behavior/output shaper skill, not a lossless compressor",
+    "full_skill_tokens": 1299,
+    "live_cases": [],
+    "baseline_avg_output_tokens": 0,
+    "ponytail_avg_output_tokens": 0
+  },
+  "components": [
+    {
+      "name": "skill-routing",
+      "baseline_tokens": 65068,
+      "optimized_tokens": 35,
+      "baseline_ms": 0,
+      "optimized_ms": 85,
+      "accepted": false,
+      "detail": "962 skills -> 0 selected (strict)",
+      "saved_pct": 99.95
+    },
+    {
+      "name": "rtk-ps",
+      "baseline_tokens": 32210,
+      "optimized_tokens": 887,
+      "baseline_ms": 421,
+      "optimized_ms": 37,
+      "accepted": true,
+      "detail": "Stable 900-row process fixture through real RTK.",
+      "saved_pct": 97.25
+    },
+    {
+      "name": "tilth-read",
+      "baseline_tokens": 6882,
+      "optimized_tokens": 747,
+      "baseline_ms": 0,
+      "optimized_ms": 5,
+      "accepted": true,
+      "detail": "Full benchmark source vs 800-token structural budget.",
+      "saved_pct": 89.15
+    },
+    {
+      "name": "native-log-projection",
+      "baseline_tokens": 300474,
+      "optimized_tokens": 185,
+      "baseline_ms": 0,
+      "optimized_ms": 1,
+      "accepted": true,
+      "detail": "20k-line log -> exact error count + last 10 errors.",
+      "saved_pct": 99.94
+    },
+    {
+      "name": "context-mode-log",
+      "baseline_tokens": 300474,
+      "optimized_tokens": 260,
+      "baseline_ms": 0,
+      "optimized_ms": 864,
+      "accepted": true,
+      "detail": "Same exact oracle through ctx_execute_file; excludes schema overhead.",
+      "saved_pct": 99.91
+    }
+  ],
+  "matrix": [
+    {
+      "name": "none/raw",
+      "estimated_visible_input_tokens": 404634,
+      "input_measurement": "utf8_bytes_div_4_proxy",
+      "observed_output_tokens": 0,
+      "output_measurement": "not_measured_zero",
+      "combined_payload_tokens": 404634,
+      "accepted": false,
+      "payload_index_vs_none": 100.0,
+      "note": "Full skill catalog + raw shell/file/log; no schema overhead."
+    },
+    {
+      "name": "cli-selective",
+      "estimated_visible_input_tokens": 1854,
+      "input_measurement": "utf8_bytes_div_4_proxy",
+      "observed_output_tokens": 0,
+      "output_measurement": "not_measured_zero",
+      "combined_payload_tokens": 1854,
+      "accepted": false,
+      "payload_index_vs_none": 0.46,
+      "note": "Router + RTK + Tilth CLI + native projection; zero MCP schema."
+    },
+    {
+      "name": "current-lean",
+      "estimated_visible_input_tokens": 3782,
+      "input_measurement": "utf8_bytes_div_4_proxy",
+      "observed_output_tokens": 0,
+      "output_measurement": "not_measured_zero",
+      "combined_payload_tokens": 3782,
+      "accepted": false,
+      "payload_index_vs_none": 0.93,
+      "note": "Prompt hook + RTK + Tilth MCP + native projection; no Headroom."
+    },
+    {
+      "name": "context-on-demand",
+      "estimated_visible_input_tokens": 9387,
+      "input_measurement": "utf8_bytes_div_4_proxy",
+      "observed_output_tokens": 0,
+      "output_measurement": "not_measured_zero",
+      "combined_payload_tokens": 9387,
+      "accepted": false,
+      "payload_index_vs_none": 2.32,
+      "note": "Router + RTK + Tilth CLI + context-mode schema/call; no Headroom."
+    },
+    {
+      "name": "max-all+ponytail",
+      "estimated_visible_input_tokens": 12614,
+      "input_measurement": "utf8_bytes_div_4_proxy",
+      "observed_output_tokens": 0,
+      "output_measurement": "not_measured_zero",
+      "combined_payload_tokens": 12614,
+      "accepted": false,
+      "payload_index_vs_none": 3.12,
+      "note": "Current + context-mode MCP + full Ponytail skill; cold-schema cost."
+    }
+  ],
+  "top3": [],
+  "monetary_cost": {
+    "status": "not_measured",
+    "reason": "Local payload estimates and subscription quota do not establish monetary cost.",
+    "comparison": "payload_index_vs_none compares only the measured fixture payload; none/raw = 100."
+  }
+}

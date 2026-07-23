@@ -1,0 +1,141 @@
+#!/usr/bin/env python3
+"""
+ats-llm-pipe — bridge supacrawl's LLM-extraction to any active CLI agent.
+
+Reads OpenAI-style messages JSON on stdin, picks the first available CLI
+(codex / kimi / claude / llm), pipes the concatenated prompt to it, and
+returns the assistant response text on stdout. No Ollama, no API key.
+
+Env overrides:
+  ATS_LLM_PIPE_CMD   — explicit command, e.g. "codex exec --skip-git-repo-check -"
+  ATS_LLM_PIPE_MODEL — model name reported to supacrawl (default: "active")
+  ATS_LLM_PIPE_TIMEOUT — seconds (default: 120)
+  ATS_LLM_PIPE_MAX_CHARS — truncate content to this many chars (default: 60000)
+
+Usage by supacrawl (via patched stdio provider):
+  SUPACRAWL_LLM_PROVIDER=stdio
+  SUPACRAWL_LLM_MODEL=active
+  SUPACRAWL_LLM_STDIO_CMD=ats-llm-pipe
+
+Input format (stdin, one JSON object):
+  {"messages":[{"role":"system","content":"..."},{"role":"user","content":"..."}],"json_mode":true}
+
+Output format (stdout): assistant response text (raw — supacrawl parses JSON).
+"""
+from __future__ import annotations
+
+import json
+import os
+import shutil
+import subprocess
+import sys
+from typing import Any
+
+
+def _pick_cli() -> tuple[str, list[str]] | None:
+    """Return (cmd, args) for the first available LLM CLI."""
+    explicit = os.getenv("ATS_LLM_PIPE_CMD")
+    if explicit:
+        parts = explicit.split()
+        return parts[0], parts[1:]
+
+    # Order of preference: codex (fast, cheap), kimi (K3 cheap), claude (expensive),
+    # llm (Simon Willison's llm, supports many providers via API key).
+    candidates = [
+        ("codex", ["exec", "--skip-git-repo-check", "-"]),
+        ("kimi", ["--print"]),
+        ("claude", ["--print"]),
+        ("llm", []),
+    ]
+    for cmd, args in candidates:
+        if shutil.which(cmd):
+            return cmd, args
+    return None
+
+
+def _flatten_prompt(messages: list[dict[str, str]], json_mode: bool) -> str:
+    """Flatten OpenAI-style messages into a single prompt string."""
+    parts: list[str] = []
+    for msg in messages:
+        role = msg.get("role", "user")
+        content = msg.get("content", "")
+        if role == "system":
+            parts.append(f"[SYSTEM]\n{content}")
+        elif role == "assistant":
+            parts.append(f"[ASSISTANT]\n{content}")
+        else:
+            parts.append(f"[USER]\n{content}")
+    body = "\n\n".join(parts)
+    if json_mode:
+        body += "\n\n[INSTRUCTION] Respond with valid JSON only, no markdown fences, no explanation."
+    max_chars = int(os.getenv("ATS_LLM_PIPE_MAX_CHARS", "60000"))
+    if len(body) > max_chars:
+        body = body[:max_chars] + "\n\n[Content truncated...]"
+    return body
+
+
+def main() -> int:
+    raw = sys.stdin.read()
+    if not raw.strip():
+        print("ats-llm-pipe: empty stdin", file=sys.stderr)
+        return 1
+
+    try:
+        payload: dict[str, Any] = json.loads(raw)
+    except json.JSONDecodeError as e:
+        print(f"ats-llm-pipe: invalid JSON on stdin: {e}", file=sys.stderr)
+        return 1
+
+    messages = payload.get("messages") or []
+    json_mode = bool(payload.get("json_mode", False))
+    if not messages:
+        print("ats-llm-pipe: no messages in payload", file=sys.stderr)
+        return 1
+
+    picked = _pick_cli()
+    if picked is None:
+        # Fallback: echo the user content back — lets supacrawl's JSON parser
+        # fail gracefully rather than crashing. Agent can still use scrape output.
+        print("ats-llm-pipe: no LLM CLI on PATH (codex/kimi/claude/llm). " +
+              "Set ATS_LLM_PIPE_CMD or install one.", file=sys.stderr)
+        # Return last user content as-is so supacrawl gets *something*.
+        last_user = next((m["content"] for m in reversed(messages) if m.get("role") == "user"), "")
+        print(last_user[:2000])
+        return 0
+
+    cmd, args = picked
+    prompt = _flatten_prompt(messages, json_mode)
+    timeout = int(os.getenv("ATS_LLM_PIPE_TIMEOUT", "120"))
+
+    try:
+        proc = subprocess.run(
+            [cmd, *args],
+            input=prompt,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        print(f"ats-llm-pipe: {cmd} timed out after {timeout}s", file=sys.stderr)
+        return 2
+    except FileNotFoundError:
+        print(f"ats-llm-pipe: {cmd} not found", file=sys.stderr)
+        return 3
+
+    if proc.returncode != 0:
+        print(f"ats-llm-pipe: {cmd} exit {proc.returncode}: {proc.stderr[:500]}", file=sys.stderr)
+        # Fail-open: return stderr-truncated so supacrawl sees a string, not a crash.
+        print(proc.stderr[:500] if proc.stderr else "(no output)")
+        return 0
+
+    # Codex prints hook noise + "tokens used" footer. Strip common wrappers.
+    out = proc.stdout
+    # Strip leading/trailing whitespace
+    out = out.strip()
+    print(out)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

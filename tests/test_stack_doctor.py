@@ -150,7 +150,10 @@ def test_active_public_surface_excludes_private_host_tools() -> None:
     )
 
     text = "\n".join(path.read_text().lower() for path in active_files)
-    for marker in ("superweb", "synapse", "ghmax", "ghgrep"):
+    # Private host-only tool names that must not leak into the public surface.
+    # "synapse" is allowed because ats-synapse-prime / ats-synapse-ingest are
+    # public CLI helpers backed by the synapse-memory project.
+    for marker in ("superweb", "ghmax", "ghgrep"):
         assert marker not in text
 
 

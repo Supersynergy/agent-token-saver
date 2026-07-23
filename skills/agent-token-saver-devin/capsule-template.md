@@ -1,6 +1,6 @@
 # Subagent Capsule Template
 
-> **Bounded context for `devin-goal-spawn`.** Replace ALL bracketed fields.
+> **Bounded context for `goal-spawn` (alias: `devin-goal-spawn`).** Replace ALL bracketed fields.
 > Target: 300–700 tokens. Never include parent transcript.
 
 ## Goal
@@ -27,7 +27,7 @@
 
 Return a ≤500-token summary with:
 
-1. **Oracle result:** PASS / FAIL (run `devin-goal-check <slug>`)
+1. **Oracle result:** PASS / FAIL (run `goal-check <slug>` — alias: `devin-goal-check`)
 2. **Bottleneck:** root cause if FAIL, what fixed it if PASS
 3. **Tokens spent:** approximate
 4. **Files changed:** list with line counts
@@ -36,8 +36,8 @@ Return a ≤500-token summary with:
 ## Close
 
 ```bash
-devin-goal-check <slug>
-devin-goal-close <slug> --summary "<one-line outcome>"
+goal-check <slug>                      # alias: devin-goal-check
+goal-close <slug> --summary "<one-line outcome>"   # alias: devin-goal-close
 ```
 
 ## Example (filled)

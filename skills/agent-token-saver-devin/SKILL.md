@@ -15,7 +15,7 @@ metadata:
 Devin hat **keine host-nativen Prompt-Hooks** (wie Codex `UserPromptSubmit` oder Claude `PreToolUse`). Dieses Profil ersetzt Hooks durch 3 portable Seams:
 
 1. **Repo-Instructions** (`AGENTS.md`) — einmal gelesen, keine per-turn Kosten.
-2. **Shell-Wrapper** (`devin-token-saver.sh`) — sourced Aliases, leitet noisy Commands durch `rtk`.
+2. **Shell-Wrapper** (`devin-token-saver.sh`) — sourced die universelle `agent-token-saver.sh` und leitet noisy Commands durch `rtk`.
 3. **Knowledge Base** — `SKILL.md` + Referenzen, RAG-gated (zero-hot: lädt nur, wenn Task es braucht).
 
 ## When to use
@@ -29,7 +29,7 @@ Devin hat **keine host-nativen Prompt-Hooks** (wie Codex `UserPromptSubmit` oder
 ## Default ladder
 
 1. `AGENTS.md` nennt Wrapper + Capsule-Protokoll — einmal gelesen.
-2. `source scripts/devin-token-saver.sh` installiert Aliases (`ps`, `git diff`, `git log`, `docker logs`, `cat *.log`) → `rtk` wenn present, else passthrough.
+2. `source scripts/devin-token-saver.sh` installiert Aliases (`ps`, `git diff`, `git log`, `docker logs`, `cat *.log`) → `rtk` wenn present, else passthrough. Die universellen `ats-*` / `goal-*` Funktionen kommen von `agent-token-saver.sh`; `devin-*` sind Backward-Compat-Aliase.
 3. `si route "<task>" --max 1 --strict --json` — explicit CLI, nie auto-load.
 4. KB für tiefe Docs — `FULL_CONTEXT_MEASUREMENT`, `SUBAGENT_CONTEXT_PROTOCOL` live in Devins KB.
 5. Delegate-Subagents: 300–700 Token Capsule, closed oracle, max 3 Worker.
@@ -41,6 +41,7 @@ Devin hat **keine host-nativen Prompt-Hooks** (wie Codex `UserPromptSubmit` oder
 ./install-universal.sh --profile lean --agent repo --project /path/to/target
 cp skills/agent-token-saver-devin/SKILL.md /path/to/target/.agents/skills/agent-token-saver-devin/
 cp integration/cli/devin-token-saver.sh /path/to/target/scripts/ && chmod +x /path/to/target/scripts/devin-token-saver.sh
+cp integration/cli/agent-token-saver.sh /path/to/target/scripts/ && chmod +x /path/to/target/scripts/agent-token-saver.sh
 ```
 
 Dann Devin-Block an `AGENTS.md` anhängen (Template in `integration/cli/devin-bootstrap.md`).
@@ -63,9 +64,9 @@ Ref: `docs/SUBAGENT_CONTEXT_PROTOCOL.md`.
 
 ### Synapse Ultra (Pre/Post-Session Brain)
 
-- **Pre:** `devin-synapse-prime "<topic> devin <repo> decisions"` → `synx hybrid` zero-hot RAG.
-- **Post:** `devin-synapse-remember "<title>" "<decision>"` → `synx put`.
-- **Post:** `devin-synapse-ingest <session.jsonl>` → `devin-usage.py` → `~/.synapse/brain.db`, tracks `unattributed_input_tokens` in `meta`.
+- **Pre:** `ats-synapse-prime "<topic> devin <repo> decisions"` (alias: `devin-synapse-prime`) → `synx hybrid` zero-hot RAG.
+- **Post:** `ats-synapse-remember "<title>" "<decision>"` (alias: `devin-synapse-remember`) → `synx put`.
+- **Post:** `ats-synapse-ingest <session.jsonl>` (alias: `devin-synapse-ingest`) → `devin-usage.py` → `~/.synapse/brain.db`, tracks `unattributed_input_tokens` in `meta`. `ATS_AGENT_NAME=devin` wird vom Devin-Wrapper gesetzt.
 - **Inspect:** `synapse-ultra events --agent devin`, `replay --session <id>`, `why --uri file:src/foo.rs --depth 5`.
 
 ### DuckLake (Token-Ledger Time-Travel)
@@ -82,31 +83,31 @@ Evaluiert, **nicht integriert**. Details in `MASTER-PLAN.md` §6 (Revisit-Kriter
 
 ## Goal-achievement system (omnigoal pattern)
 
-`devin-goal-*` implementiert **oracle-gated stop**: Session stoppt wenn Oracle PASS oder Budget erschöpft. Goals als JSON in `~/.synapse/goals/` — cross-agent koordinierbar **ohne Transcript-Sharing**.
+Die universelle `goal-*` CLI implementiert **oracle-gated stop**: Session stoppt wenn Oracle PASS oder Budget erschöpft. Goals als JSON in `~/.synapse/goals/` — cross-agent koordinierbar **ohne Transcript-Sharing**. `devin-goal-*` sind Backward-Compat-Aliase.
 
 ```bash
 # 1. Goal mit checkable Definition-of-Done
-devin-goal-init "fix-cargo-test" \
+goal-init "fix-cargo-test" \
   --oracle "cargo test --workspace 2>&1 | tail -1 | grep -q 'test result: ok'" \
   --budget-tokens 50000 --deadline 2h
 
 # 2. Prime + Route + Spawn (Capsule, NICHT Transcript)
-devin-synapse-prime "devin superweb cargo-test decisions"
+ats-synapse-prime "devin superweb cargo-test decisions"
 si route "fix cargo test" --max 1 --strict --json
-devin-goal-spawn fix-cargo-test --capsule capsules/extract-errors.md --skill none
+goal-spawn fix-cargo-test --capsule capsules/extract-errors.md --skill none
 
 # 3. Check + Close (persistiert Summary zu synx)
-devin-goal-check fix-cargo-test
-devin-goal-close fix-cargo-test --summary "Fixed 3 errors, oracle green, 12k tokens"
+goal-check fix-cargo-test
+goal-close fix-cargo-test --summary "Fixed 3 errors, oracle green, 12k tokens"
 ```
 
 **Warum superintelligent:**
 
 1. **Oracle-gated stop** — keine "I think I'm done" Self-Delusion.
-2. **Bottleneck-Identification** — `devin-goal-check` extrahiert `error|fail|missing|panic`, Agent arbeitet an Root-Cause.
+2. **Bottleneck-Identification** — `goal-check` extrahiert `error|fail|missing|panic`, Agent arbeitet an Root-Cause.
 3. **Bounded budget** — `--budget-tokens` cappt Runaway-Sessions.
 4. **Cross-agent coordination via Goal-JSON** — Subagents sehen Capsule + Goal, nicht 200k-Token-Transcript. Das ist der Token-Saver-Integration-Punkt.
-5. **Persistent outcome** — `devin-goal-close` → `synx put` → nächste Session kann `devin-synapse-prime` es abrufen.
+5. **Persistent outcome** — `goal-close` → `synx put` → nächste Session kann `ats-synapse-prime` es abrufen.
 6. **DuckLake-archiveable** — `just dl-ingest goals ~/.synapse/goals/*.json` für Time-Travel-Analytics.
 
 **Oracle-Design-Regeln:**
@@ -140,7 +141,8 @@ agent-token-ledger --usage parent=run.jsonl --usage child-1=delegate1.jsonl --pr
 ## See also
 
 - `skills/agent-token-saver/SKILL.md` — canonical hook-based skill.
-- `integration/cli/devin-token-saver.sh` — Shell-Wrapper.
+- `integration/cli/agent-token-saver.sh` — universeller Shell-Wrapper (`ats-*` + `goal-*`).
+- `integration/cli/devin-token-saver.sh` — Devin-spezifischer Wrapper (`devin-*` Aliase).
 - `skills/agent-token-saver-devin/MASTER-PLAN.md` — 8-Phase Rollout + ROI-Messung + Test-Prompt.
 - `skills/agent-token-saver-devin/capsule-template.md` — Capsule-Vorlage.
 - `docs/SUBAGENT_CONTEXT_PROTOCOL.md` · `docs/CLI_FIRST_POLICY.md` · `docs/FULL_CONTEXT_MEASUREMENT.md`.

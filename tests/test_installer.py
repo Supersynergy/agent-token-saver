@@ -58,7 +58,7 @@ def test_all_agents_install_without_overwriting_existing_settings(tmp_path: Path
     assert config["profile"] == "lean"
     assert config["agents"] == ["codex", "claude", "hermes", "ggcoder", "repo"]
     assert config["project_root"] == str(project.resolve())
-    assert config["canonical_skill"]["version"] == "3.2.0"
+    assert config["canonical_skill"]["version"] == "3.8.1"
     assert config["canonical_skill"]["sha256"] == hashlib.sha256(
         (ROOT / "skills" / "agent-token-saver" / "SKILL.md").read_bytes()
     ).hexdigest()

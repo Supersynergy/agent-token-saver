@@ -1,16 +1,18 @@
 {
-  "date": "2026-07-23 14:05 CEST (updated 15:00 after ponytail compression)",
+  "date": "2026-07-23 14:05 CEST (v1.3.0 ponytail; v3.6.0 Devin cleanup; v3.7.0 adaptive)",
   "version": "1.3.0",
   "method": "local measurement, UTF-8 bytes/4 token proxy",
-  "profile": "agent-token-saver-devin v1.3.0 (synx + goal-system + ducklake + ponytail-compressed docs)",
+  "profile": "agent-token-saver v3.7.0 (universal ats-* + goal-* + adaptive detect/safe/metareview/omnigoal-check/auto + claude/codex/cmux wrappers)",
   "files_pre_compression": {
-    "scripts/devin-token-saver.sh": {"bytes": 14714, "tokens": 3678, "lines": 410},
+    "scripts/agent-token-saver.sh": {"bytes": 7400, "tokens": 1850, "lines": 175},
+    "scripts/devin-token-saver.sh": {"bytes": 2200, "tokens": 550, "lines": 55},
     "AGENTS.md Devin block": {"bytes": 4410, "tokens": 1102, "lines": 68},
     "SKILL.md": {"bytes": 13409, "tokens": 3352, "lines": 297},
     "MASTER-PLAN.md": {"bytes": 14805, "tokens": 3701, "lines": 328}
   },
   "files_post_compression": {
-    "scripts/devin-token-saver.sh": {"bytes": 12594, "tokens": 3148, "lines": 341, "reduction_pct": 14.4},
+    "scripts/agent-token-saver.sh": {"bytes": 7400, "tokens": 1850, "lines": 175, "reduction_pct": 0},
+    "scripts/devin-token-saver.sh": {"bytes": 2200, "tokens": 550, "lines": 55, "reduction_pct": 0},
     "AGENTS.md Devin block": {"bytes": 1988, "tokens": 497, "lines": 35, "reduction_pct": 54.9},
     "SKILL.md": {"bytes": 7528, "tokens": 1882, "lines": 147, "reduction_pct": 43.9},
     "MASTER-PLAN.md": {"bytes": 7032, "tokens": 1758, "lines": 157, "reduction_pct": 52.5}
@@ -21,12 +23,29 @@
     "kb_savings_per_session_tokens": 3968
   },
   "maximization_stack": {
+    "universal_wrapper": {
+      "status": "integrated (v3.6.0; v3.7.0 adaptive)",
+      "file": "integration/cli/agent-token-saver.sh",
+      "functions": ["ats-token-ledger", "ats-synapse-prime", "ats-synapse-remember", "ats-synapse-ingest", "ats-capsule-template", "ats-doctor", "ats-detect-agent", "ats-safe", "ats-have", "ats-prime-and-init", "ats-parallel", "ats-metareview", "ats-omnigoal-check", "ats-auto"],
+      "env": ["ATS_AGENT_NAME", "ATS_ACTIVE_SKILL", "ATS_AGENT_DETECTED"]
+    },
+    "agent_wrappers": {
+      "status": "thin wrappers around universal (v3.7.0)",
+      "files": ["devin-token-saver.sh", "claude-token-saver.sh", "codex-token-saver.sh", "cmux-token-saver.sh"],
+      "pattern": "export ATS_AGENT_NAME + ATS_ACTIVE_SKILL, source universal, install <agent>-* aliases"
+    },
+    "devin_wrapper": {
+      "status": "thin wrapper around universal (v3.6.0)",
+      "file": "integration/cli/devin-token-saver.sh",
+      "exports": ["ATS_AGENT_NAME=devin", "ATS_ACTIVE_SKILL=.agents/skills/agent-token-saver-devin/SKILL.md"],
+      "aliases": ["devin-token-ledger", "devin-synapse-prime", "devin-synapse-remember", "devin-synapse-ingest", "devin-capsule-template", "devin-token-doctor", "devin-goal-init", "devin-goal-check", "devin-goal-close", "devin-goal-spawn"]
+    },
     "synx": {
       "status": "integrated (renamed from syn)",
       "binary": "/Users/master/.local/bin/synx (9767 bytes, full CLI)",
-      "pre_session": "devin-synapse-prime → synx hybrid",
-      "post_session": "devin-synapse-remember → synx put",
-      "ingest": "devin-synapse-ingest → devin-usage.py → synapse-ultra ingest"
+      "pre_session": "ats-synapse-prime (alias: devin-synapse-prime) → synx hybrid",
+      "post_session": "ats-synapse-remember (alias: devin-synapse-remember) → synx put",
+      "ingest": "ats-synapse-ingest (alias: devin-synapse-ingest) → devin-usage.py → synapse-ultra ingest"
     },
     "synapse_ultra": {
       "status": "integrated",
@@ -38,9 +57,10 @@
       "use_case": "token_ledger + goals time-travel, A/B routing branches"
     },
     "goal_system": {
-      "status": "integrated + live-validated",
+      "status": "integrated + live-validated (universal goal-* CLI)",
       "pattern": "omnigoal (oracle-gated stop, bottleneck identification, budget cap)",
-      "functions": ["devin-goal-init", "devin-goal-check", "devin-goal-close", "devin-goal-spawn"],
+      "functions": ["goal-init", "goal-recall", "goal-leverage", "goal-slice", "goal-spawn", "goal-check", "goal-verify", "goal-refute", "goal-close", "goal-trace", "goal-trust", "goal-list", "goal-doctor"],
+      "devin_aliases": ["devin-goal-init", "devin-goal-check", "devin-goal-close", "devin-goal-spawn"],
       "storage": "~/.synapse/goals/*.json (cross-agent coordinatable)",
       "roi_estimate": "40-60% token savings on tasks >30min or >20k tokens"
     },
@@ -50,15 +70,30 @@
     }
   },
   "validation": {
-    "wrapper_syntax": "OK",
+    "universal_wrapper_syntax": "OK (bash -n)",
+    "devin_wrapper_syntax": "OK (bash -n)",
+    "claude_wrapper_syntax": "OK (bash -n, v3.7.0)",
+    "codex_wrapper_syntax": "OK (bash -n, v3.7.0)",
+    "cmux_wrapper_syntax": "OK (bash -n, v3.7.0)",
+    "goal_sh_syntax": "OK (bash -n)",
+    "smoke_test": "tests/test_goal_system.sh — 30/30 checks PASS (universal goal-* + ats-* + devin-* compat + v3.7.0 adaptive: detect/safe/parallel/metareview/omnigoal-check/auto + claude/codex/cmux wrappers)",
     "goal_init": "OK (jq --arg quoting fixed)",
     "goal_check_pass": "OK (oracle 'true' → PASS)",
     "goal_check_fail": "OK (oracle 'grep nonexistent' → FAIL + bottleneck)",
     "goal_close": "OK (summary persisted to synx + goal JSON)",
-    "goal_spawn": "OK (subagent registered with capsule + skill)",
+    "goal_close_require_metareview": "OK (refuses without metareview, succeeds after PASS — v3.7.0)",
+    "goal_spawn": "OK (subagent registered with capsule + skill + trust 0.5)",
     "goal_list": "OK (lists all goals with state)",
     "synx_prime": "OK (returned 4 relevant chunks)",
     "synapse_ingest": "OK (2 events ingested, replay works)",
+    "ats_doctor": "OK (reports AGENT_TOKEN_SAVER_LOADED + ATS_AGENT_NAME + ATS_AGENT_DETECTED + ATS_ACTIVE_SKILL)",
+    "ats_detect_agent": "OK (auto-sets ATS_AGENT_NAME from env vars — v3.7.0)",
+    "ats_safe": "OK (fail-open skip + dispatch — v3.7.0)",
+    "ats_parallel": "OK (N commands in parallel + join — v3.7.0)",
+    "ats_metareview": "OK (verdict recorded in goal JSON — v3.7.0)",
+    "ats_omnigoal_check": "OK (7 hard gates verified — v3.7.0)",
+    "ats_auto": "OK (two-phase omnigoal loop: start + --continue — v3.7.0)",
+    "devin_aliases": "OK (devin-goal-init, devin-token-doctor delegate to universal)",
     "doctor": "All 9 tools present: rtk, si, agent-token-ledger, agent-token-saver, synx, synapse-ultra, duckdb, jq, goals"
   },
   "roi_projection": {

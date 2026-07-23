@@ -2,6 +2,209 @@
 
 ## Unreleased
 
+## 3.8.1 — 2026-07-23
+
+### stdio LLM bridge + ats-recon auto-router + jury benchmarks
+
+- **feat(cli): `ats-llm-pipe`** — Python bridge that reads OpenAI-style
+  messages JSON from stdin and routes to the first available CLI LLM
+  (codex, kimi, claude, llm). Enables supacrawl LLM extraction without
+  Ollama or API keys. Installed at `integration/cli/ats-llm-pipe`.
+
+- **feat(supacrawl): stdio LLM provider** — patched `supacrawl/llm/config.py`
+  and `supacrawl/llm/client.py` (site-packages) to recognize `stdio` as a
+  valid provider. Configured via `SUPACRAWL_LLM_PROVIDER=stdio` and
+  `SUPACRAWL_LLM_STDIO_CMD=ats-llm-pipe`. No API key, no Ollama daemon.
+
+- **feat(cli): `ats-supacrawl-extract <url> "<prompt>"`** — bash wrapper
+  that runs scrape + LLM extraction in one call using the stdio bridge.
+
+- **feat(cli): `ats-recon "<query>"`** — auto-routing pipeline that picks
+  the best recon tool based on the query shape:
+  - URL → `supacrawl scrape` (or `extract` if `--extract` flag)
+  - `owner/repo` → `ghx explore` (or `inspect` if question contains "where"/"how")
+  - else → `gmax` semantic search
+  Fail-open: missing tools degrade gracefully.
+
+- **feat(cli): `ats-recon-doctor`** — now checks `ats-llm-pipe` and stdio
+  LLM CLIs (codex/kimi/claude/llm) alongside gmax/ghx/supacrawl.
+
+- **feat(bench): `ats-recon-bench.py`** — benchmarks gmax vs grep,
+  ghx explore/inspect vs `gh api`, supacrawl scrape vs curl, and
+  supacrawl stdio extraction. Outputs JSON + Markdown table.
+
+- **feat(bench): `ats-swarm-bench.py`** — tests the stdio bridge across
+  multiple agent CLIs (codex, hermes+kimi, hermes+luna, hermes+terra).
+  Measures wall time, chars, JSON validity.
+
+- **feat(bench): `ats-jury-bench.py`** — jury of agents answers questions
+  about agent-token-saver via baseline (grep/gh api/curl) vs ats-recon
+  (gmax/ghx/supacrawl). Measures token savings per question.
+
+### Benchmark results (2026-07-23, 1 iter, 4 agents)
+
+| Probe | Baseline tokens | ATS-recon tokens | Saved |
+|---|---|---|---|
+| local_search | 930 | 167 | 82.0% |
+| github_recon | 8836 | 85 | 99.0% |
+| web_scrape | 157 | 64 | 59.2% |
+
+## 3.8.0 — 2026-07-23
+
+### Recon CLI integration — gmax + ghx + supacrawl (fail-open, no MCP, no API keys)
+
+- **feat(cli): `ats-gmax` wraps grepmax (gmax)** — persistent semantic index of
+  local codebases. Replaces Cascade `code_search` for indexed projects.
+  `--agent` output is ledger-compatible (single-line hits + similarity score +
+  role tag ORCH/DEFI). Subcommands `trace`, `skeleton`, `extract`, `peek`,
+  `dead` exposed. Index once: `gmax add <path>`. Query: `gmax "<q>" --agent`.
+  Install: `npm install -g grepmax` (requires `npm config set allow-scripts`
+  for native ONNX/MLX/sharp modules).
+
+- **feat(cli): `ats-ghx` wraps ghx (GitHub reconnaissance sidecar)** — GraphQL
+  batching (10 files/call), `read --map` output ~92% token reduction vs raw
+  file reads. `inspect <owner/repo> "<concern>"` ranks files by relevance.
+  Uses `gh` CLI auth, no extra API key. Ideal pre-step before
+  `superweb research --deep` for repo-specific questions.
+  Install: `npm install -g @gkoreli/ghx`.
+
+- **feat(cli): `ats-supacrawl` wraps supacrawl (HTTP-first web scraper)** —
+  markdown output, `map`/`crawl`/`batch`/`search` subcommands. No API key
+  required for scrape/map/crawl/batch. LLM-Extract with Ollama currently
+  broken (schema serialization) — pipe `supacrawl scrape` to `ollama`
+  directly as workaround. Complements `superweb research --deep` for quick
+  single-page pulls. Install: `pip install supacrawl`.
+
+- **feat(cli): `ats-recon-doctor`** — quick health check for the three recon
+  CLIs. Shows install state + `gh`/`ollama` dependencies + `gmax status` for
+  indexed projects overview.
+
+- **feat(doctor): `ats-doctor` now reports gmax/ghx/supacrawl install state**
+  alongside existing rtk/si/synx/duckdb/jq lines. New adaptive functions
+  `ats-gmax`, `ats-ghx`, `ats-supacrawl`, `ats-recon-doctor` listed.
+
+- **docs(skill): SKILL.md bumped to 3.8.0** — new "Recon CLIs" section
+  documents the three helpers, fail-open contract, and MCP-free rationale.
+
+- **docs(agents): AGENTS.md "Recon CLIs (v3.8.0+)" section** — discoverable by
+  agents reading repo rules.
+
+All three recon CLIs are optional and fail-open: missing CLI → passthrough
+message, never error. MCP servers deliberately NOT used — CLIs keep
+Cascade/agent context clean. No API keys required (ghx uses `gh` auth,
+supacrawl scrape/map/crawl/batch are key-free, gmax is fully local).
+
+## 3.7.0 — 2026-07-23
+
+### Adaptive agent system — universal wrapper + auto-detection + hard gates
+
+- **feat(cli): `ats-detect-agent` auto-detects the calling agent from env vars**
+  (`DEVIN`, `CLAUDECODE`, `CODEX_AGENT`, `CMUX_SESSION`, `KIMI_WORKER`,
+  `CASCADE_AGENT`, `TERM_PROGRAM`) and process-name heuristic. Sets
+  `ATS_AGENT_NAME` + auto-discovers `ATS_ACTIVE_SKILL` from
+  `skills/agent-token-saver-<name>/SKILL.md`. Agents can override by exporting
+  `ATS_AGENT_NAME` before sourcing. Enables "source one wrapper, works for
+  any agent" deployment.
+
+- **feat(cli): `ats-safe <fn> [args...]` fail-open wrapper** — calls `<fn>` if
+  defined, else warns + returns 0. Lets agents call optional ats-* helpers
+  without knowing whether they're installed. `ats-have <tool>` silent CLI
+  existence check.
+
+- **feat(cli): `ats-metareview <slug>` spawns a FRESH reviewer to refute the
+  DoD** — implements omnigoal Hard Gate #5 (foreign cross-check, never
+  self-review). Tries in order: `agentmaster send` → `grepgod review` →
+  `si route code-reviewer` → manual prompt. Records verdict in goal JSON
+  `.evidence.refuter` = PASS|FAIL|PENDING|SKIPPED + `.evidence.refuter_via`.
+  `--skip-if-missing` lets close proceed when no reviewer is available.
+
+- **feat(cli): `goal-close --require-metareview`** — refuses close when no
+  foreign reviewer was ever run (refuter == SKIPPED). Makes the metareview
+  gate enforceable rather than advisory. Without the flag, behavior is
+  unchanged (backward-compatible).
+
+- **feat(cli): `ats-omnigoal-check <slug>` verifies the 7 omnigoal hard gates**
+  before a "done" claim: (1) oracle exists, (2) eval written before build
+  (EDD), (3) bottleneck named, (4) commits since spawn, (5) metareview PASS,
+  (6) compounding writeback (summary), (7) no 3-try cap violation. Returns 0
+  only if all gates pass. Prints a concise pass/fail report.
+
+- **feat(cli): `ats-auto` runs the full omnigoal loop in one call** —
+  recall → contract → leverage → slice → execute (you) → eval-gate → learn →
+  report. Two-phase: `ats-auto "<title>" --oracle "..."` starts the loop and
+  pauses at EXECUTE; `ats-auto --continue <slug>` runs goal-check +
+  ats-metareview + ats-omnigoal-check + goal-close. `--skip-metareview` for
+  environments without a reviewer runtime.
+
+- **feat(cli): `ats-prime-and-init` parallel speedtuning** — runs `synx hybrid`
+  recall AND `goal-init` in parallel, then joins. Cuts loop latency on the
+  first omnigoal step by ~50% when synx is available. Recall results appended
+  to goal JSON `.evidence.recall[]`. Falls back to sequential when synx
+  missing. `ats-parallel "<cmd1>" "<cmd2>" ...` general-purpose parallel
+  runner with join + indexed output.
+
+- **feat(cli): thin agent wrappers `claude-token-saver.sh`,
+  `codex-token-saver.sh`, `cmux-token-saver.sh`** — each is ~40 lines, sources
+  the universal wrapper, sets `ATS_AGENT_NAME` + `ATS_ACTIVE_SKILL`, installs
+  `<agent>-*` aliases mirroring the Devin pattern. Enables any hookless agent
+  to use the system with one `source` line.
+
+- **refactor(tests): expand `tests/test_goal_system.sh` from 20 to 30 checks**
+  covering ats-detect-agent, ats-safe, ats-have, ats-parallel, ats-metareview,
+  ats-omnigoal-check, ats-auto (both phases), goal-close --require-metareview,
+  and claude/codex/cmux wrapper loading. All 30 checks green.
+
+- **docs: update ats-doctor** to report `ATS_AGENT_DETECTED`,
+  `ATS_ACTIVE_SKILL`, and list all adaptive functions installed.
+
+- **compat: no breaking changes.** Existing `source scripts/devin-token-saver.sh`
+  sessions continue to work unchanged. New adaptive functions are additive.
+  `goal-close` without `--require-metareview` behaves as before.
+
+## 3.6.0 — 2026-07-23
+
+### Devin-naming cleanup — universal `ats-*` wrapper, Devin becomes thin profile
+
+- **refactor(cli): split `devin-token-saver.sh` into universal + Devin wrapper.**
+  The universal helpers (`ats-token-ledger`, `ats-synapse-prime`,
+  `ats-synapse-remember`, `ats-synapse-ingest`, `ats-capsule-template`,
+  `ats-doctor`) now live in `integration/cli/agent-token-saver.sh` and work for
+  any hookless agent. `devin-token-saver.sh` is now a ~50-line wrapper that:
+  1. sources the universal wrapper,
+  2. exports `ATS_AGENT_NAME=devin` + `ATS_ACTIVE_SKILL=…devin/SKILL.md`,
+  3. re-exports `devin-*` as 1-line backward-compat aliases.
+  Existing Devin sessions keep working; new agents call `ats-*` / `goal-*`
+  directly.
+
+- **refactor(cli): `devin-*` functions renamed to universal `ats-*` names** in
+  the universal wrapper. `devin-token-ledger` → `ats-token-ledger`,
+  `devin-synapse-prime` → `ats-synapse-prime`, `devin-synapse-remember` →
+  `ats-synapse-remember`, `devin-synapse-ingest` → `ats-synapse-ingest`,
+  `devin-capsule-template` → `ats-capsule-template`, `devin-token-doctor` →
+  `ats-doctor`. The Devin wrapper re-exports all six as `devin-*` aliases.
+
+- **feat(cli): `ATS_AGENT_NAME` + `ATS_ACTIVE_SKILL` env overrides** let
+  agent-specific wrappers customize the ledger's `--agent` field and
+  `active-skill` component without re-implementing `ats-token-ledger`. Devin
+  sets both via the wrapper; other agents can set them inline or via their own
+  wrapper.
+
+- **refactor(tests): rename `tests/test_devin_goal_system.sh` →
+  `tests/test_goal_system.sh`** and expand from 19 to 20 checks. New test
+  verifies `ats-doctor` reports `AGENT_TOKEN_SAVER_LOADED` + `ATS_AGENT_NAME`;
+  the existing `devin-goal-init` / `devin-token-doctor` alias check remains as
+  backward-compat coverage. All 20 checks green.
+
+- **docs: update README, SKILL.md, MASTER-PLAN.md, capsule-template.md,
+  devin-bootstrap.md** to reference the universal `ats-*` / `goal-*` CLI as
+  primary and `devin-*` as backward-compat aliases. MASTER-PLAN bumped to
+  v1.3.0; Devin profile is now described as a strict subset of the universal
+  wrapper plus env overrides + aliases.
+
+- **compat: no breaking changes.** `source scripts/devin-token-saver.sh` still
+  installs `devin-*` aliases; existing Devin sessions and docs continue to
+  work. The universal wrapper is additive.
+
 ## 3.5.0 — 2026-07-23
 
 ### Universal goal-* CLI — full omnigoal loop for ALL agents
