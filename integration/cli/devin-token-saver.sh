@@ -41,7 +41,7 @@ fi
 unset _universal _ats_script _ats_script_dir
 
 # Devin-specific ingest script default (legacy devin-usage.py location).
-export SYNAPSE_ULTRA_INGEST="${SYNAPSE_ULTRA_INGEST:-$HOME/BASE/projects/synapse-memory/crates/synapse-ultra/scripts/ingest/devin-usage.py}"
+export SYNAPSE_ULTRA_INGEST="${SYNAPSE_ULTRA_INGEST:-$HOME/projects/synapse-memory/crates/synapse-ultra/scripts/ingest/devin-usage.py}"
 
 export DEVIN_TOKEN_SAVER_LOADED=1
 

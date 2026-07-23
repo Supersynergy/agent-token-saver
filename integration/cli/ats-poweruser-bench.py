@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 """ats-poweruser-bench - 10 real power-user cases for codex + kimi.
 
-Each case is a task Maxim would actually run today against his systems.
+Each case is a task the author would actually run today against his systems.
 Two paths per case:
   A) baseline: raw grep / gh api / curl / cat / find
   B) ats-recon: gmax / ghx / supacrawl / ats-llm-pipe
 
 Token savings = (baseline_tokens - ats_recon_tokens) / baseline_tokens.
 Agent answers via codex + kimi (real CLI, real prompts, real context).
+
+Reproducibility: cases reference the author's repo layout. Set
+ATS_BENCH_BASE to point at your own projects directory to adapt the
+cases; the agent-token-saver cases auto-detect from this script's path.
 """
 from __future__ import annotations
 
@@ -21,16 +25,19 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
-BASE = "/Users/master/BASE/projects"
+# Auto-detect: this script lives in <BASE>/agent-token-saver/integration/cli/
+_SCRIPT_DIR = Path(__file__).resolve().parent
+_REPO_ROOT = _SCRIPT_DIR.parents[1]  # agent-token-saver/
+_BASE = os.environ.get("ATS_BENCH_BASE", str(_REPO_ROOT.parent))
 
 # 10 power-user cases — all directly contribute to today's systems
 CASES: list[dict[str, Any]] = [
     {
         "id": "01_usage_parsing",
         "question": "Where is usage parsing handled in agent-token-saver?",
-        "baseline_cmd": ["grep", "-rn", "usage", f"{BASE}/agent-token-saver/integration"],
+        "baseline_cmd": ["grep", "-rn", "usage", f"{_BASE}/agent-token-saver/integration"],
         "ats_recon_cmd": ["gmax", "where is usage parsing handled", "--agent"],
-        "cwd": f"{BASE}/agent-token-saver",
+        "cwd": f"{_BASE}/agent-token-saver",
     },
     {
         "id": "02_superweb_readme",
@@ -38,50 +45,50 @@ CASES: list[dict[str, Any]] = [
         "baseline_cmd": ["gh", "api", "repos/Supersynergy/superweb/contents/README.md",
                          "--jq", ".content"],
         "ats_recon_cmd": ["ghx", "read", "Supersynergy/superweb", "README.md"],
-        "cwd": f"{BASE}/superweb",
+        "cwd": f"{_BASE}/superweb",
     },
     {
         "id": "03_chartlab_quantagent",
         "question": "How does chartlab's QuantAgent Durable Object work?",
-        "baseline_cmd": ["grep", "-rn", "QuantAgent", f"{BASE}/chartlab/src"],
+        "baseline_cmd": ["grep", "-rn", "QuantAgent", f"{_BASE}/chartlab/src"],
         "ats_recon_cmd": ["gmax", "How does the QuantAgent Durable Object work", "--agent"],
-        "cwd": f"{BASE}/chartlab",
+        "cwd": f"{_BASE}/chartlab",
     },
     {
         "id": "04_synapse_fts5",
         "question": "Where is FTS5 search implemented in synapse-memory?",
         "baseline_cmd": ["grep", "-rn", r"FTS5|fts5|ultra_search",
-                         f"{BASE}/synapse-memory/crates"],
+                         f"{_BASE}/synapse-memory/crates"],
         "ats_recon_cmd": ["gmax", "Where is FTS5 search implemented", "--agent"],
-        "cwd": f"{BASE}/synapse-memory",
+        "cwd": f"{_BASE}/synapse-memory",
     },
     {
         "id": "05_codex_pro_providers",
         "question": "Which LLM providers does codex-pro support?",
-        "baseline_cmd": ["ls", f"{BASE}/codex-pro/core/providers"],
+        "baseline_cmd": ["ls", f"{_BASE}/codex-pro/core/providers"],
         "ats_recon_cmd": ["gmax", "Which LLM providers does codex-pro support", "--agent"],
-        "cwd": f"{BASE}/codex-pro",
+        "cwd": f"{_BASE}/codex-pro",
     },
     {
         "id": "06_token_cfo_pricing",
         "question": "What are the token-cfo pricing tiers?",
-        "baseline_cmd": ["cat", f"{BASE}/token-cfo/token_cfo/pricing.py"],
+        "baseline_cmd": ["cat", f"{_BASE}/token-cfo/token_cfo/pricing.py"],
         "ats_recon_cmd": ["gmax", "What are the token-cfo pricing tiers", "--agent"],
-        "cwd": f"{BASE}/token-cfo",
+        "cwd": f"{_BASE}/token-cfo",
     },
     {
         "id": "07_psi_schlafzimmer",
         "question": "What is the PSI Sanctuary product ladder?",
-        "baseline_cmd": ["cat", f"{BASE}/presentum/psi-business-strategie.md"],
+        "baseline_cmd": ["cat", f"{_BASE}/presentum/psi-business-strategie.md"],
         "ats_recon_cmd": ["gmax", "What is the PSI Sanctuary product ladder", "--agent"],
-        "cwd": f"{BASE}/presentum",
+        "cwd": f"{_BASE}/presentum",
     },
     {
         "id": "08_ats_hooks",
         "question": "Which hooks does agent-token-saver install?",
-        "baseline_cmd": ["ls", f"{BASE}/agent-token-saver/integration/hooks"],
+        "baseline_cmd": ["ls", f"{_BASE}/agent-token-saver/integration/hooks"],
         "ats_recon_cmd": ["gmax", "Which hooks does agent-token-saver install", "--agent"],
-        "cwd": f"{BASE}/agent-token-saver",
+        "cwd": f"{_BASE}/agent-token-saver",
     },
     {
         "id": "09_example_scrape",
@@ -95,9 +102,9 @@ CASES: list[dict[str, Any]] = [
         "id": "10_ats_recon_router",
         "question": "How does ats-recon auto-route between gmax/ghx/supacrawl?",
         "baseline_cmd": ["grep", "-n", r"ats-recon|ats_auto|route",
-                         f"{BASE}/agent-token-saver/integration/cli/agent-token-saver.sh"],
+                         f"{_BASE}/agent-token-saver/integration/cli/agent-token-saver.sh"],
         "ats_recon_cmd": ["gmax", "How does ats-recon auto-route between tools", "--agent"],
-        "cwd": f"{BASE}/agent-token-saver",
+        "cwd": f"{_BASE}/agent-token-saver",
     },
 ]
 

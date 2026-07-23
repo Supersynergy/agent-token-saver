@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # goal.sh — Universal goal-achievement CLI for ALL agents.
 # Built on omnigoal law + 2026 research (AgentLTL, AgentVerify, delegato, Orloj, Network-AI, CAPO).
-# See ~/BASE/docs/goal-system-rework.md for full spec + ADRs.
+# See docs/goal-system-rework.md in the synapse-memory repo for full spec + ADRs.
 #
 # 13 functions: init / recall / leverage / slice / spawn / check / verify / refute /
 # close / trace / trust / list / doctor. Backward-compat: devin-goal-* are 1-line
@@ -510,10 +510,12 @@ goal-close() {
   local now; now=$(_goal_now)
   # compounding writeback (ADR-10 + omnigoal §Compounding):
   #   1. synx put summary + decision (durable fact, retrieval)
-  #   2. append to ~/BASE/docs/universal-goal-science.md (human-readable canon)
+  #   2. append to $GOAL_SCIENCE_DOC (human-readable canon, default
+  #      $HOME/docs/universal-goal-science.md — set the env var to
+  #      relocate)
   #   3. optional DuckLake archive via ats-goal-archive (see below)
   if [[ -n "$decision" ]]; then
-    local goal_science="${GOAL_SCIENCE_DOC:-$HOME/BASE/docs/universal-goal-science.md}"
+    local goal_science="${GOAL_SCIENCE_DOC:-$HOME/docs/universal-goal-science.md}"
     if [[ -d "$(dirname "$goal_science")" ]]; then
       local bottleneck levers oracle
       bottleneck=$(jq -r '.bottleneck // "unknown"' "$goal_file")
@@ -684,7 +686,7 @@ goal-doctor() {
   echo "agentmaster:  $(command -v agentmaster || echo 'MISSING (cmux fan-out skipped)')"
   echo "rtk:          $(command -v rtk || echo 'MISSING (fail-open pass-through)')"
   echo "si:           $(command -v si || echo 'MISSING (skill routing skipped)')"
-  local ultra_bin="${SYNAPSE_ULTRA_BIN:-$HOME/BASE/projects/synapse-memory/target/release/synapse-ultra}"
+  local ultra_bin="${SYNAPSE_ULTRA_BIN:-$HOME/projects/synapse-memory/target/release/synapse-ultra}"
   echo "synapse-ultra: $([[ -x "$ultra_bin" ]] && echo "$ultra_bin" || echo 'MISSING')"
   echo "duckdb:       $(command -v duckdb || echo 'MISSING (DuckLake archive unavailable)')"
   local n_goals=0

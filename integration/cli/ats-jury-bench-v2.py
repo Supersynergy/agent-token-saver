@@ -31,7 +31,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
-REPO = "/Users/master/BASE/projects/agent-token-saver"
+REPO = str(Path(__file__).resolve().parents[2])
 REPO_GH = "Supersynergy/agent-token-saver"
 
 QUESTIONS: list[dict[str, Any]] = [

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ats-token-cfo — Routing-Audit + Token-CFO-Report wrapper (v4.0.0+).
 #
-# Wraps the token-cfo Python package (~/BASE/projects/token-cfo) so agents can
+# Wraps the token-cfo Python package ($HOME/projects/token-cfo) so agents can
 # run routing audits, simulate cost-saving strategies, and generate sales-ready
 # reports without leaving the ats-* CLI surface. Fail-open: if token-cfo is not
 # installed, prints a hint and returns 0.
@@ -11,7 +11,7 @@
 # Verify: type ats-token-cfo
 #
 # Env overrides:
-#   ATS_TOKEN_CFO_DIR  — path to token-cfo project (default: ~/BASE/projects/token-cfo)
+#   ATS_TOKEN_CFO_DIR  — path to token-cfo project (default: $HOME/projects/token-cfo)
 #   ATS_TOKEN_CFO_PY   — python interpreter (default: python3)
 #
 # Examples:
@@ -45,7 +45,7 @@ Common flags:
   --tier NAME        — frontier_closed|mid_tier|open_weight (pricing subcommand)
 
 Env:
-  ATS_TOKEN_CFO_DIR  — path to token-cfo project (default: ~/BASE/projects/token-cfo)
+  ATS_TOKEN_CFO_DIR  — path to token-cfo project (default: $HOME/projects/token-cfo)
   ATS_TOKEN_CFO_PY   — python interpreter (default: python3)
 
 Examples:

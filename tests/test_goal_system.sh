@@ -7,9 +7,11 @@
 
 set -euo pipefail
 
-UNIVERSAL="/Users/master/BASE/projects/agent-token-saver/integration/cli/agent-token-saver.sh"
-DEVIN_WRAPPER="/Users/master/BASE/projects/agent-token-saver/integration/cli/devin-token-saver.sh"
-GOAL_SH="/Users/master/BASE/projects/agent-token-saver/integration/cli/goal.sh"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)"
+export REPO_ROOT
+UNIVERSAL="$REPO_ROOT/integration/cli/agent-token-saver.sh"
+DEVIN_WRAPPER="$REPO_ROOT/integration/cli/devin-token-saver.sh"
+GOAL_SH="$REPO_ROOT/integration/cli/goal.sh"
 GOALS_DIR="${SYNAPSE_GOALS_DIR:-$HOME/.synapse/goals}"
 TEST_SLUG="smoke-test-goal"
 FAIL_SLUG="smoke-test-fail"
@@ -267,9 +269,9 @@ echo "  [PASS] ats-auto --continue completes the loop"
 rm -f "${GOALS_DIR}/auto-cont-test-pass.json"
 
 # 30. claude-* + codex-* + cmux-* wrappers source + install aliases
-CLAUDE_WRAPPER="/Users/master/BASE/projects/agent-token-saver/integration/cli/claude-token-saver.sh"
-CODEX_WRAPPER="/Users/master/BASE/projects/agent-token-saver/integration/cli/codex-token-saver.sh"
-CMUX_WRAPPER="/Users/master/BASE/projects/agent-token-saver/integration/cli/cmux-token-saver.sh"
+CLAUDE_WRAPPER="$REPO_ROOT/integration/cli/claude-token-saver.sh"
+CODEX_WRAPPER="$REPO_ROOT/integration/cli/codex-token-saver.sh"
+CMUX_WRAPPER="$REPO_ROOT/integration/cli/cmux-token-saver.sh"
 bash -n "$CLAUDE_WRAPPER" "$CODEX_WRAPPER" "$CMUX_WRAPPER" || { echo "FAIL: agent wrapper syntax"; exit 1; }
 # Source in subshell to verify they load cleanly
 ( source "$CLAUDE_WRAPPER" && type claude-token-doctor >/dev/null 2>&1 ) || { echo "FAIL: claude wrapper missing claude-token-doctor"; exit 1; }
@@ -306,7 +308,7 @@ else
 fi
 
 # 34. ats-llm-pipe bridges supacrawl LLM-extraction to active CLI agent
-ATS_LLM_PIPE="/Users/master/BASE/projects/agent-token-saver/integration/cli/ats-llm-pipe"
+ATS_LLM_PIPE="$REPO_ROOT/integration/cli/ats-llm-pipe"
 [[ -x "$ATS_LLM_PIPE" ]] || { echo "FAIL: ats-llm-pipe not executable"; exit 1; }
 # Pick first available CLI (codex/kimi/claude) — skip test if none
 if ats-have codex || ats-have kimi || ats-have claude; then
@@ -322,7 +324,7 @@ fi
 # 35. zsh portability — wrappers load under zsh without BASH_SOURCE errors
 if ats-have zsh; then
   zsh_out=$(zsh -c '
-    source /Users/master/BASE/projects/agent-token-saver/integration/cli/codex-token-saver.sh 2>&1
+    source "$REPO_ROOT/integration/cli/codex-token-saver.sh" 2>&1
     type codex-token-doctor >/dev/null 2>&1 && echo "ZSH_OK"
   ' 2>&1)
   echo "$zsh_out" | grep -q "ZSH_OK" || { echo "FAIL: zsh did not load codex wrapper cleanly: $zsh_out"; exit 1; }
@@ -348,7 +350,7 @@ SWARM_SLUG="codex-swarm-smoke-pass"
 # which would short-circuit the universal wrapper's goal.sh sourcing in zsh).
 SWARM_OUT=$(env -u AGENT_TOKEN_SAVER_LOADED -u GOAL_SH_LOADED zsh -c "
   export SYNAPSE_GOALS_DIR=$SWARM_DIR/goals
-  source /Users/master/BASE/projects/agent-token-saver/integration/cli/codex-token-saver.sh 2>&1
+  source $REPO_ROOT/integration/cli/codex-token-saver.sh 2>&1
   codex-goal-init 'codex-swarm-smoke pass' --oracle '$ORACLE' --budget-tokens 500 --deadline 5m >/dev/null 2>&1
   codex-goal-check $SWARM_SLUG >/dev/null 2>&1
   state=\$(jq -r .state $SWARM_DIR/goals/$SWARM_SLUG.json 2>&1)

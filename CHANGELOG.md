@@ -1,5 +1,34 @@
 # Changelog
 
+## 4.1.1 — 2026-07-24
+
+### Trust and reproducibility pass
+
+- **fix(cli):** remove hardcoded `/Users/master/BASE` paths from all
+  benchmark drivers and shell wrappers. Defaults now use `$HOME/projects/...`
+  (overridable via `ATS_BENCH_BASE`, `SYNAPSE_ULTRA_BIN`,
+  `SYNAPSE_ULTRA_INGEST`, `ATS_TOKEN_CFO_DIR`, `GOAL_SCIENCE_DOC`,
+  `ATS_ROOT`). `ats-poweruser-bench.py`, `ats-jury-bench.py`,
+  `ats-jury-bench-v2.py`, `ats-recon-bench.py` auto-detect their repo
+  root from `__file__` so they run on any checkout without edits.
+- **fix(tests):** `tests/test_goal_system.sh` now derives `REPO_ROOT`
+  from `BASH_SOURCE` instead of a hardcoded absolute path. All 36
+  checks still pass.
+- **docs(readme):** soften the 199.1x headline badge from
+  "up to 199.1x payload capacity" to "payload capacity fixture" and
+  move the caveat into the headline quote itself. Add a new
+  "Who this is for (and who it is not)" section that explicitly lists
+  readers who already run context-mode / Graphify / subagent routing /
+  firecrawl / strict CLAUDE.md discipline, and tells them which pieces
+  (if any) are worth a second look.
+- **docs(readme):** add "On reproducibility and private paths"
+  subsection under "What this repository does not claim" — explains that
+  historical benchmark JSON artifacts contain the author's absolute
+  paths (real run output, kept as-is) while the drivers are now
+  portable, and gives the shortest verify-it-yourself commands.
+- **docs(readme):** replace `~/BASE/...` defaults in the Superintelligent
+  Stack section with `$HOME/projects/...` and `$HOME/docs/...`.
+
 ## 4.1.0 — 2026-07-24
 
 ### Poweruser recon benchmark — 10 real cases across 3 agents

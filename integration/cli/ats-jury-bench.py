@@ -24,7 +24,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
-REPO = "/Users/master/BASE/projects/agent-token-saver"
+REPO = str(Path(__file__).resolve().parents[2])
 REPO_GH = "Supersynergy/agent-token-saver"
 
 # The questions the jury must answer about agent-token-saver

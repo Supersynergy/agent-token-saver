@@ -43,12 +43,12 @@ PROBES: list[dict[str, Any]] = [
     {
         "name": "gmax_semantic",
         "cmd": ["gmax", "where is usage parsing handled", "--agent"],
-        "cwd": "/Users/master/BASE/projects/agent-token-saver",
+        "cwd": str(Path(__file__).resolve().parents[2]),
     },
     {
         "name": "grep_baseline",
         "cmd": ["grep", "-rn", "usage",
-                "/Users/master/BASE/projects/agent-token-saver/integration"],
+                f"{Path(__file__).resolve().parents[2]}/integration"],
         "cwd": None,
     },
     # --- GitHub repo recon ---

@@ -7,12 +7,13 @@
 [![MIT](https://img.shields.io/badge/license-MIT-1c7c54.svg)](LICENSE)
 [![CI](https://github.com/Supersynergy/agent-token-saver/actions/workflows/ci.yml/badge.svg)](https://github.com/Supersynergy/agent-token-saver/actions/workflows/ci.yml)
 ![verified agents](https://img.shields.io/badge/verified-Codex%20%7C%20Claude%20%7C%20Hermes%20%7C%20GG%20Coder-f2c14e.svg)
-![measured](https://img.shields.io/badge/measured-up%20to%20199.1x%20payload%20capacity-e8f1f2.svg)
+![measured](https://img.shields.io/badge/measured-payload%20capacity%20fixture-e8f1f2.svg)
 
-> **Imagine getting 100x more context-heavy work from Codex, Claude Code,
-> Hermes or GG Coder before hitting the same token budget. In the included
-> accepted-workload fixture, 375,673 estimated visible-input units became
-> 1,887 -- 99.50% less payload, or 199.1x more comparable payload capacity.**
+> **In the included accepted-workload fixture, 375,673 estimated
+> visible-input units became 1,887 -- 99.50% less payload, or 199.1x
+> more comparable payload capacity. This is a payload-capacity
+> benchmark on one fixture, not a promise that your host will cut its
+> provider bill by 199x. See [What this is not](#what-this-repository-does-not-claim).**
 
 `agent-token-saver` stops wasted tokens before they reach your model. It sends
 the smallest context that can still produce the correct result: the relevant
@@ -48,6 +49,42 @@ provider ledger and an accepted A/B for that claim.
 It does **not** make the model cheaper by making it dumber. It removes context
 the task did not need while keeping required evidence, errors, approvals and
 acceptance checks intact.
+
+## Who this is for (and who it is not)
+
+**For you if:**
+
+- You run Codex CLI, Claude Code, Hermes or GG Coder and want a measured,
+  reversible context-reduction layer with fail-open hooks.
+- You want one install command, one doctor, one ledger — not a new runtime.
+- You want benchmarks with raw artifacts you can re-run, not just percentages
+  in a README.
+
+**Not for you if any of these are true:**
+
+- You already run `context-mode` for tool-output sandboxing — `agent-token-saver`
+  uses context-mode itself; stacking the wrapper on top is likely double work.
+- You already run a persistent repo knowledge graph (Graphify, CodeGraph,
+  your own) — the Graphify/CodeGraph entries here overlap with yours.
+- You route heavy work to subagents (Sonnet/Haiku) and keep the parent lean —
+  the `teams` profile here is a stricter version of that pattern, not a new
+  capability.
+- You already have a mature web/research stack (firecrawl, API-first) —
+  `supacrawl` here is a lightweight fallback, not a firecrawl replacement.
+- You have a strict `CLAUDE.md` under 200 lines and `/compact` discipline —
+  the hidden skill + zero-output gate is the same idea with hooks attached.
+
+If you fall in the second group, the pieces worth a second look are:
+
+- **CodeGraph** (caller/callee/impact analysis) — if your graph tool does not
+  cover call-impact analysis.
+- **`ats-recon` auto-router** — one command that picks `gmax` / `ghx` /
+  `supacrawl` based on the query shape, if you want a single entry point.
+- **`agent-token-ledger`** — reconciles provider-reported usage with visible
+  context layers and flags `unattributed_input_tokens`, if your ledger does
+  not already do that.
+
+Everything else is additive — install only what you need.
 
 ## Why this exists
 
@@ -615,7 +652,7 @@ tools degrade gracefully, never block the agent.
 - **`ats-token-cfo <subcommand>`** — wraps the `token-cfo` Python package
   (routing audit + cost simulation + sales-ready report). Subcommands:
   `audit`, `simulate`, `plan`, `report`, `pricing`. Config:
-  `ATS_TOKEN_CFO_DIR` (default: `~/BASE/projects/token-cfo`).
+  `ATS_TOKEN_CFO_DIR` (default: `$HOME/projects/token-cfo`).
 - **`ats-goal-archive <slug> [--all]`** — archives closed goals to a
   DuckLake catalog (default: `~/.synapse/goal-archive.duckdb`). Time-travel
   queries over closed goals. Config: `ATS_GOAL_ARCHIVE_DB`,
@@ -624,7 +661,7 @@ tools degrade gracefully, never block the agent.
   skill as a reviewer backend (in addition to `agentmaster`, `grepgod`,
   `si`, `manual`). Config: `METAREVIEW_ROOT`.
 - **`goal-close --decision "<text>"`** — compounding writeback now appends
-  a dated insight block to `~/BASE/docs/universal-goal-science.md`
+  a dated insight block to `$HOME/docs/universal-goal-science.md`
   (configurable via `GOAL_SCIENCE_DOC`), in addition to the existing
   `synx put` durable-fact writeback.
 - **`ats-jury-bench-v2.py`** — jury of agents with ABBA-adaptive ordering
@@ -645,8 +682,32 @@ See [CHANGELOG.md](CHANGELOG.md) for the full v4.0.0 changelog.
 - A component's best-case reduction is not the whole session reduction.
 - The 199.1x payload result is not a clean-host or provider-billing multiplier.
 - Popularity is not proof of savings.
-- “Installed” is not “active”; verify hooks, MCP startup and real usage.
+- "Installed" is not "active"; verify hooks, MCP startup and real usage.
 - Optional local models can add latency and storage while saving almost nothing after deterministic filtering.
+
+### On reproducibility and private paths
+
+Some benchmark artifacts under `data/benchmarks/` were produced on the
+author's machine and contain absolute paths from that machine
+(`/Users/...`). They are kept as-is because they are real run output, not
+config. The benchmark drivers themselves (`integration/cli/ats-*-bench.py`)
+auto-detect their own repo root and accept an env override
+(`ATS_BENCH_BASE`) so you can re-run them against your own projects
+directory.
+
+If you want to verify a number yourself, the shortest path is:
+
+```bash
+# Re-run the poweruser benchmark against your own projects dir
+ATS_BENCH_BASE=$HOME/projects python3 integration/cli/ats-poweruser-bench.py --iter 1
+
+# Re-run the component matrix on the included fixture
+python3 scripts/token_stack_matrix_benchmark.py --reuse-live data/benchmarks/token-stack-matrix-2026-07-15.json
+```
+
+Numbers will differ from the README because your repos, your agent
+versions and your cache state are not the author's. That is expected and
+honest — the benchmark code is the source of truth, not the README table.
 
 ## Why GitHub users may care
 

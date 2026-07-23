@@ -75,7 +75,7 @@ tools degrade gracefully, never block the agent.
 - **`ats-token-cfo <subcommand>`** — wraps the `token-cfo` Python package
   (routing audit + cost simulation + sales-ready report). Subcommands:
   `audit`, `simulate`, `plan`, `report`, `pricing`. Config:
-  `ATS_TOKEN_CFO_DIR` (default: `~/BASE/projects/token-cfo`). Missing
+  `ATS_TOKEN_CFO_DIR` (default: `$HOME/projects/token-cfo`). Missing
   package → warning + return 0.
 - **`ats-goal-archive <slug> [--all]`** — archives closed goals to a
   DuckLake catalog (default: `~/.synapse/goal-archive.duckdb`). Time-travel
@@ -86,7 +86,7 @@ tools degrade gracefully, never block the agent.
   `si`, `manual`). Config: `METAREVIEW_ROOT` (default:
   `~/.claude/skills/metareview`).
 - **`goal-close --decision "<text>"`** — compounding writeback now appends
-  a dated insight block to `~/BASE/docs/universal-goal-science.md`
+  a dated insight block to `$HOME/docs/universal-goal-science.md`
   (configurable via `GOAL_SCIENCE_DOC`), in addition to the existing
   `synx put` durable-fact writeback.
 - **`ats-jury-bench-v2.py`** — jury of agents with ABBA-adaptive ordering

@@ -58,7 +58,7 @@ ats-detect-agent() {
     local _ats_script _ats_root
     _ats_script="${BASH_SOURCE[0]:-$0}"
     _ats_root="${_ats_script%/*}/../.."
-    [[ -d "$_ats_root" ]] || _ats_root="${ATS_ROOT:-$HOME/BASE/projects/agent-token-saver}"
+    [[ -d "$_ats_root" ]] || _ats_root="${ATS_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/../.." 2>/dev/null && pwd)}"
     local _skill_candidates=(
       "$_ats_root/skills/agent-token-saver-$ATS_AGENT_NAME/SKILL.md"
       "$_ats_root/.agents/skills/agent-token-saver-$ATS_AGENT_NAME/SKILL.md"
@@ -189,8 +189,8 @@ EOF
 # --- Synapse Ultra ingest (post-session) ------------------------------------
 
 ats-synapse-ingest() {
-  local ultra_bin="${SYNAPSE_ULTRA_BIN:-$HOME/BASE/projects/synapse-memory/target/release/synapse-ultra}"
-  local ingest_script="${SYNAPSE_ULTRA_INGEST:-$HOME/BASE/projects/synapse-memory/crates/synapse-ultra/scripts/ingest/agent-usage.py}"
+  local ultra_bin="${SYNAPSE_ULTRA_BIN:-$HOME/projects/synapse-memory/target/release/synapse-ultra}"
+  local ingest_script="${SYNAPSE_ULTRA_INGEST:-$HOME/projects/synapse-memory/crates/synapse-ultra/scripts/ingest/agent-usage.py}"
   local db="${SYNAPSE_DB:-$HOME/.synapse/brain.db}"
   local agent_name="${ATS_AGENT_NAME:-agent}"
 
@@ -213,7 +213,7 @@ EOF
   fi
   if [[ ! -x "$ultra_bin" ]]; then
     echo "ats-synapse-ingest: synapse-ultra binary not found at $ultra_bin" >&2
-    echo "  Build: cd ~/BASE/projects/synapse-memory && cargo build -p synapse-ultra --release" >&2
+    echo "  Build: clone https://github.com/Supersynergy/synapse-memory && cargo build -p synapse-ultra --release" >&2
     return 1
   fi
   if [[ ! -f "$ingest_script" ]]; then
@@ -262,7 +262,7 @@ ats-synapse-remember() {
 #   init / recall / leverage / slice / spawn / check / verify / refute / close /
 #   trace / trust / list / doctor
 # Built on omnigoal law + 2026 research (AgentLTL, AgentVerify, delegato, Orloj).
-# See ~/BASE/docs/goal-system-rework.md for full spec + ADRs.
+# See docs/goal-system-rework.md in the synapse-memory repo for full spec + ADRs.
 
 _ats_script="${BASH_SOURCE[0]:-$0}"
 _ats_script_dir="${_ats_script%/*}"
@@ -838,7 +838,7 @@ ats-doctor() {
   echo "agent-token-ledger: $(command -v agent-token-ledger || echo 'MISSING (post-session ledger unavailable)')"
   echo "agent-token-saver:  $(command -v agent-token-saver || echo 'MISSING (doctor unavailable)')"
   echo "synx: $(command -v synx || echo 'MISSING (synapse hybrid recall unavailable)')"
-  local ultra_bin="${SYNAPSE_ULTRA_BIN:-$HOME/BASE/projects/synapse-memory/target/release/synapse-ultra}"
+  local ultra_bin="${SYNAPSE_ULTRA_BIN:-$HOME/projects/synapse-memory/target/release/synapse-ultra}"
   echo "synapse-ultra: $([[ -x "$ultra_bin" ]] && echo "$ultra_bin" || echo 'MISSING (build: cargo build -p synapse-ultra --release)')"
   echo "duckdb: $(command -v duckdb || echo 'MISSING (DuckLake archive unavailable)')"
   echo "jq:     $(command -v jq || echo 'MISSING (goal system requires jq)')"
@@ -848,7 +848,7 @@ ats-doctor() {
   echo "ats-llm-pipe: $(command -v ats-llm-pipe || echo 'MISSING (ln -sf .../ats-llm-pipe ~/.local/bin/)')"
   echo "ats-token-cfo: $(declare -F ats-token-cfo >/dev/null 2>&1 && echo 'loaded (v4.0.0)' || echo 'MISSING (source ats-token-cfo)')"
   echo "ats-goal-archive: $(declare -F ats-goal-archive >/dev/null 2>&1 && echo 'loaded (v4.0.0)' || echo 'MISSING (v4.0.0)')"
-  echo "token-cfo pkg: $([[ -d "${ATS_TOKEN_CFO_DIR:-$HOME/BASE/projects/token-cfo}" ]] && echo "${ATS_TOKEN_CFO_DIR:-$HOME/BASE/projects/token-cfo}" || echo 'MISSING (set ATS_TOKEN_CFO_DIR)')"
+  echo "token-cfo pkg: $([[ -d "${ATS_TOKEN_CFO_DIR:-$HOME/projects/token-cfo}" ]] && echo "${ATS_TOKEN_CFO_DIR:-$HOME/projects/token-cfo}" || echo 'MISSING (set ATS_TOKEN_CFO_DIR)')"
   echo "metareview skill: $([[ -d "${METAREVIEW_ROOT:-$HOME/.claude/skills/metareview}" ]] && echo "${METAREVIEW_ROOT:-$HOME/.claude/skills/metareview}" || echo 'MISSING (optional, --via metareview)')"
   local goals_dir="${SYNAPSE_GOALS_DIR:-$HOME/.synapse/goals}"
   local n_goals=0
