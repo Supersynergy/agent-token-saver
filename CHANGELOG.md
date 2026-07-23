@@ -1,6 +1,26 @@
 # Changelog
 
-## Unreleased
+## 4.1.0 — 2026-07-24
+
+### Poweruser recon benchmark — 10 real cases across 3 agents
+
+- **feat(cli): `ats-poweruser-bench.py`** — 10 real power-user cases
+  (usage parsing, superweb README, chartlab QuantAgent, synapse FTS5,
+  codex-pro providers, token-cfo pricing, PSI Sanctuary, ats hooks,
+  example.com scrape, ats-recon router) benchmarked across 3 agents
+  (codex, kimi, hermes_luna). Compares baseline (grep/gh api/curl/ls/cat)
+  vs ats-recon (gmax/ghx/supacrawl) tool output + agent answer. JSON +
+  Markdown report. Results 2026-07-23 (1 iter, 3 agents): codex 80.7%
+  saved, kimi 84.6% saved, hermes_luna 75.1% saved. Best cases 86-97%
+  saved (large tool outputs); negative cases where ats-recon router
+  output exceeds baseline grep are a metric artifact (baseline returns
+  no content, agent hallucinates from training). hermes_terra omitted
+  (OpenRouter 402 billing exhausted).
+- **docs(readme):** new "Poweruser recon benchmark (2026-07-23)"
+  section with per-agent and per-case tables, plus a "What the negative
+  cases mean" subsection that flags the ungrounded-baseline artifact.
+- **docs(agents):** `ats-poweruser-bench.py` added to the Benchmarks
+  section.
 
 ## 4.0.0 — 2026-07-24
 

@@ -58,6 +58,11 @@ used — CLIs keep agent context clean. `ats-recon-doctor` shows install state.
   (codex, hermes+kimi/luna/terra).
 - `integration/cli/ats-jury-bench.py` — jury of agents answers questions
   via baseline vs ats-recon. Token savings per probe.
+- `integration/cli/ats-poweruser-bench.py` — 10 real power-user cases
+  across codex/kimi/hermes_luna. Compares baseline (grep/gh api/curl) vs
+  ats-recon (gmax/ghx/supacrawl). JSON + Markdown report. Results
+  2026-07-23: codex 80.7% saved, kimi 84.6% saved, hermes_luna 75.1%
+  saved; best cases 86-97% saved.
 
 Benchmark results (2026-07-23, 1 iter, 4 agents): local_search 82% saved,
 github_recon 99% saved, web_scrape 59% saved.

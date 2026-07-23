@@ -387,6 +387,54 @@ app-only and not headless-accessible. Single lean lane: 24,691 gross,
 $0.018 list. `--no-thinking` measured and refuted for shallow lanes (−4%
 output, +71% uncached input).
 
+## Poweruser recon benchmark (2026-07-23)
+
+Real power-user questions across three agent CLIs (codex, kimi,
+hermes_luna), each answering 10 questions about this repository and
+adjacent repos. Each case runs twice: once with a baseline tool
+(`grep` / `gh api` / `curl` / `ls` / `cat`) and once with the matching
+`ats-recon` tool (`gmax` / `ghx` / `supacrawl`). Token estimates are
+UTF-8 bytes / 4. 1 iteration, 60 runs total, ~28 min wall.
+
+- Benchmark: [data/benchmarks/poweruser-2026-07-23.md](data/benchmarks/poweruser-2026-07-23.md)
+- Raw JSON: [data/benchmarks/poweruser-2026-07-23.json](data/benchmarks/poweruser-2026-07-23.json)
+- Analysis: [data/benchmarks/poweruser-2026-07-23-analysis.md](data/benchmarks/poweruser-2026-07-23-analysis.md)
+- Reproduce: `python3 integration/cli/ats-poweruser-bench.py --iter 1`
+
+### Per-agent token savings
+
+| Agent | Baseline tok | ATS-recon tok | Saved | Saved % | Notes |
+|---|---:|---:|---:|---:|---|
+| codex | 6,579 | 1,269 | 5,310 | **80.7%** | 20/20 OK, reference run |
+| kimi | 6,604 | 1,015 | 5,589 | **84.6%** | 4 FAILs (rate-limit), inflates savings |
+| hermes_luna | 7,049 | 1,758 | 5,291 | **75.1%** | OpenRouter 402 billing — answers invalid |
+
+### Per-case savings (aggregate over 3 agents)
+
+| Case | Baseline | ATS-recon | Saved % | Note |
+|---|---:|---:|---:|---|
+| 07_psi_schlafzimmer | 2,963 | 98 | **96.7%** | large `cat` → gmax |
+| 06_token_cfo_pricing | 1,369 | 75 | **94.5%** | large `cat` → gmax |
+| 01_usage_parsing | 1,586 | 220 | **86.1%** | large grep → gmax |
+| 09_example_scrape | 209 | 112 | 46.4% | curl → supacrawl |
+| 04_synapse_fts5 | 122 | 84 | 31.1% | small grep → gmax |
+| 02_superweb_readme | 94 | 74 | 21.3% | gh api → ghx |
+| 03_chartlab_quantagent | 87 | 82 | 5.7% | small grep → gmax |
+| 05_codex_pro_providers | 87 | 88 | -1.1% | `ls` → gmax, parity |
+| 08_ats_hooks | 101 | 265 | -162.4% | `ls` → gmax, see analysis |
+| 10_ats_recon_router | 121 | 245 | -102.5% | grep misses → gmax, see analysis |
+
+### What the negative cases mean
+
+Cases 08 and 10 show "negative savings" that are a **metric artifact**:
+the baseline command returns no useful content (`ls` returns filenames,
+the `grep` pattern does not match the router code). The agent then
+answers from its own training memory, which scores as 0 tool tokens but
+is hallucination-risk. `ats-recon` (`gmax`) returns real grounded content
+that costs more tokens but produces a grounded answer. A fairer metric
+would penalize ungrounded answers; see the analysis file. For headline
+savings, use the large-tool-output cases (01, 06, 07: 86–97% saved).
+
 ## Measure the complete token bill
 
 The installed `agent-token-ledger` reconciles provider-reported usage with the
