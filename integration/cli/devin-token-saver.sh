@@ -163,156 +163,24 @@ devin-synapse-remember() {
   echo "$@" | synx put --title "$title"
 }
 
-# --- Goal-achievement system (omnigoal pattern) -----------------------------
-# Every session gets a machine-checkable oracle. Agent stops when oracle PASS
-# or budget exhausted. Goals live in ~/.synapse/goals/ as JSON — any agent can
-# pick them up, coordinate, and ingest outcomes WITHOUT sharing transcripts.
-# Replaces "spawn workers with shared context" (burns tokens) with
-# "spawn workers with shared goal contract" (bounded).
+# --- Goal-achievement system (universal goal-* CLI) -------------------------
+# Sources integration/cli/goal.sh — 13 functions covering the full omnigoal loop:
+#   init / recall / leverage / slice / spawn / check / verify / refute / close /
+#   trace / trust / list / doctor
+# Built on omnigoal law + 2026 research (AgentLTL, AgentVerify, delegato, Orloj).
+# See ~/BASE/docs/goal-system-rework.md for full spec + ADRs.
+#
+# devin-goal-* are kept as 1-line backward-compat aliases (Devin sessions that
+# already use them don't break). New agents should call goal-* directly.
 
-devin-goal-init() {
-  if [[ $# -lt 2 ]]; then
-    cat <<'EOF'
-Usage: devin-goal-init "<title>" --oracle "<checkable condition>" \
-  [--budget-tokens 50000] [--deadline 2h] [--repo <path>]
-
-Creates ~/.synapse/goals/<slug>.json — a machine-checkable goal contract
-any agent can pick up. The oracle MUST be a single shell command that
-returns 0 on success. Examples:
-  --oracle "cargo test --workspace 2>&1 | tail -1 | grep -q 'test result: ok'"
-  --oracle "grep -c 'TODO' src/lib.rs | grep -q '^0$'"
-  --oracle "jq -e '.passes > 100' reports/bench.json"
-EOF
-    return 0
-  fi
-  local title="$1"; shift
-  local oracle="" budget=50000 deadline="2h" repo="${PWD}"
-  while [[ $# -gt 0 ]]; do
-    case "$1" in
-      --oracle) oracle="$2"; shift 2 ;;
-      --budget-tokens) budget="$2"; shift 2 ;;
-      --deadline) deadline="$2"; shift 2 ;;
-      --repo) repo="$2"; shift 2 ;;
-      *) shift ;;
-    esac
-  done
-  if [[ -z "$oracle" ]]; then
-    echo "devin-goal-init: --oracle is required" >&2; return 1
-  fi
-  local goals_dir="${SYNAPSE_GOALS_DIR:-$HOME/.synapse/goals}"
-  mkdir -p "$goals_dir"
-  local slug
-  slug=$(echo -n "$title" | tr -c 'a-zA-Z0-9-' '-' | tr 'A-Z' 'a-z' | sed 's/--*/-/g;s/^-//;s/-$//')
-  local goal_file="$goals_dir/${slug}.json"
-  local ts; ts=$(date +%s)
-  # jq --arg for safe JSON quoting (handles quotes/special chars in oracle/title)
-  jq -n \
-    --arg id "$slug" \
-    --arg title "$title" \
-    --arg oracle "$oracle" \
-    --arg deadline "$deadline" \
-    --arg repo "$repo" \
-    --argjson budget "$budget" \
-    --argjson ts "$ts" \
-    '{id:$id, title:$title, oracle:$oracle, budget_tokens:$budget,
-      deadline:$deadline, repo:$repo, created_ts:$ts,
-      state:"open", attempts:[], subagents:[]}' >"$goal_file"
-  echo "$goal_file"
-  echo "  Oracle: $oracle"
-  echo "  Budget: $budget tokens, deadline $deadline"
-  echo "  Check:  devin-goal-check $slug"
-}
-
-devin-goal-check() {
-  if [[ $# -lt 1 ]]; then
-    local goals_dir="${SYNAPSE_GOALS_DIR:-$HOME/.synapse/goals}"
-    ls -1 "$goals_dir"/*.json 2>/dev/null | while read -r f; do
-      jq -r '"\(.id)\t\(.state)\t\(.title)"' "$f" 2>/dev/null
-    done
-    return 0
-  fi
-  local slug="$1"
-  local goal_file; goal_file="${SYNAPSE_GOALS_DIR:-$HOME/.synapse/goals}/$slug.json"
-  if [[ ! -f "$goal_file" ]]; then
-    echo "devin-goal-check: goal not found: $slug" >&2; return 1
-  fi
-  local oracle; oracle=$(jq -r '.oracle' "$goal_file")
-  echo "=== Goal: $slug ==="
-  echo "Oracle: $oracle"
-  echo "--- Running oracle ---"
-  if bash -c "$oracle" >/tmp/goal-oracle.log 2>&1; then
-    echo "ORACLE: PASS"
-    jq '.state = "passed" | .passed_ts = '"$(date +%s)" "$goal_file" >"${goal_file}.tmp" && mv "${goal_file}.tmp" "$goal_file"
-    return 0
-  else
-    echo "ORACLE: FAIL (exit $?)"
-    tail -5 /tmp/goal-oracle.log
-    local bottleneck
-    bottleneck=$(grep -iE 'error|fail|not found|missing|panic' /tmp/goal-oracle.log | head -1)
-    echo "BOTTLENECK: ${bottleneck:-unknown — inspect /tmp/goal-oracle.log}"
-    return 1
-  fi
-}
-
-devin-goal-close() {
-  if [[ $# -lt 1 ]]; then
-    echo 'Usage: devin-goal-close <slug> [--summary "<text>"]' >&2; return 1
-  fi
-  local slug="$1"; shift
-  local summary=""
-  while [[ $# -gt 0 ]]; do
-    case "$1" in
-      --summary) summary="$2"; shift 2 ;;
-      *) shift ;;
-    esac
-  done
-  local goal_file; goal_file="${SYNAPSE_GOALS_DIR:-$HOME/.synapse/goals}/$slug.json"
-  if [[ ! -f "$goal_file" ]]; then
-    echo "devin-goal-close: goal not found: $slug" >&2; return 1
-  fi
-  if ! devin-goal-check "$slug" >/dev/null 2>&1; then
-    echo "devin-goal-close: oracle still failing — close refused" >&2; return 1
-  fi
-  if [[ -n "$summary" ]] && command -v synx >/dev/null 2>&1; then
-    echo "$summary" | synx put --title "goal-close:$slug"
-  fi
-  # jq --arg for safe summary quoting (handles spaces, quotes)
-  jq --arg s "$summary" '.state = "closed" | .closed_ts = '"$(date +%s)"' | .summary = $s' \
-    "$goal_file" >"${goal_file}.tmp" && mv "${goal_file}.tmp" "$goal_file"
-  echo "CLOSED: $slug"
-}
-
-devin-goal-spawn() {
-  if [[ $# -lt 2 ]]; then
-    echo 'Usage: devin-goal-spawn <slug> --capsule <capsule.md> [--skill <name>]' >&2; return 1
-  fi
-  local slug="$1"; shift
-  local capsule="" skill=""
-  while [[ $# -gt 0 ]]; do
-    case "$1" in
-      --capsule) capsule="$2"; shift 2 ;;
-      --skill) skill="$2"; shift 2 ;;
-      *) shift ;;
-    esac
-  done
-  local goal_file; goal_file="${SYNAPSE_GOALS_DIR:-$HOME/.synapse/goals}/$slug.json"
-  if [[ ! -f "$goal_file" ]]; then
-    echo "devin-goal-spawn: goal not found: $slug" >&2; return 1
-  fi
-  if [[ ! -f "$capsule" ]]; then
-    echo "devin-goal-spawn: capsule not found: $capsule" >&2; return 1
-  fi
-  local sub_id="sub-$(date +%s)-$RANDOM"
-  jq '.subagents += [{"id":"'"$sub_id"'","capsule":"'"$capsule"'","skill":"'"${skill:-none}"'","state":"spawned"}]' \
-    "$goal_file" >"${goal_file}.tmp" && mv "${goal_file}.tmp" "$goal_file"
-  echo "$sub_id"
-  echo "  Capsule: $capsule ($(wc -c <"$capsule") bytes, ~$(($(wc -c <"$capsule")/4)) tokens)"
-  echo "  Skill:   ${skill:-none}"
-  echo "  Goal:    $goal_file"
-  echo ""
-  echo "Subagent contract: read goal oracle + capsule only. No parent transcript."
-  echo "On completion: devin-goal-check $slug && devin-goal-close $slug --summary \"...\""
-}
+_goal_sh="${BASH_SOURCE[0]%/*}/goal.sh"
+if [[ -f "$_goal_sh" ]]; then
+  # shellcheck source=/dev/null
+  source "$_goal_sh"
+else
+  echo "devin-token-saver: goal.sh not found at $_goal_sh — goal system unavailable" >&2
+fi
+unset _goal_sh
 
 # --- Doctor -----------------------------------------------------------------
 
@@ -330,7 +198,7 @@ devin-token-doctor() {
   local goals_dir="${SYNAPSE_GOALS_DIR:-$HOME/.synapse/goals}"
   local n_goals=0
   [[ -d "$goals_dir" ]] && n_goals=$(ls -1 "$goals_dir"/*.json 2>/dev/null | wc -l | tr -d ' ')
-  echo "goals:  ${n_goals} in ${goals_dir} (devin-goal-init / devin-goal-check)"
+  echo "goals:  ${n_goals} in ${goals_dir} (goal-init / goal-check / goal-list)"
   echo "DEVIN_TOKEN_SAVER_LOADED: ${DEVIN_TOKEN_SAVER_LOADED:-0}"
   echo
   echo "Aliases installed:"

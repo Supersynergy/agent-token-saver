@@ -2,6 +2,65 @@
 
 ## Unreleased
 
+## 3.5.0 — 2026-07-23
+
+### Universal goal-* CLI — full omnigoal loop for ALL agents
+
+- **feat(goal): universal `goal-*` CLI with 13 functions covering the full
+  omnigoal loop** (`integration/cli/goal.sh`, 670 lines). Replaces the
+  Devin-specific 4-function MVP from v3.4.0 with a universal CLI that works
+  for any agent (Devin, Codex, Claude, cmux, kimi-worker). Built on the
+  omnigoal law + 2026 research (AgentLTL, AgentVerify, delegato, Orloj,
+  Network-AI, CAPO). See `~/BASE/docs/goal-system-rework.md` for full spec
+  + 10 ADRs. The 13 functions:
+  - `goal-init` — contract with **closed-verb enforcement** (rejects
+    "optimize/improve/polish" — open verbs diverge forever), bottleneck-naming
+    requirement, eval-written flag, 3-try cap, budget + deadline, agent field.
+    `--force` escape hatch for exploratory goals.
+  - `goal-recall` — `synx hybrid` pre-session RAG (state, not narrative).
+  - `goal-leverage` — name the ONE bottleneck / null-term (TOC) + min 2 levers
+    (hebelwort). Refuses spawn if missing — no bottleneck = 80% waste.
+  - `goal-slice` — smallest reversible vertical slice at the bottleneck.
+  - `goal-spawn` — bounded subagent + capsule + skill + **trust score** (starts
+    0.5, delegato pattern) + privilege attenuation. Optional `--via agentmaster`
+    for cmux fleet fan-out. Subagent state machine: spawned→running→done/failed/refuted.
+  - `goal-check` — runs oracle, increments `attempts[]`, enforces **3-try cap**
+    → root-cause note (not try 4), checks **budget + deadline** (hard stops at
+    100%, state→failed), identifies bottleneck from error log.
+  - `goal-verify` — **verify-back via git commits since spawn_ts** (real work =
+    commits, not mtime, not self-claim — agent-loop principle).
+  - `goal-refute` — spawn FRESH subagent (no parent context) to refute DoD.
+    Default verdict = "NICHT-ERFÜLLT". Catches honesty-bugs at the last inch
+    (self-review finds 0/34, fresh instance 7/34, deterministic checker 34/34).
+  - `goal-close` — refuses if oracle failing OR refute found a hole. **Compounding
+    writeback**: `synx put` of summary + decision rationale + bottleneck + levers
+    + verify-command (not just result). Next session's `goal-recall` finds the
+    decision, compounds across sessions.
+  - `goal-trace` — optional **LTL-style trace verification** (AgentLTL-inspired):
+    `always(P)`, `eventually(P)`, `P before Q`, `P until Q`. Checks procedural
+    compliance over execution trace, not just outcome.
+  - `goal-trust` — per-subagent **trust scoring with asymmetric decay** (+0.05
+    done, −0.15 failed, −0.30 refuted). **Circuit breaker** at Δtrust > 0.3
+    pauses subagent.
+  - `goal-list` — all goals with state, attempts, budget used, deadline,
+    bottleneck, average trust.
+  - `goal-doctor` — health check for jq, git, synx, agentmaster, rtk, si,
+    synapse-ultra, duckdb.
+
+- **feat(goal): `devin-goal-*` kept as 1-line backward-compat aliases** —
+  existing Devin sessions that use `devin-goal-init/check/close/spawn` don't
+  break. New agents should call `goal-*` directly.
+
+- **feat(goal): 19-check smoke test** (`tests/test_devin_goal_system.sh`)
+  covers all 13 functions + backward-compat + budget enforcement + 3-try cap
+  + root-cause note. All 19 checks green.
+
+- **docs(goal): `~/BASE/docs/goal-system-rework.md`** — 162-line design spec
+  with JSON schema, 10 ADRs, testing strategy, known limitations, and 2026
+  sources (AgentLTL, AgentVerify, GCRL-LTL, cDFAs, ACQL, Orloj, Network-AI,
+  CAPO, delegato, A3S, Anthropic EDD, Microsoft harness-first, Karpathy
+  autoresearch).
+
 ## 3.4.0 — 2026-07-23
 
 ### Devin profile — goal-achievement system + ponytail compression
