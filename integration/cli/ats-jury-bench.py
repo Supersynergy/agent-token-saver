@@ -17,14 +17,12 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import subprocess
 import sys
 import time
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
-
 
 REPO = "/Users/master/BASE/projects/agent-token-saver"
 REPO_GH = "Supersynergy/agent-token-saver"

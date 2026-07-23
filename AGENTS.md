@@ -35,4 +35,30 @@ Three fail-open recon tools are wrapped as `ats-*` helpers in
 
 All fail-open: missing CLI → passthrough, never error. MCP deliberately not
 used — CLIs keep agent context clean. `ats-recon-doctor` shows install state.
+
+## stdio LLM bridge + auto-router (v3.8.1+)
+
+- `ats-llm-pipe` — Python bridge at `integration/cli/ats-llm-pipe`. Reads
+  OpenAI-style messages JSON from stdin, routes to the first available CLI
+  LLM (codex, kimi, claude, llm). Enables supacrawl LLM extraction without
+  Ollama or API keys. Symlink into `~/.local/bin/` to use.
+- `ats-supacrawl-extract <url> "<prompt>"` — scrape + LLM extraction in one
+  call via the stdio bridge. Config: `SUPACRAWL_LLM_PROVIDER=stdio`,
+  `SUPACRAWL_LLM_STDIO_CMD=ats-llm-pipe`.
+- `ats-recon "<query>"` — auto-routing pipeline. URL → supacrawl scrape
+  (or `--extract`); `owner/repo` → ghx explore (or inspect if question
+  contains "where"/"how"); else → gmax semantic search. Fail-open.
+- `ats-recon-doctor` — now checks `ats-llm-pipe` and stdio LLM CLIs.
+
+## Benchmarks (v3.8.1+)
+
+- `integration/cli/ats-recon-bench.py` — gmax vs grep, ghx vs `gh api`,
+  supacrawl vs curl, stdio extraction. JSON + Markdown output.
+- `integration/cli/ats-swarm-bench.py` — stdio bridge across agent CLIs
+  (codex, hermes+kimi/luna/terra).
+- `integration/cli/ats-jury-bench.py` — jury of agents answers questions
+  via baseline vs ats-recon. Token savings per probe.
+
+Benchmark results (2026-07-23, 1 iter, 4 agents): local_search 82% saved,
+github_recon 99% saved, web_scrape 59% saved.
 <!-- REPO-POLISH-AGENTS:END -->

@@ -8,3 +8,8 @@ catboost_info/
 .fastembed_cache/
 .tokensave
 .gmax.json
+.grepgod/
+.debugmaster/
+.superverify/
+.repovista/
+.repovista-metareview/
