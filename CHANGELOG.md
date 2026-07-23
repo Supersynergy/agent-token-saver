@@ -2,6 +2,80 @@
 
 ## Unreleased
 
+## 4.0.0 — 2026-07-24
+
+### Superintelligent Stack — omnigoal compounding + token-cfo + jury-bench v2 + DuckLake archive
+
+This release combines five feature axes into one major version. The public
+`ats-*` surface gains three new helpers (`ats-token-cfo`, `ats-goal-archive`,
+`ats-metareview --via metareview`) and the goal system gains compounding
+writeback to a human-readable canon. The benchmark harness gains ABBA-adaptive
+ordering and a blind reviewer score.
+
+- **feat(cli): `ats-token-cfo`** — shell wrapper at
+  `integration/cli/ats-token-cfo` that exposes the `token-cfo` Python package
+  (routing audit + cost simulation + sales-ready report) as an `ats-*` helper.
+  Subcommands pass through: `audit`, `simulate`, `plan`, `report`, `pricing`.
+  Fail-open: missing package → warning + return 0. Configurable via
+  `ATS_TOKEN_CFO_DIR` (default: `~/BASE/projects/token-cfo`). Sourced
+  automatically by `agent-token-saver.sh` alongside `goal.sh`.
+
+- **feat(goal): compounding writeback to `universal-goal-science.md`** —
+  `goal-close --decision "<text>"` now appends a dated insight block
+  (decision, bottleneck, levers, oracle, summary) to
+  `~/BASE/docs/universal-goal-science.md` (configurable via `GOAL_SCIENCE_DOC`).
+  This is the human-readable canon companion to the existing `synx put`
+  durable-fact writeback. Fail-open: missing dir → skip.
+
+- **feat(cli): `ats-goal-archive <slug> [--all]`** — archives closed goals to
+  a DuckLake catalog (default: `~/.synapse/goal-archive.duckdb`). Enables
+  time-travel queries over closed goals ("what did we decide on 2026-07-23?").
+  Idempotent: re-running on an already-archived slug upserts. Fail-open:
+  missing `duckdb` → warning + return 0. Configurable via
+  `ATS_GOAL_ARCHIVE_DB` and `ATS_GOAL_ARCHIVE_TABLE`.
+
+- **feat(metareview): `--via metareview`** — `ats-metareview` now supports the
+  `metareview` skill as a reviewer backend, in addition to `agentmaster`,
+  `grepgod`, `si`, and `manual`. Uses `METAREVIEW_ROOT` (default:
+  `~/.claude/skills/metareview`) and invokes `run.sh` if present, else the
+  `metareview` CLI. Fail-open: missing skill → falls through to next backend.
+
+- **feat(bench): `ats-jury-bench-v2.py`** — jury of agents with:
+  1. Broader jury: `codex`, `claude`, `kimi`, `gemini`, `fable` (auto-filtered
+     to those available on PATH; hermes_* variants kept for backward-compat).
+  2. ABBA-adaptive ordering: each (agent, question) pair runs
+     baseline/ats_recon in ABBA or BAAB order (counter-balanced) so
+     warmup/fatigue bias cancels. `--no-abba` disables.
+  3. Blind reviewer score: a second pass where a different agent (the
+     "reviewer") rates the answer 1-5 without seeing which path produced it.
+     The mean reviewer score per path is the "quality" metric.
+  Flags: `--agents codex,claude`, `--reviewer gemini`, `--iter N`, `--no-abba`.
+  Output: JSON + Markdown with per-question savings and per-agent/path detail.
+
+- **feat(doctor): `ats-doctor`** now reports `ats-token-cfo`,
+  `ats-goal-archive`, `token-cfo` package, and `metareview` skill availability.
+
+- **docs:** README and AGENTS.md updated with v4.0.0 sections.
+
+### Benchmark results (2026-07-24, v2 harness, 1 iter, ABBA)
+
+The v2 harness uses ABBA-adaptive ordering and a blind reviewer. Results are
+comparable to v1 in shape; the v2 JSON includes `reviewer_score_mean` per
+path. Run locally to regenerate:
+
+```
+python3 integration/cli/ats-jury-bench-v2.py --iter 1 \
+  --out /tmp/ats_jury_bench_v2.json --md /tmp/ats_jury_bench_v2.md
+```
+
+### Public usability of the ggcoder shim
+
+The universal shell wrapper `integration/cli/agent-token-saver.sh` is the
+publicly usable "ggcoder shim". It sources `goal.sh` (v3.5.0+) and
+`ats-token-cfo` (v4.0.0+) and is wrapped by agent-specific profiles
+(`devin-token-saver.sh`, `claude-token-saver.sh`, `codex-token-saver.sh`,
+`cmux-token-saver.sh`). All fail-open: missing tools degrade gracefully.
+
 ## 3.8.1 — 2026-07-23
 
 ### stdio LLM bridge + ats-recon auto-router + jury benchmarks

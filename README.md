@@ -559,6 +559,38 @@ bash scripts/neutral_install_smoke.sh
 python3 scripts/codex_provider_ab.py --live --model <PINNED_MODEL>
 ```
 
+## Superintelligent Stack (v4.0.0)
+
+Five feature axes combined into one major release. All fail-open: missing
+tools degrade gracefully, never block the agent.
+
+- **`ats-token-cfo <subcommand>`** — wraps the `token-cfo` Python package
+  (routing audit + cost simulation + sales-ready report). Subcommands:
+  `audit`, `simulate`, `plan`, `report`, `pricing`. Config:
+  `ATS_TOKEN_CFO_DIR` (default: `~/BASE/projects/token-cfo`).
+- **`ats-goal-archive <slug> [--all]`** — archives closed goals to a
+  DuckLake catalog (default: `~/.synapse/goal-archive.duckdb`). Time-travel
+  queries over closed goals. Config: `ATS_GOAL_ARCHIVE_DB`,
+  `ATS_GOAL_ARCHIVE_TABLE`. Missing `duckdb` → warning + return 0.
+- **`ats-metareview <slug> --via metareview`** — adds the `metareview`
+  skill as a reviewer backend (in addition to `agentmaster`, `grepgod`,
+  `si`, `manual`). Config: `METAREVIEW_ROOT`.
+- **`goal-close --decision "<text>"`** — compounding writeback now appends
+  a dated insight block to `~/BASE/docs/universal-goal-science.md`
+  (configurable via `GOAL_SCIENCE_DOC`), in addition to the existing
+  `synx put` durable-fact writeback.
+- **`ats-jury-bench-v2.py`** — jury of agents with ABBA-adaptive ordering
+  and a blind reviewer score. Broader jury: `codex`, `claude`, `kimi`,
+  `gemini`, `fable`. Flags: `--agents`, `--reviewer`, `--iter`, `--no-abba`.
+
+The universal shell wrapper `integration/cli/agent-token-saver.sh` is the
+publicly usable "ggcoder shim". It sources `goal.sh` (v3.5.0+) and
+`ats-token-cfo` (v4.0.0+) and is wrapped by agent-specific profiles
+(`devin-token-saver.sh`, `claude-token-saver.sh`, `codex-token-saver.sh`,
+`cmux-token-saver.sh`). All fail-open: missing tools degrade gracefully.
+
+See [CHANGELOG.md](CHANGELOG.md) for the full v4.0.0 changelog.
+
 ## What this repository does not claim
 
 - Token proxies are not provider billing meters.

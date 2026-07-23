@@ -508,7 +508,29 @@ goal-close() {
     return 1
   fi
   local now; now=$(_goal_now)
-  # compounding writeback (ADR-10): synx put summary + decision
+  # compounding writeback (ADR-10 + omnigoal §Compounding):
+  #   1. synx put summary + decision (durable fact, retrieval)
+  #   2. append to ~/BASE/docs/universal-goal-science.md (human-readable canon)
+  #   3. optional DuckLake archive via ats-goal-archive (see below)
+  if [[ -n "$decision" ]]; then
+    local goal_science="${GOAL_SCIENCE_DOC:-$HOME/BASE/docs/universal-goal-science.md}"
+    if [[ -d "$(dirname "$goal_science")" ]]; then
+      local bottleneck levers oracle
+      bottleneck=$(jq -r '.bottleneck // "unknown"' "$goal_file")
+      levers=$(jq -r '.levers | join(", ")' "$goal_file")
+      oracle=$(jq -r .oracle "$goal_file")
+      {
+        echo ""
+        echo "## $(date +%F) — goal:$slug"
+        echo ""
+        echo "- **Decision**: $decision"
+        echo "- **Bottleneck**: $bottleneck"
+        echo "- **Levers**: $levers"
+        echo "- **Oracle**: \`$oracle\`"
+        echo "- **Summary**: $summary"
+      } >>"$goal_science" 2>/dev/null || _goal_warn "goal-close: could not append to $goal_science"
+    fi
+  fi
   if _goal_have synx; then
     [[ -n "$summary" ]] && echo "$summary" | synx put --title "goal-close:$slug"
     if [[ -n "$decision" ]]; then

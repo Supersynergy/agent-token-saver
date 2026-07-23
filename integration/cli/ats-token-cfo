@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+# ats-token-cfo — Routing-Audit + Token-CFO-Report wrapper (v4.0.0+).
+#
+# Wraps the token-cfo Python package (~/BASE/projects/token-cfo) so agents can
+# run routing audits, simulate cost-saving strategies, and generate sales-ready
+# reports without leaving the ats-* CLI surface. Fail-open: if token-cfo is not
+# installed, prints a hint and returns 0.
+#
+# Contract: fail-open · non-destructive · no MCP · reuses full_context_ledger.
+# Usage:  ats-token-cfo audit|simulate|plan|report|pricing [args...]
+# Verify: type ats-token-cfo
+#
+# Env overrides:
+#   ATS_TOKEN_CFO_DIR  — path to token-cfo project (default: ~/BASE/projects/token-cfo)
+#   ATS_TOKEN_CFO_PY   — python interpreter (default: python3)
+#
+# Examples:
+#   ats-token-cfo audit --usage ~/.codex/sessions/2026-07-23.jsonl --provider codex
+#   ats-token-cfo simulate --usage FILE --strategy optimal
+#   ats-token-cfo plan --usage FILE --strategy optimal --summary
+#   ats-token-cfo report --usage FILE --out report.md --html report.html \
+#                        --client "Acme" --period "Juli 2026"
+#   ats-token-cfo pricing --tier frontier_closed
+
+ats-token-cfo() {
+  if [[ $# -lt 1 ]]; then
+    cat <<'EOF'
+Usage: ats-token-cfo <subcommand> [args...]
+
+Subcommands (pass-through to token-cfo CLI):
+  audit      — Tatsächliche KI-Kosten berechnen (baseline)
+  simulate   — Routing-Strategien simulieren (conservative/optimal/aggressive/all)
+  plan       — Konkreten Routing-Plan pro Call generieren
+  report     — Sales-ready Markdown + HTML Report generieren
+  pricing    — Pricing-Tabelle anzeigen (optional --tier filter)
+
+Common flags:
+  --usage PATH       — Usage-Datei (JSONL/JSON); repeatable for multiple sources
+  --provider NAME    — codex|claude|openrouter|openai|unknown (default: unknown)
+  --strategy NAME    — conservative|optimal|aggressive|all (default: all)
+  --out PATH         — Markdown output path (report subcommand)
+  --html PATH        — HTML output path (report subcommand)
+  --client NAME      — Client name for report (default: "Ihr Unternehmen")
+  --period LABEL     — Period label for report (default: "letzter Monat")
+  --tier NAME        — frontier_closed|mid_tier|open_weight (pricing subcommand)
+
+Env:
+  ATS_TOKEN_CFO_DIR  — path to token-cfo project (default: ~/BASE/projects/token-cfo)
+  ATS_TOKEN_CFO_PY   — python interpreter (default: python3)
+
+Examples:
+  ats-token-cfo audit --usage ~/.codex/sessions/2026-07-23.jsonl --provider codex
+  ats-token-cfo simulate --usage FILE --strategy optimal
+  ats-token-cfo report --usage FILE --out report.md --html report.html \
+                       --client "Acme GmbH" --period "Juli 2026"
+  ats-token-cfo pricing --tier frontier_closed
+
+Fail-open: if token-cfo is not installed, prints a hint and returns 0.
+EOF
+    return 0
+  fi
+
+  local cfo_dir="${ATS_TOKEN_CFO_DIR:-$HOME/BASE/projects/token-cfo}"
+  local py="${ATS_TOKEN_CFO_PY:-python3}"
+
+  if [[ ! -d "$cfo_dir" || ! -f "$cfo_dir/token_cfo/cli.py" ]]; then
+    echo "ats-token-cfo: token-cfo not found at $cfo_dir" >&2
+    echo "  Install: git clone <token-cfo repo> $cfo_dir  (or set ATS_TOKEN_CFO_DIR)" >&2
+    echo "  Fail-open: returning 0." >&2
+    return 0
+  fi
+
+  # Run with PYTHONPATH so the package resolves without installation.
+  PYTHONPATH="$cfo_dir${PYTHONPATH:+:$PYTHONPATH}" "$py" -m token_cfo.cli "$@"
+}
+
+# Backward-compat alias: ats-cfo → ats-token-cfo
+ats-cfo() { ats-token-cfo "$@"; }

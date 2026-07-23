@@ -1,6 +1,6 @@
 [project]
 name = "agent-token-saver"
-version = "3.8.0"
+version = "4.0.0"
 description = "Measured token routing, projection and hook wiring for coding agents."
 authors = [{name = "Maxim Supersynergy"}]
 requires-python = ">=3.11"

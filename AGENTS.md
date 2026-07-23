@@ -61,4 +61,31 @@ used — CLIs keep agent context clean. `ats-recon-doctor` shows install state.
 
 Benchmark results (2026-07-23, 1 iter, 4 agents): local_search 82% saved,
 github_recon 99% saved, web_scrape 59% saved.
+
+## Superintelligent Stack (v4.0.0+)
+
+Five feature axes combined into one major release. All fail-open: missing
+tools degrade gracefully, never block the agent.
+
+- **`ats-token-cfo <subcommand>`** — wraps the `token-cfo` Python package
+  (routing audit + cost simulation + sales-ready report). Subcommands:
+  `audit`, `simulate`, `plan`, `report`, `pricing`. Config:
+  `ATS_TOKEN_CFO_DIR` (default: `~/BASE/projects/token-cfo`). Missing
+  package → warning + return 0.
+- **`ats-goal-archive <slug> [--all]`** — archives closed goals to a
+  DuckLake catalog (default: `~/.synapse/goal-archive.duckdb`). Time-travel
+  queries over closed goals. Config: `ATS_GOAL_ARCHIVE_DB`,
+  `ATS_GOAL_ARCHIVE_TABLE`. Missing `duckdb` → warning + return 0.
+- **`ats-metareview <slug> --via metareview`** — adds the `metareview`
+  skill as a reviewer backend (in addition to `agentmaster`, `grepgod`,
+  `si`, `manual`). Config: `METAREVIEW_ROOT` (default:
+  `~/.claude/skills/metareview`).
+- **`goal-close --decision "<text>"`** — compounding writeback now appends
+  a dated insight block to `~/BASE/docs/universal-goal-science.md`
+  (configurable via `GOAL_SCIENCE_DOC`), in addition to the existing
+  `synx put` durable-fact writeback.
+- **`ats-jury-bench-v2.py`** — jury of agents with ABBA-adaptive ordering
+  and a blind reviewer score. Broader jury: `codex`, `claude`, `kimi`,
+  `gemini`, `fable`. Flags: `--agents`, `--reviewer`, `--iter`, `--no-abba`.
+
 <!-- REPO-POLISH-AGENTS:END -->

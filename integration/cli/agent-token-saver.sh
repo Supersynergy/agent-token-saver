@@ -274,7 +274,17 @@ if [[ -f "$_goal_sh" ]]; then
 else
   echo "agent-token-saver: goal.sh not found at $_goal_sh — goal system unavailable" >&2
 fi
-unset _goal_sh _ats_script _ats_script_dir
+
+# v4.0.0: source ats-token-cfo wrapper (Routing-Audit + Token-CFO-Report).
+# Fail-open: missing file → warning, never blocks.
+_ats_cfo="$_ats_script_dir/ats-token-cfo"
+if [[ -f "$_ats_cfo" ]]; then
+  # shellcheck source=/dev/null
+  source "$_ats_cfo"
+else
+  echo "agent-token-saver: ats-token-cfo not found at $_ats_cfo — routing audit unavailable" >&2
+fi
+unset _goal_sh _ats_cfo _ats_script _ats_script_dir
 
 # --- Speedtuning: parallel prime + init (v3.7.0) -----------------------------
 ats-prime-and-init() {
@@ -365,6 +375,14 @@ EOF
     agentmaster start --here --name "refute-$slug" 2>/dev/null || true
     agentmaster send "workspace:refute-$slug" "$prompt" 2>/dev/null || true
     verdict="PENDING"
+  elif [[ "$via" == "auto" || "$via" == "metareview" ]] && ats-have metareview; then
+    chosen="metareview"
+    local mr_root="${METAREVIEW_ROOT:-$HOME/.claude/skills/metareview}"
+    if [[ -x "$mr_root/run.sh" ]]; then
+      "$mr_root/run.sh" "$repo" --since "$since_date" 2>/dev/null && verdict="PASS" || verdict="FAIL"
+    else
+      metareview "$repo" --since "$since_date" 2>/dev/null && verdict="PASS" || verdict="FAIL"
+    fi
   elif [[ "$via" == "auto" || "$via" == "grepgod" ]] && ats-have grepgod; then
     chosen="grepgod"
     grepgod review "$repo" --since "$since_date" 2>/dev/null && verdict="PASS" || verdict="FAIL"
@@ -384,6 +402,90 @@ EOF
     '.evidence.refuter = $v | .evidence.refuter_via = $via' \
     "$goal_file" >"${goal_file}.tmp" && mv "${goal_file}.tmp" "$goal_file"
   echo "ats-metareview: verdict=$verdict via=$chosen"
+}
+
+# --- DuckLake goal-archive (v4.0.0) ------------------------------------------
+# ats-goal-archive <slug> — append the goal JSON to a DuckLake catalog so that
+# closed goals become queryable history (time-travel snapshots, branch replay).
+# Fail-open: missing duckdb → warning + return 0. Idempotent: re-running on an
+# already-archived slug upserts (no duplicate rows).
+#
+# Env:
+#   ATS_GOAL_ARCHIVE_DB — path to DuckLake catalog (default: ~/.synapse/goal-archive.duckdb)
+#   ATS_GOAL_ARCHIVE_TABLE — table name (default: goals)
+ats-goal-archive() {
+  if [[ $# -lt 1 ]]; then
+    cat <<'EOF'
+Usage: ats-goal-archive <slug> [--all]
+
+Archives the goal JSON to a DuckLake catalog (default: ~/.synapse/goal-archive.duckdb).
+Enables time-travel queries over closed goals: "what did we decide on 2026-07-23?"
+
+Flags:
+  --all  — archive every closed goal in SYNAPSE_GOALS_DIR
+
+Env:
+  ATS_GOAL_ARCHIVE_DB     — catalog path (default: ~/.synapse/goal-archive.duckdb)
+  ATS_GOAL_ARCHIVE_TABLE  — table name (default: goals)
+
+Requires: duckdb CLI on PATH. Fail-open: missing duckdb → warning + return 0.
+EOF
+    return 0
+  fi
+  local slug="$1"; shift
+  local all=0
+  [[ "${1:-}" == "--all" ]] && all=1
+  if ! ats-have duckdb; then
+    echo "ats-goal-archive: duckdb not on PATH — archive skipped (fail-open)" >&2
+    return 0
+  fi
+  local db="${ATS_GOAL_ARCHIVE_DB:-$HOME/.synapse/goal-archive.duckdb}"
+  local table="${ATS_GOAL_ARCHIVE_TABLE:-goals}"
+  local goals_dir="${SYNAPSE_GOALS_DIR:-$HOME/.synapse/goals}"
+  mkdir -p "$(dirname "$db")"
+  local init_sql="CREATE TABLE IF NOT EXISTS ${table} (slug VARCHAR, state VARCHAR, title VARCHAR, oracle VARCHAR, bottleneck VARCHAR, closed_ts BIGINT, summary VARCHAR, raw JSON, archived_at TIMESTAMP DEFAULT now());"
+  duckdb "$db" -c "$init_sql" >/dev/null 2>&1 || { echo "ats-goal-archive: duckdb init failed" >&2; return 0; }
+  # Inline archive helper (kept simple — no nested function for shell portability).
+  local gf s st ti orc bn ct sm raw
+  if [[ "$all" -eq 1 ]]; then
+    echo "=== ats-goal-archive --all ==="
+    local n=0
+    for gf in "$goals_dir"/*.json; do
+      [[ -f "$gf" ]] || continue
+      s=$(jq -r .id "$gf" 2>/dev/null)
+      st=$(jq -r .state "$gf" 2>/dev/null)
+      ti=$(jq -r .title "$gf" 2>/dev/null)
+      orc=$(jq -r .oracle "$gf" 2>/dev/null)
+      bn=$(jq -r '.bottleneck // ""' "$gf" 2>/dev/null)
+      ct=$(jq -r '.closed_ts // 0' "$gf" 2>/dev/null)
+      sm=$(jq -r '.summary // ""' "$gf" 2>/dev/null)
+      raw=$(jq -c . "$gf" 2>/dev/null)
+      local s_esc=${s//\'/\'\'}
+      duckdb "$db" -c "DELETE FROM ${table} WHERE slug = '$s_esc'; INSERT INTO ${table} (slug, state, title, oracle, bottleneck, closed_ts, summary, raw) VALUES ('$s_esc', '$st', '$(echo "$ti" | sed "s/'/''/g")', '$(echo "$orc" | sed "s/'/''/g")', '$(echo "$bn" | sed "s/'/''/g")', $ct, '$(echo "$sm" | sed "s/'/''/g")', '$(echo "$raw" | sed "s/'/''/g")');" >/dev/null 2>&1 \
+        && echo "  [archived] $s ($st)" \
+        || echo "  [warn] $s — duckdb insert failed" >&2
+      n=$((n+1))
+    done
+    echo "  Archived $n goal(s) to $db"
+  else
+    gf="$goals_dir/$slug.json"
+    if [[ ! -f "$gf" ]]; then
+      echo "ats-goal-archive: goal not found: $slug" >&2; return 1
+    fi
+    s=$(jq -r .id "$gf" 2>/dev/null)
+    st=$(jq -r .state "$gf" 2>/dev/null)
+    ti=$(jq -r .title "$gf" 2>/dev/null)
+    orc=$(jq -r .oracle "$gf" 2>/dev/null)
+    bn=$(jq -r '.bottleneck // ""' "$gf" 2>/dev/null)
+    ct=$(jq -r '.closed_ts // 0' "$gf" 2>/dev/null)
+    sm=$(jq -r '.summary // ""' "$gf" 2>/dev/null)
+    raw=$(jq -c . "$gf" 2>/dev/null)
+    local s_esc=${s//\'/\'\'}
+    duckdb "$db" -c "DELETE FROM ${table} WHERE slug = '$s_esc'; INSERT INTO ${table} (slug, state, title, oracle, bottleneck, closed_ts, summary, raw) VALUES ('$s_esc', '$st', '$(echo "$ti" | sed "s/'/''/g")', '$(echo "$orc" | sed "s/'/''/g")', '$(echo "$bn" | sed "s/'/''/g")', $ct, '$(echo "$sm" | sed "s/'/''/g")', '$(echo "$raw" | sed "s/'/''/g")');" >/dev/null 2>&1 \
+      && echo "  [archived] $s ($st)" \
+      || echo "  [warn] $s — duckdb insert failed" >&2
+    echo "  Catalog: $db  Table: ${table}"
+  fi
 }
 
 # --- Omnigoal hard-gate verifier (v3.7.0) ------------------------------------
@@ -744,6 +846,10 @@ ats-doctor() {
   echo "ghx:        $(command -v ghx || echo 'MISSING (npm i -g @gkoreli/ghx)')"
   echo "supacrawl:  $(command -v supacrawl || echo 'MISSING (pip install supacrawl)')"
   echo "ats-llm-pipe: $(command -v ats-llm-pipe || echo 'MISSING (ln -sf .../ats-llm-pipe ~/.local/bin/)')"
+  echo "ats-token-cfo: $(declare -F ats-token-cfo >/dev/null 2>&1 && echo 'loaded (v4.0.0)' || echo 'MISSING (source ats-token-cfo)')"
+  echo "ats-goal-archive: $(declare -F ats-goal-archive >/dev/null 2>&1 && echo 'loaded (v4.0.0)' || echo 'MISSING (v4.0.0)')"
+  echo "token-cfo pkg: $([[ -d "${ATS_TOKEN_CFO_DIR:-$HOME/BASE/projects/token-cfo}" ]] && echo "${ATS_TOKEN_CFO_DIR:-$HOME/BASE/projects/token-cfo}" || echo 'MISSING (set ATS_TOKEN_CFO_DIR)')"
+  echo "metareview skill: $([[ -d "${METAREVIEW_ROOT:-$HOME/.claude/skills/metareview}" ]] && echo "${METAREVIEW_ROOT:-$HOME/.claude/skills/metareview}" || echo 'MISSING (optional, --via metareview)')"
   local goals_dir="${SYNAPSE_GOALS_DIR:-$HOME/.synapse/goals}"
   local n_goals=0
   [[ -d "$goals_dir" ]] && n_goals=$(ls -1 "$goals_dir"/*.json 2>/dev/null | wc -l | tr -d ' ')
@@ -754,7 +860,7 @@ ats-doctor() {
   echo "ATS_ACTIVE_SKILL: ${ATS_ACTIVE_SKILL:-none}"
   echo
   echo "Adaptive functions:"
-  declare -F ats-detect-agent ats-safe ats-have ats-prime-and-init ats-parallel ats-metareview ats-omnigoal-check ats-auto ats-gmax ats-ghx ats-supacrawl ats-supacrawl-extract ats-recon ats-recon-doctor 2>/dev/null | awk '{print "  "$3}'
+  declare -F ats-detect-agent ats-safe ats-have ats-prime-and-init ats-parallel ats-metareview ats-omnigoal-check ats-auto ats-gmax ats-ghx ats-supacrawl ats-supacrawl-extract ats-recon ats-recon-doctor ats-token-cfo ats-goal-archive 2>/dev/null | awk '{print "  "$3}'
   echo
   echo "Aliases installed:"
   type ps 2>/dev/null | head -1
