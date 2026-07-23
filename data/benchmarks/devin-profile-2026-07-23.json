@@ -1,0 +1,66 @@
+{
+  "date": "2026-07-23 14:05 CEST",
+  "version": "1.2.0",
+  "method": "local measurement, UTF-8 bytes/4 token proxy",
+  "profile": "agent-token-saver-devin v1.2.0 (synx + goal-system + ducklake)",
+  "files": {
+    "scripts/devin-token-saver.sh": {"bytes": 14714, "tokens": 3678, "lines": 410},
+    "AGENTS.md Devin block": {"bytes": 4410, "tokens": 1102, "lines": 68},
+    "SKILL.md": {"bytes": 13409, "tokens": 3352, "lines": 297},
+    "MASTER-PLAN.md": {"bytes": 14805, "tokens": 3701, "lines": 328}
+  },
+  "always_hot_per_session_tokens": 1102,
+  "zero_hot_vs_always_hot": {
+    "kb_savings_pct": 79.62,
+    "kb_savings_per_session_tokens": 3563
+  },
+  "maximization_stack": {
+    "synx": {
+      "status": "integrated (renamed from syn)",
+      "binary": "/Users/master/.local/bin/synx (9767 bytes, full CLI)",
+      "pre_session": "devin-synapse-prime → synx hybrid",
+      "post_session": "devin-synapse-remember → synx put",
+      "ingest": "devin-synapse-ingest → devin-usage.py → synapse-ultra ingest"
+    },
+    "synapse_ultra": {
+      "status": "integrated",
+      "tracks": "unattributed_input_tokens in meta",
+      "binary": "target/release/synapse-ultra (2.96 MB)"
+    },
+    "ducklake": {
+      "status": "recipes-ready in superweb",
+      "use_case": "token_ledger + goals time-travel, A/B routing branches"
+    },
+    "goal_system": {
+      "status": "integrated + live-validated",
+      "pattern": "omnigoal (oracle-gated stop, bottleneck identification, budget cap)",
+      "functions": ["devin-goal-init", "devin-goal-check", "devin-goal-close", "devin-goal-spawn"],
+      "storage": "~/.synapse/goals/*.json (cross-agent coordinatable)",
+      "roi_estimate": "40-60% token savings on tasks >30min or >20k tokens"
+    },
+    "velesdb": {
+      "status": "evaluated, NOT integrated",
+      "reason": "Synapse already covers vector+graph; VelesDB would duplicate"
+    }
+  },
+  "validation": {
+    "wrapper_syntax": "OK",
+    "goal_init": "OK (jq --arg quoting fixed)",
+    "goal_check_pass": "OK (oracle 'true' → PASS)",
+    "goal_check_fail": "OK (oracle 'grep nonexistent' → FAIL + bottleneck)",
+    "goal_close": "OK (summary persisted to synx + goal JSON)",
+    "goal_spawn": "OK (subagent registered with capsule + skill)",
+    "goal_list": "OK (lists all goals with state)",
+    "synx_prime": "OK (returned 4 relevant chunks)",
+    "synapse_ingest": "OK (2 events ingested, replay works)",
+    "doctor": "All 9 tools present: rtk, si, agent-token-ledger, agent-token-saver, synx, synapse-ultra, duckdb, jq, goals"
+  },
+  "roi_projection": {
+    "baseline_30min_20k_task": 20000,
+    "with_core_wrapper": 12000,
+    "with_synapse_prime": 9000,
+    "with_goal_system": 5000,
+    "with_ducklake_cross_session": 4000,
+    "total_savings_pct": 80
+  }
+}
