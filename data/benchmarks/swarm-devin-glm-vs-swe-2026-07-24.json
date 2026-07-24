@@ -1,0 +1,48 @@
+{
+  "results": [
+    {
+      "agent": "devin_glm52",
+      "iter_idx": 0,
+      "wall_s": 20.614,
+      "chars": 123,
+      "tokens_est": 30,
+      "exit_code": 0,
+      "success": true,
+      "json_valid": true,
+      "sample": "```json {\"name\":\"Acme Widget Pro\",\"price\":\"$42.99\",\"features\":[\"durable\",\"lightweight\",\"eco-friendly\"],\"in_stock\":true} ```",
+      "cost_usd": 0.0
+    },
+    {
+      "agent": "devin_swe17",
+      "iter_idx": 0,
+      "wall_s": 39.981,
+      "chars": 142,
+      "tokens_est": 35,
+      "exit_code": 0,
+      "success": true,
+      "json_valid": true,
+      "sample": "```json {   \"name\": \"Acme Widget Pro\",   \"price\": \"$42.99\",   \"features\": [\"durable\", \"lightweight\", \"eco-friendly\"],   \"in_stock\": true } ```",
+      "cost_usd": 0.0
+    }
+  ],
+  "aggregate": {
+    "devin_glm52": {
+      "n": 1,
+      "success_rate": 1.0,
+      "json_valid_rate": 1.0,
+      "wall_s_mean": 20.614,
+      "chars_mean": 123,
+      "tokens_est_mean": 30,
+      "cost_usd_sum": 0.0
+    },
+    "devin_swe17": {
+      "n": 1,
+      "success_rate": 1.0,
+      "json_valid_rate": 1.0,
+      "wall_s_mean": 39.981,
+      "chars_mean": 142,
+      "tokens_est_mean": 35,
+      "cost_usd_sum": 0.0
+    }
+  }
+}

@@ -116,11 +116,32 @@ AGENTS: list[tuple[str, list[str], dict[str, str]]] = [
         ],
         {},
     ),
+    # devin = Devin/Windsurf CLI (chisel), headless via `devin --print -- <p>`.
+    # Auth: PKCE browser flow (`devin auth login`). 35 model families. These
+    # two lanes use FREE models ($0): GLM-5.2 High and SWE-1.7 Max (beta).
+    # Paid models (sonnet-5, opus-4.8, fable-5) share a weekly quota — add
+    # them under a devin_paid_* name so PAID_LANES excludes them from the $0
+    # count. Skip all devin lanes in routine runs with `--skip devin`.
+    (
+        "devin_glm52",
+        ["devin", "--print", "--model", "glm-5-2", "--", "__PROMPT__"],
+        {},
+    ),
+    (
+        "devin_swe17",
+        ["devin", "--print", "--model", "swe-1-7", "--", "__PROMPT__"],
+        {},
+    ),
     # Local lanes — no API key, no billing, available whenever installed.
     ("claude", ["claude", "-p"], {}),
     ("ollama_phi4", ["ollama", "run", "phi4-reasoning:plus"], {}),
     ("ollama_dolphin3", ["ollama", "run", "dolphin3:8b"], {}),
 ]
+
+# Lanes that consume real paid quota/credits (excluded from the $0-lane count).
+# devin_glm52/devin_swe17 use free models, so they are NOT listed here; a
+# paid devin lane would be named devin_paid_* to match this prefix.
+PAID_LANES = ("devin_paid",)
 
 # stdout error signatures that mean the agent did NOT answer, even with
 # exit code 0 (hosted CLIs print HTTP errors to stdout and exit clean).
@@ -136,6 +157,9 @@ ERROR_MARKERS = (
     "invalid api key",
     "rate limit",
     "quota exceeded",
+    "quota has been exhausted",
+    "usage quota",
+    "weekly usage",
 )
 
 
@@ -293,7 +317,9 @@ def markdown_table(agg: dict[str, dict[str, Any]]) -> str:
         )
     total = sum(s.get("cost_usd_sum", 0.0) for s in agg.values())
     free_ok = sum(
-        s["n"] * s["success_rate"] for s in agg.values() if s.get("cost_usd_sum", 0.0) == 0
+        s["n"] * s["success_rate"]
+        for a, s in agg.items()
+        if s.get("cost_usd_sum", 0.0) == 0 and not a.startswith(PAID_LANES)
     )
     lines.append("")
     lines.append(
@@ -309,12 +335,20 @@ def main() -> int:
     ap.add_argument("--out", type=str, default="/tmp/ats_swarm_bench.json")
     ap.add_argument("--md", type=str, default="/tmp/ats_swarm_bench.md")
     ap.add_argument("--only", type=str, default=None)
+    ap.add_argument(
+        "--skip",
+        type=str,
+        default=None,
+        help="skip lanes whose name contains this substring (e.g. devin)",
+    )
     ap.add_argument("--timeout", type=int, default=120, help="per-call timeout in seconds")
     ap.add_argument("--workers", type=int, default=0, help="parallel workers (0 = min(8, calls))")
     ap.add_argument("--sequential", action="store_true", help="disable parallel execution")
     args = ap.parse_args()
 
     agents = [a for a in AGENTS if args.only is None or args.only in a[0]]
+    if args.skip:
+        agents = [a for a in agents if args.skip not in a[0]]
     # Skip CLIs that are not installed — a swarm bench should report the
     # missing lane once, not burn a slot on FileNotFoundError per iteration.
     missing = [a[0] for a in agents if not shutil.which(a[1][0])]

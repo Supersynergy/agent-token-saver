@@ -69,6 +69,8 @@ AGENT_CANDIDATES: list[tuple[str, list[str]]] = [
     # the working binary is kimi-awake with --quiet --input-format text.
     ("kimi", ["kimi-awake", "--quiet", "--input-format", "text"]),
     ("fable", ["fable", "--print"]),
+    # devin (chisel) via free GLM-5.2 High. Auth: `devin auth login`.
+    ("devin_glm52", ["devin", "--print", "--model", "glm-5-2", "--", "__PROMPT__"]),
     # gemini DISABLED 2026-07: Google killed the free individual Gemini-CLI
     # tier (IneligibleTierError → "migrate to Antigravity"). Left on PATH but
     # dead; keep out of the jury/reviewer set so it can't zero every score.

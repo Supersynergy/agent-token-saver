@@ -1,5 +1,35 @@
 # Changelog
 
+## 4.9.0 — 2026-07-24
+
+### Devin CLI wired headless + `devincontrol` + free GLM-5.2/SWE-1.7 lanes
+
+Devin's agent CLI (`chisel`) ships inside `Devin.app` at
+`.../extensions/windsurf/devin/bin/devin`, not on PATH. It has a real headless
+`--print` mode — the earlier "no prompt frontend" claim was wrong. Wired it up
+end to end.
+
+- **auth:** `devin auth login` is a PKCE browser flow whose code prompt needs
+  a real TTY (rejects piped stdin, and blocks on OSC 10/11 color queries).
+  Automated it with a PTY driver (`TERM=dumb` + auto-answered terminal
+  queries + prompt-aware code feeding). Login succeeded, credentials stored at
+  `~/.local/share/devin/credentials.toml`. `devin` symlinked into
+  `~/.local/bin`.
+- **feat(cli): `devincontrol`** — thin wrapper: `ask "<p>"` (one-shot,
+  default free GLM-5.2 High), `ask --swe`/`--model <id>`, `chat`, `list` and
+  `show <id>` (reads the local `sessions.db`: id · title · date, replays
+  `message_nodes`), `models`, `auth`, `which`. Default model
+  `glm-5-2` (`DEVINCONTROL_MODEL` overrides). Symlinked to `~/.local/bin`.
+- **feat(swarm): free Devin lanes** — `devin_glm52` (GLM-5.2 High) and
+  `devin_swe17` (SWE-1.7 Max, beta), both **$0**. Measured 2026-07-24:
+  GLM 20.6s, SWE 40.0s, both valid JSON. GLM-5.2 is the default (faster +
+  preferred). Paid Devin models (sonnet-5/opus-4.8/fable-5) share a weekly
+  quota that is currently exhausted — the bench catches
+  "usage quota"/"weekly usage" as honest failures. New `--skip <substr>`
+  flag + `PAID_LANES` so paid lanes are excluded from the $0-lane count.
+- **feat(jury): devin_glm52 candidate** (free GLM-5.2).
+- Artifact: `data/benchmarks/swarm-devin-glm-vs-swe-2026-07-24.json`.
+
 ## 4.8.0 — 2026-07-24
 
 ### agy is a real headless lane — antigravity GUI marker deleted
