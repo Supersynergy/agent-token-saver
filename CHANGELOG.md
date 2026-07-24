@@ -1,5 +1,27 @@
 # Changelog
 
+## 4.12.0 — 2026-07-24
+
+- New `scripts/llmadapter.ts` (Bun single-file, symlinked as `llmadapter`):
+  one interface over all 23 verified lanes — 16 OpenRouter (14 :free +
+  kimi-k3/k2.7-code), Ollama local, codex, agy, devin (single-flight),
+  cursor, ggcoder, claude-haiku. Direct OpenRouter HTTP (kills ~3s
+  hermes-python startup per call), jitter, concurrency pool, retry-once
+  on transient provider errors, quota/auth/timeout/empty taxonomy,
+  24h exact-hash response cache, `--aggregate` dedup via nemotron-super.
+  Verified: 19/23 one-shot burst 160s wall; cache hit 0ms; kimi-k3 fixed
+  via max_tokens cap. Known-down: gemma-4-31b + laguna-s-2.1 (provider),
+  agy (quota, resets ~6d).
+- llmadapter best-practices round: `--first N` hedged-request race mode
+  (3 answers in 2.2s vs 49s full burst), per-call usage capture
+  (provider-reported for OpenRouter/Ollama, bytes/4 estimate for CLI
+  lanes), monthly JSONL ledger in `~/.agent-token-saver/ledger/`,
+  `stats` subcommand, `--usage-out` emitting hermes-style usage JSON
+  verified through `agent-token-ledger --usage llmadapter=FILE` (48/53
+  tokens reported end-to-end), normalized cache keys (case/whitespace
+  insensitive), 429-vs-hard-quota retry split, per-kind default
+  timeouts (openrouter 90s, ollama 120s, cli 170s), `--max-tokens`.
+
 ## 4.11.0 — 2026-07-24
 
 ### General fan-out + `ats-pipe` research pipeline shim
