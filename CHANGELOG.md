@@ -1,5 +1,19 @@
 # Changelog
 
+## 4.20.0 — 2026-07-25
+
+### Daily auto-ingest — the recall loop stays fresh on its own
+
+- **feat: `scripts/install-ingest-cron.sh`** — installs a launchd job that runs
+  `synapse-ingest-cli-logs.py --since 2` daily (default 04:30). Resolves the
+  REAL python binary (a `command -v python3` shell alias poisons the plist and
+  fails with exit 78 — hit and fixed), sets a proper PATH so `synx` is found,
+  loads it idempotently. Every new agent CLI session is recall-able the next
+  day without any manual step. Job verified live: LastExitStatus 0, imports
+  new sessions. The plist lives in `~/Library/LaunchAgents` (machine-local,
+  outside the repo); this helper regenerates it on any machine with no
+  hardcoded paths.
+
 ## 4.19.0 — 2026-07-24
 
 ### Compounding loop closed: `ats-pipe --recall` + 2960 sessions indexed
