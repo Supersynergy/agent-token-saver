@@ -43,8 +43,9 @@ _ats_pipe_scrape() {
   command -v superweb >/dev/null 2>&1 && superweb fetch "$u" --mode auto --max-tier 1 2>/dev/null
 }
 
-mode="local" url="" gather_only=0 synth=0
+mode="local" url="" gather_only=0 synth=0 verify=0
 lanes="free" first="" engine="${ATS_PIPE_ENGINE:-auto}"
+verify_lane="${ATS_PIPE_VERIFY_LANE:-nemotron-3-super-120b-a12b}"
 swarm_passthru=() words=()
 # Flags may appear anywhere (before or after the question); everything that is
 # not a recognised flag is joined into the question.
@@ -55,6 +56,8 @@ while [[ $# -gt 0 ]]; do
     --url) mode="url"; url="$2"; shift 2 ;;
     --gather-only) gather_only=1; shift ;;
     --synth) synth=1; shift ;;
+    --verify) verify=1; shift ;;
+    --verify-lane) verify_lane="$2"; shift 2 ;;
     --lanes) lanes="$2"; shift 2 ;;         # llmadapter: free|paid|local|cli|all|name,…
     --only) lanes="$2"; shift 2 ;;           # alias for a single lane/group
     --first) first="$2"; shift 2 ;;          # hedged race: stop after N answers
@@ -105,8 +108,26 @@ if [[ "$engine" == "llmadapter" ]]; then
   llm_args=(ask "$prompt" --lanes "$lanes")
   [[ "$synth" == 1 ]] && llm_args+=(--aggregate)
   [[ -n "$first" ]] && llm_args+=(--first "$first")
-  llmadapter "${llm_args[@]}"
-  exit $?
+  if [[ "$verify" == 0 ]]; then
+    llmadapter "${llm_args[@]}"
+    exit $?
+  fi
+  # --- VERIFY (pilotfish / Anthropic pattern: a fresh-context verifier beats
+  # self-critique). Capture the answer, then have ONE strong lane check it and
+  # correct if wrong. Costs one extra call; catches confident-wrong consensus.
+  answer="$(llmadapter "${llm_args[@]}" 2>/dev/null | sed 's/\x1b\[[0-9;?]*[a-zA-Z]//g')"
+  printf '%s\n' "$answer"
+  echo "· verify (fresh $verify_lane) …" >&2
+  vprompt="You are an independent verifier with fresh context. Check the proposed answer against the question. If it is correct, reply exactly: VERIFIED. If it is wrong or incomplete, reply: CORRECTION: <the correct answer>.
+
+Question: $question
+
+Proposed answer:
+$answer"
+  echo "— verify —"
+  llmadapter ask "$vprompt" --lanes "$verify_lane" --first 1 2>/dev/null \
+    | sed 's/\x1b\[[0-9;?]*[a-zA-Z]//g' | rg -v '^$|ok · wall|race first' | tail -3
+  exit 0
 fi
 
 # Fallback engine: Python swarm-bench (--system/--workers/--timeout apply here).

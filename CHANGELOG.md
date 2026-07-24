@@ -1,5 +1,28 @@
 # Changelog
 
+## 4.16.0 — 2026-07-24
+
+### `ats-pipe --verify` — fresh-context verifier gate (stolen from the 500-repo sweep)
+
+Evaluated 10 candidate repos from a 500-repo sweep against ATS. Adopted the
+one idea with Anthropic-benchmarked backing and no dependency weight: a
+fresh-context verifier beats self-critique (per the Fable 5 multi-agent docs;
+pilotfish/tura use the same pattern).
+
+- **feat(cli): `ats-pipe --verify`** — after the fan-out/aggregate produces an
+  answer, one strong fresh-context lane checks it and replies `VERIFIED` or
+  `CORRECTION: <fix>`. Costs one extra call; catches confident-wrong
+  consensus. `--verify-lane` / `ATS_PIPE_VERIFY_LANE` pick the verifier
+  (default `nemotron-3-super-120b-a12b`, free). Verified 2026-07-24: correct
+  answer → VERIFIED; planted "17×23=371" → "CORRECTION: 391".
+- **evaluation notes** (idea-adoption, not deps — bench-before-adopt):
+  pilotfish tiered plan/execute/verify = adopted (verify gate). deja-vu/paxm
+  memory = redundant with the local Synapse KB (311k docs incl. chat logs).
+  waggle 30-byte context refs = the url-cache already does content-addressed
+  storage; low marginal gain for stateless LLM fan-out. tura turn-reduction =
+  applies to agent loops, ats-pipe already gathers once. fastctx/agent-chief/
+  brain0/klaatcode/contextvc = adjacent surfaces, not core-thesis fits.
+
 ## 4.15.0 — 2026-07-24
 
 ### Local-only lane overlay — private CLIs stay off the deployed surface
