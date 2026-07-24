@@ -1,5 +1,23 @@
 # Changelog
 
+## 4.19.0 — 2026-07-24
+
+### Compounding loop closed: `ats-pipe --recall` + 2960 sessions indexed
+
+- **feat: `ats-pipe --recall`** — before fan-out, pull past-session hits from
+  Synapse (via `ats-recall`) and prepend them to the context. Every run feeds
+  the corpus (`synapse-ingest-cli-logs`), every run reads it back: the pipeline
+  builds on what you already solved instead of re-deriving it. The deja-vu
+  thesis, wired into the pipe.
+- **fix: `ats-recall` brain-first** — CLI sessions bulk-import into the main
+  brain (`cli-log://`), which `synx hybrid` searches in ~0s; the corpus
+  sidecar search was 30s+ on the grown DB. Default flipped to brain; `--corpus`
+  and `--both` opt-in. Recall now returns in 0s.
+- **milestone:** the full backfill ran — **2960 agent CLI sessions**
+  (Codex/Claude/aider/opencode, 3623 scanned) imported into Synapse, searchable
+  via `synx hybrid` / `ats-recall`. Past solutions across every agent CLI are
+  now one query away.
+
 ## 4.18.0 — 2026-07-24
 
 ### `ats-recall` — the recall front-end for the ingested CLI histories

@@ -43,7 +43,7 @@ _ats_pipe_scrape() {
   command -v superweb >/dev/null 2>&1 && superweb fetch "$u" --mode auto --max-tier 1 2>/dev/null
 }
 
-mode="local" url="" gather_only=0 synth=0 verify=0 tier=0
+mode="local" url="" gather_only=0 synth=0 verify=0 tier=0 recall=0
 lanes="free" first="" engine="${ATS_PIPE_ENGINE:-auto}"
 verify_lane="${ATS_PIPE_VERIFY_LANE:-nemotron-3-super-120b-a12b}"
 swarm_passthru=() words=()
@@ -58,6 +58,7 @@ while [[ $# -gt 0 ]]; do
     --synth) synth=1; shift ;;
     --verify) verify=1; shift ;;
     --tier) tier=1; shift ;;
+    --recall) recall=1; shift ;;
     --verify-lane) verify_lane="$2"; shift 2 ;;
     --lanes) lanes="$2"; shift 2 ;;         # llmadapter: free|paid|local|cli|all|name,…
     --only) lanes="$2"; shift 2 ;;           # alias for a single lane/group
@@ -72,6 +73,16 @@ done
 [[ ${#words[@]} -ge 1 ]] || { echo 'usage: ats-pipe [--web|--github|--url <u>] "<question>"' >&2; exit 1; }
 question="${words[*]}"
 
+# --- RECALL (optional) — "your agents already solved this." Prepend past-
+# session hits from Synapse (via ats-recall) so the fan-out builds on what you
+# already worked out instead of re-deriving it. Compounds: every run feeds the
+# corpus (synapse-ingest-cli-logs), every run can read it back.
+recall_ctx=""
+if [[ "$recall" == 1 ]] && command -v ats-recall >/dev/null 2>&1; then
+  echo "· recall (past sessions) …" >&2
+  recall_ctx="$(ats-recall --limit 4 "$question" 2>/dev/null | sed 's/\x1b\[[0-9;?]*[a-zA-Z]//g' | head -c 2500)"
+fi
+
 # --- GATHER -----------------------------------------------------------------
 echo "· gather ($mode) …" >&2
 context=""
@@ -83,6 +94,9 @@ case "$mode" in
 esac
 # strip ansi + cap size so noisy tool output never floods the model context
 context="$(printf '%s' "$context" | sed 's/\x1b\[[0-9;?]*[a-zA-Z]//g' | head -c 6000)"
+[[ -n "$recall_ctx" ]] && context="$recall_ctx
+
+$context"
 [[ -n "$context" ]] || echo "  (no context — fanning out on the question alone)" >&2
 
 if [[ "$gather_only" == 1 ]]; then

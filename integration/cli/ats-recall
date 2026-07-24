@@ -16,13 +16,17 @@
 
 set -euo pipefail
 
-src="both" limit=6 words=()
+# CLI sessions are bulk-imported into the main brain (uri cli-log://), which
+# `synx hybrid` searches fast. The corpus sidecar is opt-in (slower, only holds
+# pre-bulk test docs). Default = brain.
+src="brain" limit=6 words=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --corpus) src="corpus"; shift ;;
     --brain) src="brain"; shift ;;
+    --both) src="both"; shift ;;
     --limit) limit="$2"; shift 2 ;;
-    -h|--help) sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) words+=("$1"); shift ;;
   esac
 done
