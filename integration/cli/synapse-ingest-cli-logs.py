@@ -3,12 +3,13 @@
 
 Closes the recall gap deja-vu names: Codex/Claude Code/aider/opencode write
 every session to local JSONL files that Synapse never indexed. This walks
-those logs, extracts the user+assistant turns, and pipes a compact digest per
-session to `synx corpus add-text`, so past solutions become searchable.
+those logs, extracts the user+assistant turns, and BULK-imports one JSONL via
+`synx import` (seconds; 6700 per-session calls would take hours on DB/index
+overhead). Sessions land under the `cli-log://` uri prefix, searchable through
+the normal recall path (synxp / ats-recall).
 
-Lean + fail-open: unknown line shapes are skipped, not fatal. Idempotent-ish
-via a state file of already-ingested paths. Corpus (not verified memory) is the
-right tier — raw history, promote later.
+Lean + fail-open: unknown line shapes are skipped, not fatal. Idempotent via a
+state file of already-imported paths.
 
 Usage:
   synapse-ingest-cli-logs.py [--since DAYS] [--limit N] [--dry-run] [--sources codex,claude,aider,opencode]
@@ -88,29 +89,26 @@ def save_state(done: set[str]) -> None:
     STATE.write_text("\n".join(sorted(done)))
 
 
-def ingest_text(title: str, ext_id: str, uri: str, text: str) -> bool:
+def bulk_import(rows: list[dict], db: str | None) -> int:
+    """Write one JSONL and do a single `synx import` — 6700 per-call add-text
+    invocations each pay ~20s of DB/index overhead (hours total); one bulk
+    import is seconds. Rows use the export schema: {title, text, uri, ts}."""
+    import tempfile
+
+    with tempfile.NamedTemporaryFile("w", suffix=".jsonl", delete=False) as fh:
+        for r in rows:
+            fh.write(json.dumps(r, ensure_ascii=False) + "\n")
+        path = fh.name
+    cmd = ["synx", "import", path]
+    if db:
+        cmd = ["synx", "import", "-f", db, path]
     try:
-        r = subprocess.run(
-            [
-                "synx",
-                "corpus",
-                "add-text",
-                "--title",
-                title,
-                "--source-uri",
-                uri,
-                "--external-id",
-                ext_id,
-                "--embed",
-            ],
-            input=text,
-            text=True,
-            capture_output=True,
-            timeout=60,
-        )
-        return r.returncode == 0
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+        Path(path).unlink(missing_ok=True)
+        return 0 if r.returncode == 0 else -1
     except Exception:
-        return False
+        Path(path).unlink(missing_ok=True)
+        return -1
 
 
 def main() -> int:
@@ -118,6 +116,12 @@ def main() -> int:
     ap.add_argument("--since", type=float, default=None, help="only files modified within N days")
     ap.add_argument("--limit", type=int, default=None, help="max sessions to ingest this run")
     ap.add_argument("--sources", type=str, default="codex,claude,aider,opencode")
+    ap.add_argument(
+        "--db",
+        type=str,
+        default=str(HOME / ".synapse" / "brain.db"),
+        help="target Synapse db (default ~/.synapse/brain.db)",
+    )
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
@@ -145,27 +149,43 @@ def main() -> int:
     if args.limit:
         files = files[: args.limit]
 
-    print(f"{len(files)} new session logs to ingest", file=sys.stderr)
-    ingested = 0
+    print(f"{len(files)} new session logs to scan", file=sys.stderr)
+    rows: list[dict] = []
+    now = int(time.time())
     for src, p in files:
         turns = extract_turns(p)
         digest = "\n".join(turns)
         if len(digest) < MIN_CHARS:
             done.add(str(p))
             continue
-        title = f"cli-log:{src}:{p.stem[:40]}"
-        if args.dry_run:
-            print(f"would ingest {title} ({len(digest)} chars, {len(turns)} turns)")
-        else:
-            if ingest_text(title, f"{src}:{p.stem}", f"file://{p}", digest[:20000]):
-                ingested += 1
-            done.add(str(p))
-        if not args.dry_run and ingested % 25 == 0 and ingested:
-            save_state(done)
-    if not args.dry_run:
+        rows.append(
+            {
+                "title": f"cli-log:{src}:{p.stem[:40]}",
+                "text": digest[:20000],
+                "uri": f"cli-log://{src}/{p.stem}",
+                "ts": now,
+                "meta": json.dumps({"source": src, "kind": "cli-session"}),
+            }
+        )
+        done.add(str(p))
+
+    if args.dry_run:
+        for r in rows[:10]:
+            print(f"would import {r['title']} ({len(r['text'])} chars)")
+        print(f"total {len(rows)} sessions ready for bulk import", file=sys.stderr)
+        return 0
+
+    if not rows:
+        print("nothing new to ingest", file=sys.stderr)
+        return 0
+    print(f"bulk-importing {len(rows)} sessions into {args.db} …", file=sys.stderr)
+    rc = bulk_import(rows, args.db)
+    if rc == 0:
         save_state(done)
-    print(f"ingested {ingested} session logs into Synapse corpus", file=sys.stderr)
-    return 0
+        print(f"imported {len(rows)} CLI sessions (uri prefix cli-log://)", file=sys.stderr)
+    else:
+        print("bulk import failed — state not advanced", file=sys.stderr)
+    return 0 if rc == 0 else 1
 
 
 if __name__ == "__main__":
