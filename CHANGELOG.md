@@ -1,5 +1,42 @@
 # Changelog
 
+## 4.7.0 — 2026-07-24
+
+### Swarm fleet v2 — OpenRouter free lanes, ggcoder-kimi, credit tracking, parallel jury
+
+Lane audit 2026-07-24 (keys probed against live APIs): `KIMI_API_KEY` is dead
+(401 at api.moonshot.ai) — that killed both `hermes -m kimi-k3` and the
+`kimi` CLI, independent of OpenRouter. The OpenRouter key is VALID with
+$0.39 credits left (65 − 64.61 used) → paid lanes 402, `:free` models work.
+
+- **feat(swarm): OpenRouter `:free` lanes** — current free list fetched live
+  (15 models). New lanes `hermes_free_ling`
+  (`inclusionai/ling-3.0-flash:free`) and `hermes_free_gemma4`
+  (`google/gemma-4-31b-it:free`) via `--provider openrouter`; correct syntax
+  is the `--provider` flag, not an `openrouter/` model prefix (that 401s).
+  Free lanes are rate-limited at peak (honest 429); nemotron free returned
+  empty and was dropped after measurement.
+- **feat(swarm): `ggcoder_kimi` lane** — `ggcoder --json --provider moonshot`
+  runs Kimi over ggcoder's own OAuth (independent of the dead API key) and
+  emits exact usage in JSON events (`agent_done.totalUsage`). Measured:
+  5.6-6.5s, valid JSON, fastest working kimi lane. New `__PROMPT__` arg-mode
+  support + `_parse_ggcoder_json` (answer from `text_delta` events).
+- **feat(swarm): credit tracking** — hermes lanes get `--usage-file`
+  per call; `SwarmResult.cost_usd` + `cost_usd_sum` per agent + report
+  footer `Total credits spent: $X — successful $0-lane calls: N`. Run
+  2026-07-24 (9 lanes): $0.0000 spent, 6 successful $0 calls
+  (codex, ggcoder_kimi, ling, claude, phi4, dolphin3).
+- **fix(swarm): kimi CLI lane removed** — `kimi-awake` reads the dead
+  `KIMI_API_KEY` (401). Re-add when renewed; comment documents it.
+- **feat(jury): parallel agents** — `ats-jury-bench-v2.py` runs one worker
+  per agent (`--workers`, default min(4, agents)); the ABBA sequence stays
+  strictly sequential inside each worker, so bias cancellation is intact.
+  New `--only-q <substr>` filter for fast smokes. Smoke (codex+claude
+  parallel, local_search, ABBA): 177s wall vs ~265s+ sequential chains;
+  savings metric intact (88.0% saved).
+- Artifacts: `data/benchmarks/swarm-v2-2026-07-24.json`,
+  `data/benchmarks/jury-parallel-smoke-2026-07-24.json`.
+
 ## 4.6.0 — 2026-07-24
 
 ### Swarm bench: parallel by default + honest success metric

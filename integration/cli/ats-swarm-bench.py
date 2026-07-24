@@ -34,15 +34,53 @@ class SwarmResult:
     success: bool
     json_valid: bool
     sample: str
+    cost_usd: float = 0.0
 
 
-# Each agent: (name, command, env_override)
+# Each agent: (name, command, env_override).
+# "__PROMPT__" in the command switches that lane from stdin to arg mode.
+# Lane audit 2026-07-24: kimi-k3 API key dead (401 at api.moonshot.ai) →
+# kimi runs via the kimi CLI (Coding Plan OAuth) and via ggcoder --provider
+# moonshot (exact usage in JSON events). OpenRouter key is valid but nearly
+# out of credits ($0.39) → paid lanes 402; :free models cost $0 and only
+# need the valid key (current list: openrouter.ai/api/v1/models, id *:free).
 AGENTS: list[tuple[str, list[str], dict[str, str]]] = [
     ("codex", ["codex", "exec", "--skip-git-repo-check", "-"], {}),
-    ("hermes_kimi", ["hermes", "-z", "-", "-m", "kimi-k3", "--cli"], {}),
+    # kimi CLI lane removed 2026-07-24: kimi-awake reads KIMI_API_KEY, which is
+    # dead (401 at api.moonshot.ai). Re-add when the key is renewed. Until
+    # then ggcoder_kimi (own OAuth) is the working kimi lane.
+    ("ggcoder_kimi", ["ggcoder", "--json", "--provider", "moonshot", "__PROMPT__"], {}),
+    # paid reference lane (needs OpenRouter credits; honest 402 without)
     ("hermes_luna", ["hermes", "-z", "-", "-m", "openai/gpt-5.6-luna", "--cli"], {}),
-    ("hermes_terra", ["hermes", "-z", "-", "-m", "openai/gpt-5.6-terra", "--cli"], {}),
-    ("hermes_codex", ["hermes", "-z", "-", "-m", "openai-codex:gpt-5.5", "--cli"], {}),
+    # $0 lanes via OpenRouter :free (rate-limited at peak times — honest 429)
+    (
+        "hermes_free_gemma4",
+        [
+            "hermes",
+            "-z",
+            "-",
+            "--provider",
+            "openrouter",
+            "-m",
+            "google/gemma-4-31b-it:free",
+            "--cli",
+        ],
+        {},
+    ),
+    (
+        "hermes_free_ling",
+        [
+            "hermes",
+            "-z",
+            "-",
+            "--provider",
+            "openrouter",
+            "-m",
+            "inclusionai/ling-3.0-flash:free",
+            "--cli",
+        ],
+        {},
+    ),
     # antigravity: Google's VSCode-fork GUI IDE. No headless CLI. Launch via
     # `open -a`. Availability = .app bundle exists. Non-interactive — recorded
     # as success=False with sample="<gui-launch: antigravity>".
@@ -73,6 +111,30 @@ ERROR_MARKERS = (
 def _looks_like_error(out: str) -> bool:
     head = out[:400].lower()
     return any(marker in head for marker in ERROR_MARKERS)
+
+
+def _parse_ggcoder_json(out: str) -> tuple[str, int]:
+    """Collect text_delta events into the answer; return (answer, output_tokens)."""
+    answer, out_tokens = [], 0
+    for line in out.splitlines():
+        try:
+            ev = json.loads(line)
+        except ValueError:
+            continue
+        if ev.get("type") == "text_delta":
+            answer.append(ev.get("text", ""))
+        elif ev.get("type") == "agent_done":
+            out_tokens = int(ev.get("totalUsage", {}).get("outputTokens", 0))
+    return "".join(answer), out_tokens
+
+
+def _read_usage_cost(path: Path) -> float:
+    """estimated_cost_usd from a hermes --usage-file; 0.0 when absent."""
+    try:
+        cost = json.loads(path.read_text()).get("estimated_cost_usd")
+        return float(cost) if cost else 0.0
+    except Exception:
+        return 0.0
 
 
 _ANTIGRAVITY_APP_BUNDLE = "/Applications/Antigravity.app"
@@ -127,11 +189,21 @@ def run_agent(
         except Exception as e:
             return SwarmResult(name, iter_idx, 0.0, 0, 0, -1, False, False, f"<gui-error: {e}>")
 
+    # arg mode: "__PROMPT__" placeholder gets the prompt, stdin stays empty.
+    arg_mode = any("__PROMPT__" in part for part in cmd)
+    if arg_mode:
+        cmd = [part.replace("__PROMPT__", EXTRACT_PROMPT) for part in cmd]
+    # hermes lanes: capture per-call cost via --usage-file.
+    usage_file: Path | None = None
+    if cmd[0] == "hermes":
+        usage_file = Path(f"/tmp/ats-swarm-usage-{name}-{iter_idx}-{os.getpid()}.json")
+        cmd = [*cmd, "--usage-file", str(usage_file)]
+
     t0 = time.time()
     try:
         proc = subprocess.run(
             cmd,
-            input=EXTRACT_PROMPT,
+            input=None if arg_mode else EXTRACT_PROMPT,
             capture_output=True,
             text=True,
             timeout=timeout,
@@ -141,6 +213,14 @@ def run_agent(
         )
         wall = time.time() - t0
         out = proc.stdout.strip()
+        cost = 0.0
+        if usage_file is not None:
+            cost = _read_usage_cost(usage_file)
+            usage_file.unlink(missing_ok=True)
+        if name.startswith("ggcoder"):
+            answer, out_tokens = _parse_ggcoder_json(out)
+            if answer:
+                out = answer
         chars = len(out)
         tokens = chars // 4
         # exit 0 + non-empty is not enough: hosted CLIs print HTTP/billing
@@ -175,6 +255,7 @@ def run_agent(
             success=success,
             json_valid=json_valid,
             sample=out[:200].replace("\n", " "),
+            cost_usd=round(cost, 6),
         )
     except subprocess.TimeoutExpired:
         return SwarmResult(name, iter_idx, float(timeout), 0, 0, -1, False, False, "<timeout>")
@@ -199,20 +280,33 @@ def aggregate(results: list[SwarmResult]) -> dict[str, dict[str, Any]]:
             "wall_s_mean": round(sum(r.wall_s for r in rs) / len(rs), 3),
             "chars_mean": int(sum(r.chars for r in rs) / len(rs)),
             "tokens_est_mean": int(sum(r.tokens_est for r in rs) / len(rs)),
+            "cost_usd_sum": round(sum(r.cost_usd for r in rs), 6),
         }
     return agg
 
 
 def markdown_table(agg: dict[str, dict[str, Any]]) -> str:
     lines = [
-        "| Agent | n | success | json_valid | wall_s | chars | tokens~ |",
-        "|---|---|---|---|---|---|---|",
+        "| Agent | n | success | json_valid | wall_s | chars | tokens~ | cost_usd |",
+        "|---|---|---|---|---|---|---|---|",
     ]
     for agent, s in agg.items():
         lines.append(
             f"| {agent} | {s['n']} | {s['success_rate']} | {s['json_valid_rate']} | "
-            f"{s['wall_s_mean']} | {s['chars_mean']} | {s['tokens_est_mean']} |"
+            f"{s['wall_s_mean']} | {s['chars_mean']} | {s['tokens_est_mean']} | "
+            f"{s.get('cost_usd_sum', 0.0)} |"
         )
+    total = sum(s.get("cost_usd_sum", 0.0) for s in agg.values())
+    free_ok = sum(
+        s["n"] * s["success_rate"]
+        for a, s in agg.items()
+        if s.get("cost_usd_sum", 0.0) == 0 and a != "antigravity"
+    )
+    lines.append("")
+    lines.append(
+        f"Total credits spent: ${total:.4f} — successful $0-lane calls: {int(free_ok)} "
+        "(subscription/local/free lanes; each would cost real credits on a paid lane)"
+    )
     return "\n".join(lines)
 
 

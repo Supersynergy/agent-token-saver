@@ -1,0 +1,162 @@
+{
+  "version": "v2",
+  "agents": [
+    "codex",
+    "claude"
+  ],
+  "reviewer": "gemini",
+  "abba": true,
+  "results": [
+    {
+      "agent": "codex",
+      "question_id": "local_search",
+      "path": "baseline",
+      "order_pos": 1,
+      "wall_s": 82.431,
+      "tool_chars": 7382,
+      "tool_tokens_est": 1845,
+      "agent_chars": 468,
+      "agent_tokens_est": 117,
+      "success": true,
+      "reviewer": "gemini",
+      "reviewer_score": 0.0,
+      "sample": "Canonical usage parsing lives in [`scripts/full_context_ledger.py`](/Users/master/BASE/projects/agent-token-saver/scripts/full_context_ledger.py:43): `_records()` reads JSON/JSONL, `_usage_candidates("
+    },
+    {
+      "agent": "codex",
+      "question_id": "local_search",
+      "path": "ats_recon",
+      "order_pos": 2,
+      "wall_s": 24.532,
+      "tool_chars": 532,
+      "tool_tokens_est": 133,
+      "agent_chars": 337,
+      "agent_tokens_est": 84,
+      "success": true,
+      "reviewer": "gemini",
+      "reviewer_score": 0.0,
+      "sample": "Primary usage parsing is in `scripts/external_usage_gate.py`: `parse_named()` at line 197 parses named usage inputs, with `main()` at line 423 orchestrating the gate. Codex provider JSONL usage is han"
+    },
+    {
+      "agent": "codex",
+      "question_id": "local_search",
+      "path": "ats_recon",
+      "order_pos": 3,
+      "wall_s": 15.484,
+      "tool_chars": 532,
+      "tool_tokens_est": 133,
+      "agent_chars": 334,
+      "agent_tokens_est": 83,
+      "success": true,
+      "reviewer": "gemini",
+      "reviewer_score": 0.0,
+      "sample": "Usage parsing is primarily handled in `scripts/external_usage_gate.py`, especially `parse_named()` around line 197, with orchestration in `main()` around line 423. Codex JSONL-specific usage extractio"
+    },
+    {
+      "agent": "codex",
+      "question_id": "local_search",
+      "path": "baseline",
+      "order_pos": 4,
+      "wall_s": 51.56,
+      "tool_chars": 7382,
+      "tool_tokens_est": 1845,
+      "agent_chars": 547,
+      "agent_tokens_est": 136,
+      "success": true,
+      "reviewer": "gemini",
+      "reviewer_score": 0.0,
+      "sample": "Canonical parsing lives in [scripts/full_context_ledger.py](/Users/master/BASE/projects/agent-token-saver/scripts/full_context_ledger.py:52): `_records()` reads JSON/JSONL, `_usage_candidates()` finds"
+    },
+    {
+      "agent": "claude",
+      "question_id": "local_search",
+      "path": "baseline",
+      "order_pos": 1,
+      "wall_s": 15.632,
+      "tool_chars": 7382,
+      "tool_tokens_est": 1845,
+      "agent_chars": 654,
+      "agent_tokens_est": 163,
+      "success": true,
+      "reviewer": "gemini",
+      "reviewer_score": 0.0,
+      "sample": "Usage parsing lives in three spots under `integration/cli/`: main parser = `ats-token-cfo` (`ats-token-cfo:18-54`), which ingests `--usage` JSONL/JSON session files per provider (codex etc.) for audit"
+    },
+    {
+      "agent": "claude",
+      "question_id": "local_search",
+      "path": "ats_recon",
+      "order_pos": 2,
+      "wall_s": 31.475,
+      "tool_chars": 532,
+      "tool_tokens_est": 133,
+      "agent_chars": 566,
+      "agent_tokens_est": 141,
+      "success": true,
+      "reviewer": "gemini",
+      "reviewer_score": 0.0,
+      "sample": "Usage parsing live in two spots:  \u2192 **`scripts/codex_provider_ab.py:125`** \u2014 `parse_codex_jsonl` = core parser. Reads Codex JSONL events, pulls token-`usage` dict from `turn.completed` events plus age"
+    },
+    {
+      "agent": "claude",
+      "question_id": "local_search",
+      "path": "ats_recon",
+      "order_pos": 3,
+      "wall_s": 37.35,
+      "tool_chars": 532,
+      "tool_tokens_est": 133,
+      "agent_chars": 464,
+      "agent_tokens_est": 116,
+      "success": true,
+      "reviewer": "gemini",
+      "reviewer_score": 0.0,
+      "sample": "Usage parsing lives in two scripts under `/Users/master/BASE/projects/agent-token-saver/scripts/`. Core parser: `parse_codex_jsonl` in `scripts/codex_provider_ab.py:125` \u2014 walks Codex JSONL events and"
+    },
+    {
+      "agent": "claude",
+      "question_id": "local_search",
+      "path": "baseline",
+      "order_pos": 4,
+      "wall_s": 89.55,
+      "tool_chars": 7382,
+      "tool_tokens_est": 1845,
+      "agent_chars": 671,
+      "agent_tokens_est": 167,
+      "success": true,
+      "reviewer": "gemini",
+      "reviewer_score": 0.0,
+      "sample": "Usage parsing lives in `integration/cli`, split by consumer: `ats-token-cfo` is main parser \u2014 takes `--usage PATH` (JSONL/JSON, repeatable, per-provider) for audit/simulate/plan/report (`ats-token-cfo"
+    }
+  ],
+  "aggregate": {
+    "local_search/baseline": {
+      "n": 4,
+      "success_rate": 1.0,
+      "wall_s_mean": 59.793,
+      "tool_tokens_mean": 1845,
+      "agent_tokens_mean": 145,
+      "total_tokens_mean": 1990,
+      "reviewer_score_mean": 0
+    },
+    "local_search/ats_recon": {
+      "n": 4,
+      "success_rate": 1.0,
+      "wall_s_mean": 27.21,
+      "tool_tokens_mean": 133,
+      "agent_tokens_mean": 106,
+      "total_tokens_mean": 239,
+      "reviewer_score_mean": 0
+    }
+  },
+  "savings": [
+    {
+      "question_id": "local_search",
+      "baseline_tokens": 1990,
+      "ats_recon_tokens": 239,
+      "saved_tokens": 1751,
+      "saved_pct": 88.0,
+      "baseline_reviewer": 0,
+      "ats_recon_reviewer": 0
+    }
+  ]
+}

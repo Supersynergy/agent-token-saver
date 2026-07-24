@@ -19,6 +19,7 @@ Usage:
   python3 ats-jury-bench-v2.py --iter 1 --out /tmp/ats_jury_bench_v2.json
   python3 ats-jury-bench-v2.py --agents codex,claude,kimi --abba --reviewer gemini
 """
+
 from __future__ import annotations
 
 import argparse
@@ -27,6 +28,7 @@ import shutil
 import subprocess
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -45,8 +47,7 @@ QUESTIONS: list[dict[str, Any]] = [
     {
         "id": "github_recon",
         "question": "What does the README of this repo say about token routing?",
-        "baseline_cmd": ["gh", "api", f"repos/{REPO_GH}/contents/README.md",
-                         "--jq", ".content"],
+        "baseline_cmd": ["gh", "api", f"repos/{REPO_GH}/contents/README.md", "--jq", ".content"],
         "ats_recon_cmd": ["ghx", "read", f"{REPO_GH}", "README.md"],
         "cwd": REPO,
     },
@@ -54,8 +55,7 @@ QUESTIONS: list[dict[str, Any]] = [
         "id": "web_scrape",
         "question": "What is the main heading of example.com?",
         "baseline_cmd": ["curl", "-sL", "https://example.com"],
-        "ats_recon_cmd": ["supacrawl", "scrape", "https://example.com",
-                          "--format", "markdown"],
+        "ats_recon_cmd": ["supacrawl", "scrape", "https://example.com", "--format", "markdown"],
         "cwd": REPO,
     },
 ]
@@ -124,8 +124,12 @@ def run_tool(probe: dict[str, Any], path: str) -> tuple[str, float, int]:
     t0 = time.time()
     try:
         proc = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=60,
-            cwd=cwd, check=False,
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=60,
+            cwd=cwd,
+            check=False,
         )
         wall = time.time() - t0
         out = proc.stdout
@@ -145,8 +149,9 @@ def ask_agent(agent_cmd: list[str], question: str, context: str) -> tuple[str, f
     if agent_cmd and agent_cmd[:2] == ["open", "-a"] and "Antigravity" in agent_cmd:
         t0 = time.time()
         try:
-            subprocess.run(agent_cmd, capture_output=True, text=True,
-                           timeout=10, cwd="/tmp", check=False)
+            subprocess.run(
+                agent_cmd, capture_output=True, text=True, timeout=10, cwd="/tmp", check=False
+            )
             wall = time.time() - t0
             return "<gui-launch: antigravity>", round(wall, 3), 0
         except Exception as e:
@@ -154,8 +159,13 @@ def ask_agent(agent_cmd: list[str], question: str, context: str) -> tuple[str, f
     t0 = time.time()
     try:
         proc = subprocess.run(
-            agent_cmd, input=prompt, capture_output=True, text=True,
-            timeout=120, cwd="/tmp", check=False,
+            agent_cmd,
+            input=prompt,
+            capture_output=True,
+            text=True,
+            timeout=120,
+            cwd="/tmp",
+            check=False,
         )
         wall = time.time() - t0
         out = proc.stdout.strip()
@@ -181,8 +191,13 @@ def blind_review(reviewer_cmd: list[str], question: str, answer: str) -> float:
     )
     try:
         proc = subprocess.run(
-            reviewer_cmd, input=prompt, capture_output=True, text=True,
-            timeout=60, cwd="/tmp", check=False,
+            reviewer_cmd,
+            input=prompt,
+            capture_output=True,
+            text=True,
+            timeout=60,
+            cwd="/tmp",
+            check=False,
         )
         txt = proc.stdout.strip()
         # Take the first digit found.
@@ -207,17 +222,37 @@ def main() -> int:
     ap.add_argument("--iter", type=int, default=1, help="ABBA rounds per (agent, question)")
     ap.add_argument("--out", type=str, default="/tmp/ats_jury_bench_v2.json")
     ap.add_argument("--md", type=str, default="/tmp/ats_jury_bench_v2.md")
-    ap.add_argument("--agents", type=str, default="",
-                    help="Comma-separated agent names (default: all available)")
-    ap.add_argument("--reviewer", type=str, default="",
-                    help="Reviewer agent name (default: first available non-juror)")
-    ap.add_argument("--no-abba", action="store_true",
-                    help="Disable ABBA ordering, use simple alternating")
+    ap.add_argument(
+        "--agents",
+        type=str,
+        default="",
+        help="Comma-separated agent names (default: all available)",
+    )
+    ap.add_argument(
+        "--reviewer",
+        type=str,
+        default="",
+        help="Reviewer agent name (default: first available non-juror)",
+    )
+    ap.add_argument(
+        "--only-q", type=str, default="", help="substring filter on question ids (fast smoke runs)"
+    )
+    ap.add_argument(
+        "--workers",
+        type=int,
+        default=0,
+        help="parallel agent workers (0 = min(4, agents); 1 = sequential)",
+    )
+    ap.add_argument(
+        "--no-abba", action="store_true", help="Disable ABBA ordering, use simple alternating"
+    )
     args = ap.parse_args()
 
     agents = agents_available(args.agents or None)
     if not agents:
-        print("No agents available on PATH. Install codex/claude/kimi/gemini/fable.", file=sys.stderr)
+        print(
+            "No agents available on PATH. Install codex/claude/kimi/gemini/fable.", file=sys.stderr
+        )
         return 1
 
     # Pick reviewer: first agent not in the jury, or fall back to jury[0].
@@ -242,25 +277,37 @@ def main() -> int:
             break
 
     results: list[JuryResultV2] = []
-    print(f"Jury v2: {len(agents)} agents x {len(QUESTIONS)} questions x "
-          f"{'ABBA' if not args.no_abba else 'alt'} x {args.iter} rounds",
-          file=sys.stderr)
+    print(
+        f"Jury v2: {len(agents)} agents x {len(QUESTIONS)} questions x "
+        f"{'ABBA' if not args.no_abba else 'alt'} x {args.iter} rounds",
+        file=sys.stderr,
+    )
     print(f"Reviewer: {reviewer_name or 'none'}", file=sys.stderr)
 
-    for agent_name, agent_cmd in agents:
-        for probe in QUESTIONS:
+    questions = [q for q in QUESTIONS if args.only_q in q["id"]] if args.only_q else QUESTIONS
+    if not questions:
+        print(f"No questions match --only-q={args.only_q!r}", file=sys.stderr)
+        return 1
+
+    def run_one_agent(agent_name: str, agent_cmd: list[str]) -> list[JuryResultV2]:
+        # ABBA bias-cancellation depends on execution ORDER within one agent,
+        # so each agent's sequence stays strictly sequential inside its worker.
+        out: list[JuryResultV2] = []
+        for probe in questions:
             if args.no_abba:
                 order = ["baseline", "ats_recon"] * args.iter
             else:
                 order = abba_sequence(args.iter)
             for pos, path in enumerate(order, start=1):
-                print(f"  {agent_name} / {probe['id']} / {path} [{pos}]...",
-                      file=sys.stderr)
                 tool_out, tool_wall, tool_chars = run_tool(probe, path)
                 agent_out, agent_wall, agent_chars = ask_agent(
                     agent_cmd, probe["question"], tool_out
                 )
-                score = blind_review(reviewer_cmd, probe["question"], agent_out) if reviewer_cmd else 0.0
+                score = (
+                    blind_review(reviewer_cmd, probe["question"], agent_out)
+                    if reviewer_cmd
+                    else 0.0
+                )
                 r = JuryResultV2(
                     agent=agent_name,
                     question_id=probe["id"],
@@ -276,9 +323,25 @@ def main() -> int:
                     reviewer_score=score,
                     sample=agent_out[:200].replace("\n", " "),
                 )
-                results.append(r)
-                print(f"    -> tool={tool_chars}c, agent={agent_chars}c, "
-                      f"score={score}, total={r.wall_s}s", file=sys.stderr)
+                out.append(r)
+                print(
+                    f"  {agent_name} / {probe['id']} / {path} [{pos}] -> "
+                    f"tool={tool_chars}c, agent={agent_chars}c, "
+                    f"score={score}, total={r.wall_s}s",
+                    file=sys.stderr,
+                )
+        return out
+
+    # Agents run in parallel (wall-clock = slowest agent), ABBA intact per agent.
+    workers = args.workers or min(4, len(agents))
+    if workers <= 1 or len(agents) == 1:
+        for agent_name, agent_cmd in agents:
+            results.extend(run_one_agent(agent_name, agent_cmd))
+    else:
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futures = [pool.submit(run_one_agent, n, c) for n, c in agents]
+            for future in futures:
+                results.extend(future.result())
 
     # Aggregate
     agg: dict[str, dict[str, Any]] = {}
@@ -295,8 +358,14 @@ def main() -> int:
             "wall_s_mean": round(sum(r.wall_s for r in rs) / len(rs), 3) if rs else 0,
             "tool_tokens_mean": int(sum(r.tool_tokens_est for r in rs) / len(rs)) if rs else 0,
             "agent_tokens_mean": int(sum(r.agent_tokens_est for r in rs) / len(rs)) if rs else 0,
-            "total_tokens_mean": int(sum(r.tool_tokens_est + r.agent_tokens_est for r in rs) / len(rs)) if rs else 0,
-            "reviewer_score_mean": round(sum(r.reviewer_score for r in scored) / len(scored), 2) if scored else 0,
+            "total_tokens_mean": int(
+                sum(r.tool_tokens_est + r.agent_tokens_est for r in rs) / len(rs)
+            )
+            if rs
+            else 0,
+            "reviewer_score_mean": round(sum(r.reviewer_score for r in scored) / len(scored), 2)
+            if scored
+            else 0,
         }
 
     savings: list[dict[str, Any]] = []
@@ -306,25 +375,32 @@ def main() -> int:
         if b and a and b["total_tokens_mean"] > 0:
             saved = b["total_tokens_mean"] - a["total_tokens_mean"]
             pct = round(100 * saved / b["total_tokens_mean"], 1)
-            savings.append({
-                "question_id": q["id"],
-                "baseline_tokens": b["total_tokens_mean"],
-                "ats_recon_tokens": a["total_tokens_mean"],
-                "saved_tokens": saved,
-                "saved_pct": pct,
-                "baseline_reviewer": b["reviewer_score_mean"],
-                "ats_recon_reviewer": a["reviewer_score_mean"],
-            })
+            savings.append(
+                {
+                    "question_id": q["id"],
+                    "baseline_tokens": b["total_tokens_mean"],
+                    "ats_recon_tokens": a["total_tokens_mean"],
+                    "saved_tokens": saved,
+                    "saved_pct": pct,
+                    "baseline_reviewer": b["reviewer_score_mean"],
+                    "ats_recon_reviewer": a["reviewer_score_mean"],
+                }
+            )
 
-    Path(args.out).write_text(json.dumps({
-        "version": "v2",
-        "agents": [a[0] for a in agents],
-        "reviewer": reviewer_name,
-        "abba": not args.no_abba,
-        "results": [asdict(r) for r in results],
-        "aggregate": agg,
-        "savings": savings,
-    }, indent=2))
+    Path(args.out).write_text(
+        json.dumps(
+            {
+                "version": "v2",
+                "agents": [a[0] for a in agents],
+                "reviewer": reviewer_name,
+                "abba": not args.no_abba,
+                "results": [asdict(r) for r in results],
+                "aggregate": agg,
+                "savings": savings,
+            },
+            indent=2,
+        )
+    )
 
     # Markdown
     lines = [
@@ -360,8 +436,10 @@ def main() -> int:
 
     print("\n=== Savings (v2) ===")
     for s in savings:
-        print(f"  {s['question_id']}: {s['baseline_tokens']} -> {s['ats_recon_tokens']} "
-              f"({s['saved_pct']}% saved, ★ {s['baseline_reviewer']} vs {s['ats_recon_reviewer']})")
+        print(
+            f"  {s['question_id']}: {s['baseline_tokens']} -> {s['ats_recon_tokens']} "
+            f"({s['saved_pct']}% saved, ★ {s['baseline_reviewer']} vs {s['ats_recon_reviewer']})"
+        )
     print(f"\nWrote: {args.out} + {args.md}")
     return 0
 
