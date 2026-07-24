@@ -1,5 +1,28 @@
 # Changelog
 
+## 4.17.0 — 2026-07-24
+
+### Tiered fan-out engine + Synapse CLI-log ingest + measured savings
+
+- **feat(llmadapter): `--tier`** — the full pilotfish/Anthropic pattern in one
+  flag: 5 cheap proposers → strong aggregate (nemotron-super) → fresh
+  INDEPENDENT verify (gpt-oss, different family so it is a real cross-check and
+  never rate-limits the aggregator twice). `--verify` adds the fresh-context
+  check to any answer (`LLMADAPTER_VERIFY_LANE` override). Verified: 17×23 →
+  391 VERIFIED; "capital is Sydney" → CORRECTION: Canberra.
+- **feat: `ats-pipe --tier`/`--verify`** delegate to the engine (removed the
+  bash verify — one implementation, cached + ledgered).
+- **feat: `synapse-ingest-cli-logs.py`** — closes the deja-vu recall gap:
+  Codex (1346), Claude Code (5314), aider, opencode session JSONLs were never
+  in Synapse. Extracts user+assistant turns → `synx corpus add-text --embed`,
+  fail-open, state-file dedup, `--since/--limit/--sources`. Verified: ingested
+  sessions are searchable via `synx corpus search`.
+- **measured savings (this session, real ledger + clean run):**
+  cache hit 20807ms → 22ms (**946×**); cache-hit rate 12.6% of 554 calls =
+  ~166k tokens not spent; `--tier` uses 5 proposers vs 14 (64% fewer proposer
+  calls); parallel wall = slowest lane, not the ~92s sum the session-start
+  Python swarm paid.
+
 ## 4.16.0 — 2026-07-24
 
 ### `ats-pipe --verify` — fresh-context verifier gate (stolen from the 500-repo sweep)
