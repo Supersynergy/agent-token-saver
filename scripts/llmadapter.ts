@@ -267,6 +267,31 @@ async function aggregate(prompt: string, results: Result[], maxTokens: number): 
   return agg.ok ? agg.answer! : `(Aggregation fehlgeschlagen: ${agg.error})`;
 }
 
+// Fresh-context verifier (Anthropic Fable-5 multi-agent pattern: an
+// independent fresh-context verifier beats self-critique). Runs one strong
+// lane to check the answer; returns whether it passed + the verifier text.
+// The verifier must be INDEPENDENT of the aggregator (LANES[0] = nemotron-super):
+// a different model family gives a real cross-check and avoids rate-limiting the
+// same lane twice back-to-back. Default gpt-oss-20b; override via env.
+const VERIFY_DEFAULT = "gpt-oss-20b";
+function strongLane(): Lane {
+  const want = process.env.LLMADAPTER_VERIFY_LANE ?? VERIFY_DEFAULT;
+  return LANES.find((l) => l.name === want) ?? LANES.find((l) => l.name === "gemma-4-31b-it") ?? LANES[1] ?? LANES[0];
+}
+async function verify(question: string, answer: string, maxTokens: number): Promise<{ ok: boolean; text: string }> {
+  const p = `You are an independent verifier with fresh context. Check the proposed answer against the question. If it is correct and complete, reply exactly: VERIFIED. If it is wrong or incomplete, reply: CORRECTION: <the correct answer>.\n\nQuestion: ${question}\n\nProposed answer:\n${answer}`;
+  const r = await runLane(strongLane(), p, undefined, false, maxTokens);
+  const text = r.ok ? r.answer!.trim() : `(verify failed: ${r.error})`;
+  return { ok: /^\s*VERIFIED/i.test(text), text };
+}
+
+// --tier: pilotfish/Anthropic tiered pattern — cheap fast lanes PROPOSE, one
+// strong lane AGGREGATES, a fresh strong lane VERIFIES. Best quality per $.
+const TIER_PROPOSERS = [
+  "nemotron-3-nano-30b-a3b", "nemotron-nano-9b-v2", "nemotron-nano-12b-v2-vl",
+  "gpt-oss-20b", "ling-3.0-flash",
+];
+
 function usageOut(path: string, results: Result[]): void {
   const okR = results.filter((r) => r.ok);
   writeFileSync(path, JSON.stringify({
@@ -331,8 +356,12 @@ if (cmd === "lanes") {
   console.log(`total: ${t.calls} calls · ${t.ok} ok · ${t.cached} cache-hits · ${t.inT + t.outT} tokens (Monat ${month})`);
 } else if (cmd === "ask") {
   const prompt = args.slice(1).find((a) => !a.startsWith("--") && a !== flag(a.replace(/^--/, "")))!;
-  if (!prompt) { console.error("usage: llmadapter ask \"<prompt>\" [--lanes free|paid|local|cli|all|name,…] [--first N] [--timeout S] [--cap 12] [--max-tokens 2048] [--aggregate] [--json] [--no-cache] [--usage-out PATH]"); process.exit(1); }
-  const lanes = pickLanes(flag("lanes", "free")!);
+  if (!prompt) { console.error("usage: llmadapter ask \"<prompt>\" [--lanes free|paid|local|cli|all|name,…] [--first N] [--tier] [--aggregate] [--verify] [--json] [--no-cache] [--usage-out PATH]"); process.exit(1); }
+  // --tier: cheap proposers → strong aggregate → fresh verify (one flag).
+  const tier = args.includes("--tier");
+  const lanes = tier
+    ? LANES.filter((l) => TIER_PROPOSERS.includes(l.name))
+    : pickLanes(flag("lanes", "free")!);
   const timeoutMs = flag("timeout") ? Number(flag("timeout")) * 1000 : undefined;
   const cap = Number(flag("cap", "12"));
   const maxTokens = Number(flag("max-tokens", "2048"));
@@ -354,7 +383,17 @@ if (cmd === "lanes") {
     for (const r of results) console.log(r.ok ? `✅ ${r.lane} (${r.ms}ms${r.cached ? ", cache" : ""}${r.est ? ", est" : ""}): ${r.answer!.replace(/\n/g, " ").slice(0, 200)}` : `❌ ${r.lane}: ${r.error} ${r.detail ?? ""}`);
     console.log(`\n${ok.length}/${results.length} ok · wall ${((Date.now() - t0) / 1000).toFixed(1)}s${first ? ` · race first=${first}` : ""}`);
   }
-  if (args.includes("--aggregate") && ok.length > 1) console.log(`\n— Aggregat (${LANES[0].name}) —\n${await aggregate(prompt, results, maxTokens)}`);
+  // Final answer: aggregate when asked (or in --tier), else the best single.
+  let finalAnswer = ok.length ? ok[0].answer! : "";
+  if ((args.includes("--aggregate") || tier) && ok.length > 1) {
+    finalAnswer = await aggregate(prompt, results, maxTokens);
+    console.log(`\n— Aggregat (${LANES[0].name}) —\n${finalAnswer}`);
+  }
+  // --verify (implied by --tier): a fresh strong lane checks the final answer.
+  if ((args.includes("--verify") || tier) && finalAnswer) {
+    const v = await verify(prompt, finalAnswer, maxTokens);
+    console.log(`\n— Verify (${v.ok ? "✓ VERIFIED" : "⚠ CORRECTION"}) —\n${v.text}`);
+  }
   process.exit(0); // race mode may have stragglers; exiting kills them deliberately
 } else {
   console.log("llmadapter — one interface over all 23 lanes\n  ask \"<prompt>\" [--lanes …] [--first N] [--aggregate] [--json] [--usage-out PATH]\n  lanes\n  doctor\n  stats");

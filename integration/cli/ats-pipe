@@ -43,7 +43,7 @@ _ats_pipe_scrape() {
   command -v superweb >/dev/null 2>&1 && superweb fetch "$u" --mode auto --max-tier 1 2>/dev/null
 }
 
-mode="local" url="" gather_only=0 synth=0 verify=0
+mode="local" url="" gather_only=0 synth=0 verify=0 tier=0
 lanes="free" first="" engine="${ATS_PIPE_ENGINE:-auto}"
 verify_lane="${ATS_PIPE_VERIFY_LANE:-nemotron-3-super-120b-a12b}"
 swarm_passthru=() words=()
@@ -57,6 +57,7 @@ while [[ $# -gt 0 ]]; do
     --gather-only) gather_only=1; shift ;;
     --synth) synth=1; shift ;;
     --verify) verify=1; shift ;;
+    --tier) tier=1; shift ;;
     --verify-lane) verify_lane="$2"; shift 2 ;;
     --lanes) lanes="$2"; shift 2 ;;         # llmadapter: free|paid|local|cli|all|name,…
     --only) lanes="$2"; shift 2 ;;           # alias for a single lane/group
@@ -103,31 +104,23 @@ have_llm=0; command -v llmadapter >/dev/null 2>&1 && have_llm=1
 [[ "$engine" == "auto" ]] && engine=$([[ $have_llm == 1 ]] && echo llmadapter || echo swarm)
 
 if [[ "$engine" == "llmadapter" ]]; then
-  msg="lanes=$lanes"; [[ "$synth" == 1 ]] && msg="$msg +aggregate"; [[ -n "$first" ]] && msg="$msg first=$first"
+  # --verify (fresh-context verifier) and --tier (cheap-propose → aggregate →
+  # verify) are implemented IN llmadapter — one engine, cached + ledgered.
+  msg="lanes=$lanes"; [[ "$synth" == 1 ]] && msg="$msg +aggregate"
+  [[ "$verify" == 1 ]] && msg="$msg +verify"; [[ "$tier" == 1 ]] && msg="tier"
+  [[ -n "$first" ]] && msg="$msg first=$first"
   echo "· fan out via llmadapter ($msg) …" >&2
-  llm_args=(ask "$prompt" --lanes "$lanes")
-  [[ "$synth" == 1 ]] && llm_args+=(--aggregate)
-  [[ -n "$first" ]] && llm_args+=(--first "$first")
-  if [[ "$verify" == 0 ]]; then
-    llmadapter "${llm_args[@]}"
-    exit $?
+  if [[ "$tier" == 1 ]]; then
+    llm_args=(ask "$prompt" --tier)
+  else
+    llm_args=(ask "$prompt" --lanes "$lanes")
+    [[ "$synth" == 1 ]] && llm_args+=(--aggregate)
+    [[ "$verify" == 1 ]] && llm_args+=(--verify)
+    [[ -n "$verify_lane" ]] && [[ "$verify" == 1 ]] && export LLMADAPTER_VERIFY_LANE="$verify_lane"
+    [[ -n "$first" ]] && llm_args+=(--first "$first")
   fi
-  # --- VERIFY (pilotfish / Anthropic pattern: a fresh-context verifier beats
-  # self-critique). Capture the answer, then have ONE strong lane check it and
-  # correct if wrong. Costs one extra call; catches confident-wrong consensus.
-  answer="$(llmadapter "${llm_args[@]}" 2>/dev/null | sed 's/\x1b\[[0-9;?]*[a-zA-Z]//g')"
-  printf '%s\n' "$answer"
-  echo "· verify (fresh $verify_lane) …" >&2
-  vprompt="You are an independent verifier with fresh context. Check the proposed answer against the question. If it is correct, reply exactly: VERIFIED. If it is wrong or incomplete, reply: CORRECTION: <the correct answer>.
-
-Question: $question
-
-Proposed answer:
-$answer"
-  echo "— verify —"
-  llmadapter ask "$vprompt" --lanes "$verify_lane" --first 1 2>/dev/null \
-    | sed 's/\x1b\[[0-9;?]*[a-zA-Z]//g' | rg -v '^$|ok · wall|race first' | tail -3
-  exit 0
+  llmadapter "${llm_args[@]}"
+  exit $?
 fi
 
 # Fallback engine: Python swarm-bench (--system/--workers/--timeout apply here).
