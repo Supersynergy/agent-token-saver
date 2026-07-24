@@ -1,5 +1,21 @@
 # Changelog
 
+## 4.13.0 — 2026-07-24
+
+### Pipeline complete: `--synth` merges the fan-out into one consensus answer
+
+`ats-pipe` is now the full loop: GATHER → FANOUT → SYNTH.
+
+- **feat(cli): `ats-pipe --synth`** — after fanning the question across the
+  $0 lanes, collect every successful answer and have ONE free model merge
+  them into a single consensus (keep agreements, resolve conflicts by
+  correctness, drop hallucinations). Judge defaults to free `glm-5-2` via
+  devin (`--synth-model` / `ATS_PIPE_SYNTH_MODEL` override). Verified
+  2026-07-24: gather→fanout(claude)→synth(glm-5-2) → "Paris" in 22s, $0.
+- **feat(swarm): `--sample-chars N`** (default 200) — controls how much of
+  each answer the result keeps; `--synth` raises it to 4000 so full answers
+  reach the judge instead of a 200-char preview.
+
 ## 4.12.0 — 2026-07-24
 
 - New `scripts/llmadapter.ts` (Bun single-file, symlinked as `llmadapter`):

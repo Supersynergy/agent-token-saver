@@ -226,6 +226,7 @@ def run_agent(
     timeout: int = 120,
     prompt: str = EXTRACT_PROMPT,
     run_cwd: str = "/tmp",
+    sample_chars: int = 200,
 ) -> SwarmResult:
     name, cmd, env_override = agent
     env = os.environ.copy()
@@ -296,7 +297,7 @@ def run_agent(
             exit_code=proc.returncode,
             success=success,
             json_valid=json_valid,
-            sample=out[:200].replace("\n", " "),
+            sample=out[:sample_chars].replace("\n", " "),
             cost_usd=round(cost, 6),
         )
     except subprocess.TimeoutExpired:
@@ -381,6 +382,12 @@ def main() -> int:
         help="override the built-in extraction probe with an arbitrary prompt — "
         "turns the bench into a general $0 fan-out engine ('-' reads stdin)",
     )
+    ap.add_argument(
+        "--sample-chars",
+        type=int,
+        default=200,
+        help="chars of each answer kept in the result (raise for synthesis)",
+    )
     args = ap.parse_args()
 
     # General fan-out: any prompt across every $0 lane. Default is the fixed
@@ -424,14 +431,16 @@ def main() -> int:
     if args.sequential:
         for i, agent in calls:
             print(f"  [{i + 1}/{args.iter}] {agent[0]}...", file=sys.stderr)
-            results.append(run_agent(agent, i, args.timeout, prompt, run_cwd))
+            results.append(run_agent(agent, i, args.timeout, prompt, run_cwd, args.sample_chars))
     else:
         # A swarm is parallel by definition: wall-clock = slowest agent,
         # not the sum. Threads are fine — the work is subprocess-bound.
         workers = args.workers or min(8, len(calls))
         with ThreadPoolExecutor(max_workers=workers) as pool:
             futures = {
-                pool.submit(run_agent, agent, i, args.timeout, prompt, run_cwd): (i, agent[0])
+                pool.submit(
+                    run_agent, agent, i, args.timeout, prompt, run_cwd, args.sample_chars
+                ): (i, agent[0])
                 for i, agent in calls
             }
             for future in as_completed(futures):

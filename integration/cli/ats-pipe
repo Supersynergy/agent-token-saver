@@ -15,8 +15,13 @@
 #   ats-pipe --github "<query>"           gather via ghmax code recon
 #   ats-pipe --url <url> "<question>"     gather a page, ask about it
 #   ats-pipe --gather-only "<q>"          just the context (no fanout)
+#   ats-pipe --synth "<q>"                fan out, then merge answers into one
 #   ats-pipe --only <lane> "<q>"          fan out to one lane (e.g. devin_glm52)
 #   ats-pipe --system "<rule>" "<q>"      apply a system instruction to the fanout
+#
+# Full pipeline: GATHER (recon) → FANOUT ($0 models) → SYNTH (one model merges
+# the answers into a consensus). --synth-model / ATS_PIPE_SYNTH_MODEL pick the
+# judge (default free glm-5-2 via devin).
 #
 # Flags after the question pass through to ats-swarm-bench (--only/--skip/
 # --system/--workers/--timeout). Config: ATS_PIPE_SWARM points at the bench.
@@ -36,7 +41,8 @@ _ats_pipe_scrape() {
   command -v superweb >/dev/null 2>&1 && superweb fetch "$u" --mode auto --max-tier 1 2>/dev/null
 }
 
-mode="local" url="" gather_only=0
+mode="local" url="" gather_only=0 synth=0
+synth_model="${ATS_PIPE_SYNTH_MODEL:-glm-5-2}"
 passthru=() words=()
 # Flags may appear anywhere (before or after the question); everything that is
 # not a recognised flag is joined into the question.
@@ -46,6 +52,8 @@ while [[ $# -gt 0 ]]; do
     --github|--gh) mode="github"; shift ;;
     --url) mode="url"; url="$2"; shift 2 ;;
     --gather-only) gather_only=1; shift ;;
+    --synth) synth=1; shift ;;
+    --synth-model) synth_model="$2"; shift 2 ;;
     --only|--skip|--system|--workers|--timeout)
       passthru+=("$1" "$2"); shift 2 ;;
     -h|--help) sed -n '2,26p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
@@ -81,4 +89,46 @@ Context (from recon tools; may be empty):
 $context
 
 Answer concisely and specifically using the context where relevant."
-printf '%s' "$prompt" | python3 "$SWARM" --iter 1 --prompt - "${passthru[@]}"
+
+if [[ "$synth" == 0 ]]; then
+  printf '%s' "$prompt" | python3 "$SWARM" --iter 1 --prompt - "${passthru[@]}"
+  exit $?
+fi
+
+# --- SYNTH ------------------------------------------------------------------
+# Collect every successful lane answer, then have ONE free model merge them
+# into a single consensus answer. Full answers need a larger sample cap.
+out_json="$(mktemp -t ats-pipe.XXXXXX).json"
+printf '%s' "$prompt" | python3 "$SWARM" --iter 1 --prompt - --sample-chars 4000 \
+  --out "$out_json" "${passthru[@]}" >/dev/null 2>&1 || true
+answers="$(python3 - "$out_json" <<'PY'
+import json, sys
+try:
+    d = json.load(open(sys.argv[1]))
+except Exception:
+    sys.exit(0)
+for r in d.get("results", []):
+    if r.get("success") and r.get("sample", "").strip():
+        print(f"### {r['agent']}\n{r['sample'].strip()}\n")
+PY
+)"
+rm -f "$out_json"
+if [[ -z "$answers" ]]; then
+  echo "ats-pipe: no successful lane answers to synthesize" >&2
+  exit 1
+fi
+echo "· synth ($synth_model) merges $(printf '%s' "$answers" | grep -c '^### ') answers …" >&2
+synth_prompt="You are a synthesis judge. Below are independent answers from several AI models to the same question. Produce ONE best consensus answer: keep what they agree on, resolve conflicts by correctness, drop hallucinations.
+
+Question: $question
+
+$answers
+
+Final consensus answer:"
+if command -v devin >/dev/null 2>&1; then
+  devin --print --model "$synth_model" -- "$synth_prompt" 2>/dev/null \
+    | sed 's/\x1b\[[0-9;?]*[a-zA-Z]//g'
+else
+  printf '%s\n' "$answers"
+  echo "(no devin CLI for synth — raw answers above)" >&2
+fi
