@@ -649,9 +649,9 @@ EOF
   esac
   local old_trust new_trust
   old_trust=$(jq --arg id "$sub_id" -r '(.subagents[] | select(.id == $id) | .trust) // 0.5' "$goal_file")
-  new_trust=$(awk -v o="$old_trust" -v d="$delta" 'BEGIN { t = o + d; if (t < 0) t = 0; if (t > 1) t = 1; printf "%.3f", t }')
+  new_trust=$(LC_ALL=C awk -v o="$old_trust" -v d="$delta" 'BEGIN { t = o + d; if (t < 0) t = 0; if (t > 1) t = 1; printf "%.3f", t }')
   local circuit=0
-  if awk -v o="$old_trust" -v n="$new_trust" 'BEGIN { exit !( (o - n) > 0.3 || (n - o) > 0.3 ) }'; then
+  if LC_ALL=C awk -v o="$old_trust" -v n="$new_trust" 'BEGIN { exit !( (o - n) > 0.3 || (n - o) > 0.3 ) }'; then
     circuit=1
   fi
   jq --arg id "$sub_id" --argjson t "$new_trust" --argjson circuit "$circuit" --arg state "$outcome" \

@@ -12,7 +12,7 @@
 # Contract: fail-open · non-destructive · idempotent · no MCP.
 # Usage: source scripts/claude-token-saver.sh · Verify: type claude-token-doctor
 
-if [[ -n "${CLAUDE_TOKEN_SAVER_LOADED:-}" ]]; then
+if [[ -n "${CLAUDE_TOKEN_SAVER_LOADED:-}" ]] && typeset -f ats-recon >/dev/null 2>&1; then
   return 0 2>/dev/null || true
 fi
 
@@ -40,7 +40,7 @@ if [[ -z "${GOAL_SH_LOADED:-}" ]] && [[ -f "$_ats_script_dir/goal.sh" ]]; then
 fi
 unset _universal _ats_script _ats_script_dir
 
-export CLAUDE_TOKEN_SAVER_LOADED=1
+CLAUDE_TOKEN_SAVER_LOADED=1
 
 # --- Thin claude-* aliases (mirror devin-* for cross-agent consistency) ------
 claude-token-ledger()       { ats-token-ledger "$@"; }

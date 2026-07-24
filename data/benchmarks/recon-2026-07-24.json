@@ -1,0 +1,230 @@
+{
+  "results": [
+    {
+      "name": "gmax_semantic",
+      "iter_idx": 0,
+      "wall_s": 0.381,
+      "chars": 532,
+      "lines": 7,
+      "exit_code": 0,
+      "success": true,
+      "sample": "scripts/external_usage_gate.py (2 hits):   :423\ts=1.000 main [ORCH] \u2014 // /Users/master/BASE/projects/agent-token-saver/scripts/external_usage_gate.py   :197\ts=0.805 parse_named [DEFI] \u2014 // /Users/mast"
+    },
+    {
+      "name": "grep_baseline",
+      "iter_idx": 0,
+      "wall_s": 0.008,
+      "chars": 5847,
+      "lines": 39,
+      "exit_code": 0,
+      "success": true,
+      "sample": "/Users/master/BASE/projects/agent-token-saver/integration/cli/ats-jury-bench.py:34:        \"question\": \"Where is usage parsing handled in this repo?\", /Users/master/BASE/projects/agent-token-saver/int"
+    },
+    {
+      "name": "ghx_explore",
+      "iter_idx": 0,
+      "wall_s": 0.727,
+      "chars": 5813,
+      "lines": 107,
+      "exit_code": 0,
+      "success": true,
+      "sample": "description: Measured token routing for Codex, Claude Code, Hermes, GG Coder and any CLI agent. Less noise. Better judgment. branch: main files:   .agents/   .github/   .gitignore   AGENTS.md   CHANGE"
+    },
+    {
+      "name": "ghx_inspect",
+      "iter_idx": 0,
+      "wall_s": 1.558,
+      "chars": 7733,
+      "lines": 164,
+      "exit_code": 0,
+      "success": true,
+      "sample": "inspect: Supersynergy/agent-token-saver \"where is usage parsing handled\" budget: 7739/12000 chars matches: total=7 candidates=7 ranked=7 ranked files: 1. integration/cli/agent-token-saver.sh score=112"
+    },
+    {
+      "name": "gh_api_baseline",
+      "iter_idx": 0,
+      "wall_s": 0.522,
+      "chars": 16568,
+      "lines": 0,
+      "exit_code": 0,
+      "success": true,
+      "sample": "[{\"name\":\".agents\",\"path\":\".agents\",\"sha\":\"dc30197601ac01a50b7d6224b527f8141d3f65ca\",\"size\":0,\"url\":\"https://api.github.com/repos/Supersynergy/agent-token-saver/contents/.agents?ref=main\",\"html_url\":\""
+    },
+    {
+      "name": "supacrawl_scrape",
+      "iter_idx": 0,
+      "wall_s": 0.775,
+      "chars": 168,
+      "lines": 5,
+      "exit_code": 0,
+      "success": true,
+      "sample": "# Example Domain  This domain is for use in documentation examples without needing permission. Avoid use in operations.  [Learn more](https://iana.org/domains/example) "
+    },
+    {
+      "name": "curl_baseline",
+      "iter_idx": 0,
+      "wall_s": 0.146,
+      "chars": 559,
+      "lines": 1,
+      "exit_code": 0,
+      "success": true,
+      "sample": "<!doctype html><html lang=\"en\"><head><title>Example Domain</title><link rel=\"icon\" href=\"data:,\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><style>body{background:#eee;width:6"
+    },
+    {
+      "name": "supacrawl_extract_stdio",
+      "iter_idx": 0,
+      "wall_s": 9.916,
+      "chars": 168,
+      "lines": 5,
+      "exit_code": 0,
+      "success": true,
+      "sample": "# Example Domain  This domain is for use in documentation examples without needing permission. Avoid use in operations.  [Learn more](https://iana.org/domains/example) "
+    },
+    {
+      "name": "gmax_semantic",
+      "iter_idx": 1,
+      "wall_s": 0.269,
+      "chars": 532,
+      "lines": 7,
+      "exit_code": 0,
+      "success": true,
+      "sample": "scripts/external_usage_gate.py (2 hits):   :423\ts=1.000 main [ORCH] \u2014 // /Users/master/BASE/projects/agent-token-saver/scripts/external_usage_gate.py   :197\ts=0.805 parse_named [DEFI] \u2014 // /Users/mast"
+    },
+    {
+      "name": "grep_baseline",
+      "iter_idx": 1,
+      "wall_s": 0.005,
+      "chars": 5847,
+      "lines": 39,
+      "exit_code": 0,
+      "success": true,
+      "sample": "/Users/master/BASE/projects/agent-token-saver/integration/cli/ats-jury-bench.py:34:        \"question\": \"Where is usage parsing handled in this repo?\", /Users/master/BASE/projects/agent-token-saver/int"
+    },
+    {
+      "name": "ghx_explore",
+      "iter_idx": 1,
+      "wall_s": 1.128,
+      "chars": 5813,
+      "lines": 107,
+      "exit_code": 0,
+      "success": true,
+      "sample": "description: Measured token routing for Codex, Claude Code, Hermes, GG Coder and any CLI agent. Less noise. Better judgment. branch: main files:   .agents/   .github/   .gitignore   AGENTS.md   CHANGE"
+    },
+    {
+      "name": "ghx_inspect",
+      "iter_idx": 1,
+      "wall_s": 11.908,
+      "chars": 7733,
+      "lines": 164,
+      "exit_code": 0,
+      "success": true,
+      "sample": "inspect: Supersynergy/agent-token-saver \"where is usage parsing handled\" budget: 7739/12000 chars matches: total=7 candidates=7 ranked=7 ranked files: 1. integration/cli/agent-token-saver.sh score=112"
+    },
+    {
+      "name": "gh_api_baseline",
+      "iter_idx": 1,
+      "wall_s": 0.411,
+      "chars": 16568,
+      "lines": 0,
+      "exit_code": 0,
+      "success": true,
+      "sample": "[{\"name\":\".agents\",\"path\":\".agents\",\"sha\":\"dc30197601ac01a50b7d6224b527f8141d3f65ca\",\"size\":0,\"url\":\"https://api.github.com/repos/Supersynergy/agent-token-saver/contents/.agents?ref=main\",\"html_url\":\""
+    },
+    {
+      "name": "supacrawl_scrape",
+      "iter_idx": 1,
+      "wall_s": 0.512,
+      "chars": 168,
+      "lines": 5,
+      "exit_code": 0,
+      "success": true,
+      "sample": "# Example Domain  This domain is for use in documentation examples without needing permission. Avoid use in operations.  [Learn more](https://iana.org/domains/example) "
+    },
+    {
+      "name": "curl_baseline",
+      "iter_idx": 1,
+      "wall_s": 0.142,
+      "chars": 559,
+      "lines": 1,
+      "exit_code": 0,
+      "success": true,
+      "sample": "<!doctype html><html lang=\"en\"><head><title>Example Domain</title><link rel=\"icon\" href=\"data:,\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><style>body{background:#eee;width:6"
+    },
+    {
+      "name": "supacrawl_extract_stdio",
+      "iter_idx": 1,
+      "wall_s": 9.891,
+      "chars": 168,
+      "lines": 5,
+      "exit_code": 0,
+      "success": true,
+      "sample": "# Example Domain  This domain is for use in documentation examples without needing permission. Avoid use in operations.  [Learn more](https://iana.org/domains/example) "
+    }
+  ],
+  "aggregate": {
+    "gmax_semantic": {
+      "n": 2,
+      "success_rate": 1.0,
+      "wall_s_mean": 0.325,
+      "chars_mean": 532,
+      "tokens_est": 133,
+      "lines_mean": 7
+    },
+    "grep_baseline": {
+      "n": 2,
+      "success_rate": 1.0,
+      "wall_s_mean": 0.007,
+      "chars_mean": 5847,
+      "tokens_est": 1461,
+      "lines_mean": 39
+    },
+    "ghx_explore": {
+      "n": 2,
+      "success_rate": 1.0,
+      "wall_s_mean": 0.927,
+      "chars_mean": 5813,
+      "tokens_est": 1453,
+      "lines_mean": 107
+    },
+    "ghx_inspect": {
+      "n": 2,
+      "success_rate": 1.0,
+      "wall_s_mean": 6.733,
+      "chars_mean": 7733,
+      "tokens_est": 1933,
+      "lines_mean": 164
+    },
+    "gh_api_baseline": {
+      "n": 2,
+      "success_rate": 1.0,
+      "wall_s_mean": 0.467,
+      "chars_mean": 16568,
+      "tokens_est": 4142,
+      "lines_mean": 0
+    },
+    "supacrawl_scrape": {
+      "n": 2,
+      "success_rate": 1.0,
+      "wall_s_mean": 0.643,
+      "chars_mean": 168,
+      "tokens_est": 42,
+      "lines_mean": 5
+    },
+    "curl_baseline": {
+      "n": 2,
+      "success_rate": 1.0,
+      "wall_s_mean": 0.144,
+      "chars_mean": 559,
+      "tokens_est": 139,
+      "lines_mean": 1
+    },
+    "supacrawl_extract_stdio": {
+      "n": 2,
+      "success_rate": 1.0,
+      "wall_s_mean": 9.904,
+      "chars_mean": 168,
+      "tokens_est": 42,
+      "lines_mean": 5
+    }
+  }
+}

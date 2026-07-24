@@ -1,5 +1,38 @@
 # Changelog
 
+## 4.3.0 — 2026-07-24
+
+### Recon router hardening + locale fix + fresh benchmarks
+
+- **feat(recon): bare `owner/repo` routing** — `ats-recon` now detects a bare
+  `owner/repo` token in the query (e.g. `ats-recon "anthropics/claude-code
+  where are hooks documented"`) and routes to `ghx inspect`; previously only
+  `github.com/...` URLs matched and such queries silently fell through to
+  gmax local search. The repo token is stripped from the concern before it is
+  passed to ghx, which measurably improves ranking (top hit
+  `hooks/llm.py` score=103 vs an unrelated `feed.xml` with the raw query).
+  Guards against false positives: skips `http*`, `./`, `/`, `~`, paths that
+  exist locally, owners containing dots, and double-slash tokens.
+- **fix(shell): wrapper now loads in subshells** — `claude-token-saver.sh`
+  exported its load guard, so any child shell (bash under zsh, scripts,
+  subagents) inherited `CLAUDE_TOKEN_SAVER_LOADED=1` and skipped defining
+  all ats-*/goal-* functions. Guard is no longer exported and additionally
+  verifies the functions actually exist (`typeset -f ats-recon`).
+- **fix(recon): bash-compatible regex capture** — `${match[1]}` (zsh-only)
+  → `${BASH_REMATCH[1]:-${match[1]:-}}` in the github.com route.
+- **fix(goal): decimal-comma locale broke goal-trust** — on `LC_NUMERIC=de_DE`
+  awk printed `0,550`, jq `--argjson` rejected it, and trust updates were
+  silently dropped (`trust should change` failed at HEAD). Float awk sites in
+  `goal.sh` now run under `LC_ALL=C`. All 36 goal-system checks pass again.
+- **docs(ghx 2.9 drift):** removed `--map` from wrapper help/comments — since
+  ghx 2.9 budget compaction (~92% reduction) is the default, tunable via
+  `--budget`, disabled via `--full`.
+- **bench:** fresh `ats-recon-bench` run (2026-07-24, 2 iter) recorded in
+  `data/benchmarks/recon-2026-07-24.{json,md}`: gmax 133 vs grep 1461 tok
+  (−91%), ghx explore 1453 vs `gh api` 4142 tok (−65%), supacrawl 42 vs curl
+  139 tok on the fixture page; live large-page check bun.com/blog: 14 912 vs
+  70 814 tok (−79%).
+
 ## 4.2.0 — 2026-07-24
 
 ### Onboarding check + installer self-update

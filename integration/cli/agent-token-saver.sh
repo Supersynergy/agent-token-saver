@@ -579,8 +579,9 @@ EOF
 # v3.8.0 — Three complementary recon CLIs that share the token-saver doctrine:
 #   gmax       — persistent semantic index of local codebases (replaces code_search
 #                for indexed projects; --agent output is ledger-compatible).
-#   ghx        — GitHub reconnaissance sidecar (GraphQL batching, --map 92% token
-#                reduction, inspect ranks files by concern).
+#   ghx        — GitHub reconnaissance sidecar (GraphQL batching; since ghx 2.9
+#                budget compaction is the default, --full disables it;
+#                inspect ranks files by concern).
 #   supacrawl  — HTTP-first web scraper (markdown output, map/crawl/batch/search;
 #                Ollama-LLM-Extract for structured pulls without API keys).
 # All three are fail-open: missing CLI → passthrough, never error.
@@ -628,13 +629,14 @@ ats-ghx() {
 Usage: ats-ghx <subcommand> [args]
 
 Wraps ghx (GitHub code-recon sidecar) for token-efficient external repo recon.
-All subcommands use GraphQL batching (10 files/call) and --map output (~92% token
-reduction vs raw file reads).
+All subcommands use GraphQL batching (10 files/call). Since ghx 2.9 token
+compaction is the DEFAULT (~92% reduction vs raw file reads); tune with
+--budget <chars>, disable with --full. The old --map flag is gone.
 
 Common:
   ghx explore <owner/repo>                       — branch + tree + README in 1 call
-  ghx read <owner/repo> <file> --map             — token-compressed file read
-  ghx read <owner/repo> f1 f2 ... --map          — up to 10 files in 1 call
+  ghx read <owner/repo> <file>                   — token-compressed file read
+  ghx read <owner/repo> f1 f2 ...                — up to 10 files in 1 call
   ghx inspect <owner/repo> "<concern>"           — rank files/maps/snippets for a concern
   ghx search "<query>" --limit N                 — code search with matching context
   ghx grep <owner/repo> <pattern>                — grep-like search inside one repo
@@ -721,7 +723,7 @@ EOF
 
 # ats-recon — auto-router that picks the optimal recon tool for a query.
 #   - Local codebase question  → gmax (semantic, --agent output)
-#   - GitHub repo question      → ghx (inspect/read --map)
+#   - GitHub repo question      → ghx (inspect/read, budget-compacted)
 #   - URL or "extract from URL" → supacrawl scrape / extract
 #   - Web search query          → supacrawl search (if key) or hint to use superweb
 # Fails open: if the picked tool is missing, prints a hint and returns 0.
@@ -732,7 +734,7 @@ Usage: ats-recon "<question>" [--url <url>] [--repo <owner/repo>] [--extract "<p
 
 Auto-routes to the cheapest recon tool that can answer the question:
   1. Local codebase    → gmax "<q>" --agent   (semantic, ledger-compatible)
-  2. GitHub repo       → ghx inspect <repo> "<q>"  (GraphQL batch, --map)
+  2. GitHub repo       → ghx inspect <repo> "<q>"  (GraphQL batch, budget-compacted)
   3. URL scrape        → supacrawl scrape <url>     (markdown, no LLM)
   4. URL + extract     → ats-supacrawl-extract <url> "<prompt>"  (LLM JSON)
   5. Web search        → supacrawl search "<q>"      (needs API key)
@@ -743,8 +745,9 @@ Flags:
   --extract "<p>"    — LLM extraction prompt (implies --url)
   --json             — force JSON output where supported
 
-Decision heuristic (no flag): if query contains "github.com/<owner>/<repo>" → ghx;
-if it starts with http(s):// → supacrawl scrape; else → gmax (local).
+Decision heuristic (no flag): if query contains "github.com/<owner>/<repo>" or a
+bare "<owner>/<repo>" token → ghx; if it starts with http(s):// → supacrawl
+scrape; else → gmax (local).
 
 Examples:
   ats-recon "where is usage parsing handled"
@@ -786,8 +789,8 @@ EOF
   fi
   # Auto-detect from query
   if [[ "$query" =~ github\.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+) ]]; then
-    repo="${match[1]}"
-    if ats-have ghx; then
+    repo="${BASH_REMATCH[1]:-${match[1]:-}}"
+    if [[ -n "$repo" ]] && ats-have ghx; then
       ghx inspect "$repo" "$query" 2>/dev/null
       return $?
     fi
@@ -796,6 +799,18 @@ EOF
     ats-supacrawl scrape "$query" --format markdown 2>/dev/null
     return $?
   fi
+  # Bare owner/repo token (e.g. "anthropics/claude-code where are hooks documented"):
+  # one slash, owner segment without dot, not an existing local path.
+  local _word
+  for _word in $(printf '%s\n' "$query"); do
+    if [[ "$_word" == */* && "$_word" != */*/* && "$_word" != http* && \
+          "$_word" != .* && "$_word" != /* && "$_word" != "~"* && \
+          "${_word%%/*}" != *.* && ! -e "$_word" ]] && ats-have ghx; then
+      local _concern="${query/$_word/}"
+      ghx inspect "$_word" "${_concern# }" 2>/dev/null
+      return $?
+    fi
+  done
   # Default: local codebase via gmax
   if ats-have gmax; then
     gmax "$query" --agent 2>/dev/null
