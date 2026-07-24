@@ -1,0 +1,216 @@
+{
+  "results": [
+    {
+      "agent": "codex",
+      "iter_idx": 0,
+      "wall_s": 10.264,
+      "chars": 108,
+      "tokens_est": 27,
+      "exit_code": 0,
+      "success": true,
+      "json_valid": true,
+      "sample": "{\"name\":\"Acme Widget Pro\",\"price\":42.99,\"features\":[\"durable\",\"lightweight\",\"eco-friendly\"],\"in_stock\":true}",
+      "cost_usd": 0.0
+    },
+    {
+      "agent": "kimi",
+      "iter_idx": 0,
+      "wall_s": 10.973,
+      "chars": 139,
+      "tokens_est": 34,
+      "exit_code": 0,
+      "success": true,
+      "json_valid": true,
+      "sample": "```json {   \"name\": \"Acme Widget Pro\",   \"price\": 42.99,   \"features\": [\"durable\", \"lightweight\", \"eco-friendly\"],   \"in_stock\": true } ```",
+      "cost_usd": 0.0
+    },
+    {
+      "agent": "ggcoder_kimi",
+      "iter_idx": 0,
+      "wall_s": 5.221,
+      "chars": 139,
+      "tokens_est": 34,
+      "exit_code": 0,
+      "success": true,
+      "json_valid": true,
+      "sample": "```json {   \"name\": \"Acme Widget Pro\",   \"price\": 42.99,   \"features\": [\"durable\", \"lightweight\", \"eco-friendly\"],   \"in_stock\": true } ```",
+      "cost_usd": 0.0
+    },
+    {
+      "agent": "hermes_luna",
+      "iter_idx": 0,
+      "wall_s": 15.974,
+      "chars": 878,
+      "tokens_est": 219,
+      "exit_code": 0,
+      "success": true,
+      "json_valid": false,
+      "sample": "SuperSynergy Operations Agent Hermes v3.1 active. Current context: macOS 15.5 | /Users/master | profile=default. System health: all services nominal. Ready for pipeline execution. No pending cron jobs",
+      "cost_usd": 0.0
+    },
+    {
+      "agent": "hermes_free_gemma4",
+      "iter_idx": 0,
+      "wall_s": 120.0,
+      "chars": 0,
+      "tokens_est": 0,
+      "exit_code": -1,
+      "success": false,
+      "json_valid": false,
+      "sample": "<timeout>",
+      "cost_usd": 0.0
+    },
+    {
+      "agent": "hermes_free_ling",
+      "iter_idx": 0,
+      "wall_s": 9.004,
+      "chars": 28,
+      "tokens_est": 7,
+      "exit_code": 0,
+      "success": true,
+      "json_valid": false,
+      "sample": "Ready. What's the next move?",
+      "cost_usd": 0.0
+    },
+    {
+      "agent": "antigravity",
+      "iter_idx": 0,
+      "wall_s": 0.113,
+      "chars": 0,
+      "tokens_est": 0,
+      "exit_code": 0,
+      "success": false,
+      "json_valid": false,
+      "sample": "<gui-launch: antigravity>",
+      "cost_usd": 0.0
+    },
+    {
+      "agent": "claude",
+      "iter_idx": 0,
+      "wall_s": 8.977,
+      "chars": 139,
+      "tokens_est": 34,
+      "exit_code": 0,
+      "success": true,
+      "json_valid": true,
+      "sample": "```json {   \"name\": \"Acme Widget Pro\",   \"price\": 42.99,   \"features\": [\"durable\", \"lightweight\", \"eco-friendly\"],   \"in_stock\": true } ```",
+      "cost_usd": 0.0
+    },
+    {
+      "agent": "ollama_phi4",
+      "iter_idx": 0,
+      "wall_s": 57.397,
+      "chars": 8387,
+      "tokens_est": 2096,
+      "exit_code": 0,
+      "success": true,
+      "json_valid": false,
+      "sample": "User says: \"Extract product information from this text:\" and then provides \u001b[K a sample text:  \"Acme Widget Pro \u2014 $42.99 \u2014 The best widget on the market. Features: durabl\u001b[6D\u001b[K durable, lightweight, ",
+      "cost_usd": 0.0
+    },
+    {
+      "agent": "ollama_dolphin3",
+      "iter_idx": 0,
+      "wall_s": 2.781,
+      "chars": 84,
+      "tokens_est": 21,
+      "exit_code": 0,
+      "success": true,
+      "json_valid": false,
+      "sample": "{\"name\": \"Acme Widget Pro\", \"price\": \"$42.99\", \"features\": [], \"in_stock\": \u001b[K true}",
+      "cost_usd": 0.0
+    }
+  ],
+  "aggregate": {
+    "codex": {
+      "n": 1,
+      "success_rate": 1.0,
+      "json_valid_rate": 1.0,
+      "wall_s_mean": 10.264,
+      "chars_mean": 108,
+      "tokens_est_mean": 27,
+      "cost_usd_sum": 0.0
+    },
+    "kimi": {
+      "n": 1,
+      "success_rate": 1.0,
+      "json_valid_rate": 1.0,
+      "wall_s_mean": 10.973,
+      "chars_mean": 139,
+      "tokens_est_mean": 34,
+      "cost_usd_sum": 0.0
+    },
+    "ggcoder_kimi": {
+      "n": 1,
+      "success_rate": 1.0,
+      "json_valid_rate": 1.0,
+      "wall_s_mean": 5.221,
+      "chars_mean": 139,
+      "tokens_est_mean": 34,
+      "cost_usd_sum": 0.0
+    },
+    "hermes_luna": {
+      "n": 1,
+      "success_rate": 1.0,
+      "json_valid_rate": 0.0,
+      "wall_s_mean": 15.974,
+      "chars_mean": 878,
+      "tokens_est_mean": 219,
+      "cost_usd_sum": 0.0
+    },
+    "hermes_free_gemma4": {
+      "n": 1,
+      "success_rate": 0.0,
+      "json_valid_rate": 0.0,
+      "wall_s_mean": 120.0,
+      "chars_mean": 0,
+      "tokens_est_mean": 0,
+      "cost_usd_sum": 0.0
+    },
+    "hermes_free_ling": {
+      "n": 1,
+      "success_rate": 1.0,
+      "json_valid_rate": 0.0,
+      "wall_s_mean": 9.004,
+      "chars_mean": 28,
+      "tokens_est_mean": 7,
+      "cost_usd_sum": 0.0
+    },
+    "antigravity": {
+      "n": 1,
+      "success_rate": 0.0,
+      "json_valid_rate": 0.0,
+      "wall_s_mean": 0.113,
+      "chars_mean": 0,
+      "tokens_est_mean": 0,
+      "cost_usd_sum": 0.0
+    },
+    "claude": {
+      "n": 1,
+      "success_rate": 1.0,
+      "json_valid_rate": 1.0,
+      "wall_s_mean": 8.977,
+      "chars_mean": 139,
+      "tokens_est_mean": 34,
+      "cost_usd_sum": 0.0
+    },
+    "ollama_phi4": {
+      "n": 1,
+      "success_rate": 1.0,
+      "json_valid_rate": 0.0,
+      "wall_s_mean": 57.397,
+      "chars_mean": 8387,
+      "tokens_est_mean": 2096,
+      "cost_usd_sum": 0.0
+    },
+    "ollama_dolphin3": {
+      "n": 1,
+      "success_rate": 1.0,
+      "json_valid_rate": 0.0,
+      "wall_s_mean": 2.781,
+      "chars_mean": 84,
+      "tokens_est_mean": 21,
+      "cost_usd_sum": 0.0
+    }
+  }
+}

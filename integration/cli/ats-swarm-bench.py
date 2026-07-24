@@ -46,12 +46,12 @@ class SwarmResult:
 # need the valid key (current list: openrouter.ai/api/v1/models, id *:free).
 AGENTS: list[tuple[str, list[str], dict[str, str]]] = [
     ("codex", ["codex", "exec", "--skip-git-repo-check", "-"], {}),
-    # kimi CLI lane removed 2026-07-24: kimi-awake reads KIMI_API_KEY, which is
-    # dead (401 at api.moonshot.ai). Re-add when the key is renewed. Until
-    # then ggcoder_kimi (own OAuth) is the working kimi lane.
+    # kimi CLI: works via its own OAuth (re-login 2026-07-24 after the old
+    # KIMI_API_KEY died); `kimi login --json` re-authorizes when it expires.
+    ("kimi", ["kimi-awake", "--quiet", "--input-format", "text"], {}),
     ("ggcoder_kimi", ["ggcoder", "--json", "--provider", "moonshot", "__PROMPT__"], {}),
     # paid reference lane (needs OpenRouter credits; honest 402 without)
-    ("hermes_luna", ["hermes", "-z", "-", "-m", "openai/gpt-5.6-luna", "--cli"], {}),
+    ("hermes_luna", ["hermes", "-z", "-", "-m", "openai/gpt-5.6-luna", "--cli", "--ignore-user-config"], {}),
     # $0 lanes via OpenRouter :free (rate-limited at peak times — honest 429)
     (
         "hermes_free_gemma4",
@@ -64,6 +64,7 @@ AGENTS: list[tuple[str, list[str], dict[str, str]]] = [
             "-m",
             "google/gemma-4-31b-it:free",
             "--cli",
+            "--ignore-user-config",
         ],
         {},
     ),
@@ -78,6 +79,7 @@ AGENTS: list[tuple[str, list[str], dict[str, str]]] = [
             "-m",
             "inclusionai/ling-3.0-flash:free",
             "--cli",
+            "--ignore-user-config",
         ],
         {},
     ),

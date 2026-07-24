@@ -1,5 +1,29 @@
 # Changelog
 
+## 4.7.1 — 2026-07-24
+
+### Kimi lane revived (OAuth) + hermes default fixed + hermetic bench lanes
+
+- **fix(kimi):** `kimi login --json` device-flow re-authorized the kimi CLI
+  (OAuth, auto-approved by the active kimi.com browser session). Lane
+  restored in the swarm bench: success 1.0, valid JSON, ~11s. ggcoder's
+  moonshot OAuth was already healthy (5.2s). The legacy `KIMI_API_KEY` in
+  `~/.hermes/.env` stays dead (401 on api.kimi.com/coding AND
+  api.moonshot.ai) — only hermes reads it.
+- **fix(hermes):** default model was the dead `kimi-k3/kimi-coding` → every
+  plain `hermes -z` call died with 401. New default:
+  `openrouter/inclusionai/ling-3.0-flash:free` with a fallback chain
+  (gemma-4-31b:free, nemotron-3-nano:free) in `~/.hermes/config.yaml`;
+  restore instructions for kimi-k3 are in a comment. Verified: plain
+  `hermes -z` answers again.
+- **fix(bench): hermetic hermes lanes** — the new user-level fallback chain
+  made failing bench lanes retry until timeout (120s instead of fast-fail).
+  All hermes bench lanes now pass `--ignore-user-config`.
+- **bench run 2026-07-24 (post-fix):** 8/10 lanes successful at $0.0000
+  spent — codex, kimi, ggcoder_kimi, hermes_luna, hermes_free_ling, claude,
+  ollama_phi4, ollama_dolphin3. Artifact:
+  `data/benchmarks/swarm-v4-kimi-fixed-2026-07-24.json`.
+
 ## 4.7.0 — 2026-07-24
 
 ### Swarm fleet v2 — OpenRouter free lanes, ggcoder-kimi, credit tracking, parallel jury
