@@ -69,23 +69,6 @@ AGENT_CANDIDATES: list[tuple[str, list[str]]] = [
     # the working binary is kimi-awake with --quiet --input-format text.
     ("kimi", ["kimi-awake", "--quiet", "--input-format", "text"]),
     ("fable", ["fable", "--print"]),
-    # devin (chisel) via free GLM-5.2 High. Auth: `devin auth login`.
-    ("devin_glm52", ["devin", "--print", "--model", "glm-5-2", "--", "__PROMPT__"]),
-    # cursor-agent headless (composer-2.5, Cursor subscription). --force for
-    # non-interactive workspace trust. Auth: `cursor-agent login`.
-    (
-        "cursor_composer",
-        [
-            "cursor-agent",
-            "-p",
-            "--force",
-            "--output-format",
-            "text",
-            "--model",
-            "composer-2.5",
-            "__PROMPT__",
-        ],
-    ),
     # gemini DISABLED 2026-07: Google killed the free individual Gemini-CLI
     # tier (IneligibleTierError → "migrate to Antigravity"). Left on PATH but
     # dead; keep out of the jury/reviewer set so it can't zero every score.
@@ -126,6 +109,17 @@ AGENT_CANDIDATES: list[tuple[str, list[str]]] = [
         ],
     ),
 ]
+
+# Local-only extra candidates live OUTSIDE the repo in
+# ~/.agent-token-saver/local-lanes.json ("swarm" key) so they are usable
+# locally but never committed or deployed. Fail-open if absent.
+try:
+    _lp = Path.home() / ".agent-token-saver" / "local-lanes.json"
+    if _lp.exists():
+        for _l in json.loads(_lp.read_text()).get("swarm", []):
+            AGENT_CANDIDATES.append((_l["name"], _l["cmd"]))
+except Exception:
+    pass
 
 
 @dataclass

@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 // llmadapter — one interface over every lane: OpenRouter, Ollama, CLI agents.
 // Born from the 23-lane burst test 2026-07-24. Lanes carry their own quirks
-// (devin is single-flight, agy has a small daily quota) so callers don't have to.
+// (some CLI lanes are single-flight or rate-limited) so callers do not have to.
 // Integrates with agent-token-saver: per-call JSONL ledger + hermes-style
 // usage files consumable by `agent-token-ledger --usage llmadapter=FILE`.
 
@@ -16,7 +16,7 @@ type Lane = {
   class: "free" | "paid" | "local" | "cli";
   model?: string;
   cmd?: (prompt: string) => string[];
-  serial?: boolean; // lane rejects concurrent sessions (devin)
+  serial?: boolean; // lane rejects concurrent sessions
   parse?: (raw: string) => string;
 };
 
@@ -57,11 +57,26 @@ const LANES: Lane[] = [
   { name: "ollama-gemma4", kind: "ollama", class: "local", model: "gemma4-31b-fast" },
   { name: "codex", kind: "cli", class: "cli", cmd: (p) => ["codex", "exec", "--skip-git-repo-check", p] },
   { name: "agy", kind: "cli", class: "cli", cmd: (p) => ["agy", "-p", p, "--dangerously-skip-permissions"] },
-  { name: "devin", kind: "cli", class: "cli", serial: true, cmd: (p) => ["devin", "-p", p] },
-  { name: "cursor", kind: "cli", class: "cli", cmd: (p) => ["cursor-agent", "-p", "--trust", p] },
   { name: "ggcoder", kind: "cli", class: "cli", cmd: (p) => ["ggcoder", "--json", p], parse: ggcoderText },
   { name: "claude-haiku", kind: "cli", class: "cli", cmd: (p) => ["claude", "-p", "--model", "haiku", p] },
 ];
+
+// Local-only extra lanes live OUTSIDE this repo in
+// ~/.agent-token-saver/local-lanes.json so they are usable locally but never
+// committed or deployed. Each has a cmd array with a "__PROMPT__" placeholder.
+try {
+  const lp = join(homedir(), ".agent-token-saver", "local-lanes.json");
+  if (existsSync(lp)) {
+    const extra = JSON.parse(readFileSync(lp, "utf8")).llmadapter ?? [];
+    for (const l of extra) {
+      const tmpl: string[] = l.cmd;
+      LANES.push({
+        name: l.name, kind: l.kind ?? "cli", class: l.class ?? "cli", serial: l.serial,
+        cmd: (p: string) => tmpl.map((x) => (x === "__PROMPT__" ? p : x)),
+      });
+    }
+  }
+} catch { /* fail-open: no local lanes */ }
 
 const ATS_DIR = join(homedir(), ".agent-token-saver");
 const CACHE_DIR = join(ATS_DIR, "cache", "llmadapter");

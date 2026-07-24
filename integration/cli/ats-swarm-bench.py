@@ -116,51 +116,25 @@ AGENTS: list[tuple[str, list[str], dict[str, str]]] = [
         ],
         {},
     ),
-    # devin = Devin/Windsurf CLI (chisel), headless via `devin --print -- <p>`.
-    # Auth: PKCE browser flow (`devin auth login`). 35 model families. These
-    # two lanes use FREE models ($0): GLM-5.2 High and SWE-1.7 Max (beta).
-    # Paid models (sonnet-5, opus-4.8, fable-5) share a weekly quota — add
-    # them under a devin_paid_* name so PAID_LANES excludes them from the $0
-    # count. Skip all devin lanes in routine runs with `--skip devin`.
-    (
-        "devin_glm52",
-        ["devin", "--print", "--model", "glm-5-2", "--", "__PROMPT__"],
-        {},
-    ),
-    (
-        "devin_swe17",
-        ["devin", "--print", "--model", "swe-1-7", "--", "__PROMPT__"],
-        {},
-    ),
-    # cursor-agent headless (`cursor-agent -p --force`). Needs --force in
-    # non-interactive mode (workspace trust). composer-2.5 is Cursor's own
-    # model on the Cursor subscription ($0 here). Auth: `cursor-agent login`
-    # (browser callback flow). Both Devin and Cursor honor an AGENTS.md in cwd
-    # as a system prompt (see --system).
-    (
-        "cursor_composer",
-        [
-            "cursor-agent",
-            "-p",
-            "--force",
-            "--output-format",
-            "text",
-            "--model",
-            "composer-2.5",
-            "__PROMPT__",
-        ],
-        {},
-    ),
     # Local lanes — no API key, no billing, available whenever installed.
     ("claude", ["claude", "-p"], {}),
     ("ollama_phi4", ["ollama", "run", "phi4-reasoning:plus"], {}),
     ("ollama_dolphin3", ["ollama", "run", "dolphin3:8b"], {}),
 ]
 
+# Local-only extra lanes live OUTSIDE the repo in
+# ~/.agent-token-saver/local-lanes.json ("swarm" key), so they are usable
+# locally but never committed or deployed. Fail-open if the file is absent.
+try:
+    _lp = Path.home() / ".agent-token-saver" / "local-lanes.json"
+    if _lp.exists():
+        for _l in json.loads(_lp.read_text()).get("swarm", []):
+            AGENTS.append((_l["name"], _l["cmd"], _l.get("env", {})))
+except Exception:
+    pass
+
 # Lanes that consume real paid quota/credits (excluded from the $0-lane count).
-# devin_glm52/devin_swe17 use free models, so they are NOT listed here; a
-# paid devin lane would be named devin_paid_* to match this prefix.
-PAID_LANES = ("devin_paid",)
+PAID_LANES = ("paid_",)
 
 # stdout error signatures that mean the agent did NOT answer, even with
 # exit code 0 (hosted CLIs print HTTP errors to stdout and exit clean).
@@ -363,7 +337,7 @@ def main() -> int:
         "--skip",
         type=str,
         default=None,
-        help="skip lanes whose name contains this substring (e.g. devin)",
+        help="skip lanes whose name contains this substring",
     )
     ap.add_argument("--timeout", type=int, default=120, help="per-call timeout in seconds")
     ap.add_argument("--workers", type=int, default=0, help="parallel workers (0 = min(8, calls))")
@@ -372,7 +346,7 @@ def main() -> int:
         "--system",
         type=str,
         default=None,
-        help="system instruction: written as AGENTS.md in the run dir (devin/cursor "
+        help="system instruction: written as AGENTS.md in the run dir (rule-reading CLIs "
         "honor it natively) AND prepended to the prompt (universal fallback)",
     )
     ap.add_argument(
@@ -398,7 +372,7 @@ def main() -> int:
     elif args.prompt:
         base_prompt = args.prompt
 
-    # System-prompt support. Rule-reading CLIs (devin, cursor) pick up an
+    # System-prompt support. Rule-reading CLIs pick up an
     # AGENTS.md in cwd; everyone else gets it prepended to the prompt. Both
     # verified 2026-07-24 to reflect the instruction.
     run_cwd = "/tmp"

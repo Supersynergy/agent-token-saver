@@ -1,5 +1,25 @@
 # Changelog
 
+## 4.15.0 — 2026-07-24
+
+### Local-only lane overlay — private CLIs stay off the deployed surface
+
+- **feat: local lane overlay** — `llmadapter.ts`, `ats-swarm-bench.py` and
+  `ats-jury-bench-v2.py` now load extra lanes from
+  `~/.agent-token-saver/local-lanes.json` (a file OUTSIDE this repo, so it is
+  never committed or deployed). Each lane carries a `cmd` array with a
+  `__PROMPT__` placeholder. Fail-open when the file is absent — the tracked,
+  deployable code ships only the portable lanes (OpenRouter free/paid,
+  Ollama, and the always-installable CLI agents).
+- **refactor:** removed the hardcoded personal-account CLI lanes from tracked
+  source (they were subscription/quota-bound and not portable). They remain
+  fully usable locally via the overlay file. `PAID_LANES` prefix generalized
+  to `paid_`.
+- **repo hygiene:** `integration/cli/devincontrol` and the personal-lane
+  benchmark artifacts are untracked (`git rm --cached`) and gitignored;
+  `local-lanes.json` is gitignored. Nothing was pushed — these commits are
+  local-only (last push predates this work).
+
 ## 4.14.0 — 2026-07-24
 
 ### One fan-out engine: ats-pipe routes through llmadapter (all features together)
