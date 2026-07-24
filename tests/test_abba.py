@@ -3,7 +3,9 @@
 Oracle: ABBA plan has symmetric A/B counts + abba_mean_diff cancels constant offset.
 """
 
-from scripts.abba import ABBAPlan, abba_mean_diff, abba_order
+import pytest
+
+from scripts.abba import abba_mean_diff, abba_order
 
 
 def test_abba_order_produces_symmetric_sequence():
@@ -21,11 +23,8 @@ def test_abba_cancels_constant_offset():
 
 
 def test_abba_rejects_zero_rounds():
-    try:
+    with pytest.raises(ValueError):
         abba_order(lambda: 1.0, lambda: 2.0, n_rounds=0)
-        assert False, "should raise"
-    except ValueError:
-        pass
 
 
 def test_abba_n_rounds_doubles_trials():

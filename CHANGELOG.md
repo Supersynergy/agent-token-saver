@@ -1,5 +1,36 @@
 # Changelog
 
+## 4.2.0 — 2026-07-24
+
+### Onboarding check + installer self-update
+
+Closes the "doctor says 100% while gmax/ghx are missing" gap: recon sidecars
+are now first-class in the doctor, and the installer ends every run with a
+full onboarding check.
+
+- **feat(doctor): recon sidecar section** — `agent-token-saver doctor` now
+  probes `gmax`, `ghx`, `supacrawl` and prints one line per sidecar with the
+  exact install command on MISSING (e.g. `bun add -g grepmax`). JSON report
+  gains a `recon` key. New summary line:
+  `onboarding: N/M layers · K/3 recon sidecars` with a fix-and-rerun hint
+  when anything is missing.
+- **feat(install): self-update** — when running from a git checkout, the
+  installer fast-forwards (`git pull --ff-only`) before installing so every
+  install ships the latest version. Skipped on dirty checkout or offline
+  (fail-open, prints why). Opt out with `--no-update`.
+- **feat(install): onboarding check on apply** — every non-dry-run install
+  ends by executing the freshly installed doctor (`== onboarding check ==`),
+  so missing sidecars are visible at install time instead of being
+  discovered mid-session.
+- **fix(readme):** rename poweruser-bench case label `02_superweb_readme` →
+  `02_public_repo_readme`; the private tool name leaked into the public
+  surface and failed `test_active_public_surface_excludes_private_host_tools`
+  at HEAD.
+- **fix(lint):** ruff pass on `scripts/abba.py` + `tests/test_abba.py`
+  (UP006/UP035/F401 autofix; B011 `assert False` → `pytest.raises`).
+  `uv run ruff check scripts integration tests` is clean again;
+  106/106 tests pass.
+
 ## 4.1.1 — 2026-07-24
 
 ### Trust and reproducibility pass

@@ -6,18 +6,18 @@ Given results from provider A and B, return ABBA-ordered trial sequence
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, Iterable, List, Tuple
 
-Trial = Tuple[str, float]  # (provider, metric)
+Trial = tuple[str, float]  # (provider, metric)
 
 
 @dataclass
 class ABBAPlan:
-    trials: List[Trial]
+    trials: list[Trial]
     order: str  # "ABBA" or "BAAB"
 
-    def pairs(self) -> List[Tuple[Trial, Trial]]:
+    def pairs(self) -> list[tuple[Trial, Trial]]:
         """Return consecutive (A, B) or (B, A) pairs for analysis."""
         t = self.trials
         return [(t[i], t[i + 1]) for i in range(0, len(t) - 1, 2)]
@@ -31,7 +31,7 @@ def abba_order(
     """Execute runs in ABBA order: A, B, B, A per round."""
     if n_rounds < 1:
         raise ValueError("n_rounds must be >= 1")
-    trials: List[Trial] = []
+    trials: list[Trial] = []
     for _ in range(n_rounds):
         trials.append(("A", run_a()))
         trials.append(("B", run_b()))

@@ -10,6 +10,8 @@ import os
 import re
 import shutil
 import stat
+import subprocess
+import sys
 import tempfile
 import time
 from contextlib import suppress
@@ -21,6 +23,32 @@ HOME = Path.home()
 INSTALL_HOME = HOME / ".agent-token-saver"
 OBSOLETE_INSTALL_FILES = (INSTALL_HOME / "hooks" / "rtk-rewrite.sh",)
 SKILL_VERSION = re.compile(r"^version:\s*([^\s]+)", re.MULTILINE)
+
+
+def self_update(dry_run: bool) -> None:
+    """Fast-forward the repo checkout so installs always ship the latest version."""
+    if not (ROOT / ".git").is_dir() or not shutil.which("git"):
+        return
+    git = ["git", "-C", str(ROOT)]
+    dirty = subprocess.run(
+        [*git, "status", "--porcelain"], capture_output=True, text=True
+    ).stdout.strip()
+    if dirty:
+        print("self-update: skipped (local changes in repo checkout)")
+        return
+    if dry_run:
+        print("would run: git pull --ff-only")
+        return
+    pull = subprocess.run(
+        [*git, "pull", "--ff-only", "--quiet"], capture_output=True, text=True, timeout=60
+    )
+    head = subprocess.run(
+        [*git, "log", "-1", "--format=%h %s"], capture_output=True, text=True
+    ).stdout.strip()
+    if pull.returncode == 0:
+        print(f"self-update: up to date @ {head}")
+    else:
+        print(f"self-update: pull failed (offline?), installing from local @ {head}")
 
 
 def atomic_json(path: Path, data: dict[str, Any], dry_run: bool) -> None:
@@ -367,7 +395,12 @@ def main() -> int:
         help="project root used by --agent repo (default: current directory)",
     )
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--no-update", action="store_true", help="skip the git fast-forward self-update"
+    )
     args = parser.parse_args()
+    if not args.no_update:
+        self_update(args.dry_run)
     remove_obsolete_install_files(args.dry_run)
     install_files(args.dry_run)
     targets = {
@@ -385,9 +418,12 @@ def main() -> int:
     write_config(args.profile, agents, args.project.resolve(), args.dry_run)
     print(f"profile={args.profile}")
     print(f"agents={','.join(agents)}")
-    print(
-        "third-party tools are never installed silently; run agent-token-saver doctor after apply"
-    )
+    print("third-party tools are never installed silently")
+    doctor = INSTALL_HOME / "bin" / "agent-token-saver"
+    if not args.dry_run and doctor.exists():
+        print("== onboarding check ==")
+        sys.stdout.flush()
+        subprocess.run([sys.executable, str(doctor), "doctor"], timeout=120)
     return 0
 
 

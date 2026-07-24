@@ -455,7 +455,7 @@ UTF-8 bytes / 4. 1 iteration, 60 runs total, ~28 min wall.
 | 01_usage_parsing | 1,586 | 220 | **86.1%** | large grep → gmax |
 | 09_example_scrape | 209 | 112 | 46.4% | curl → supacrawl |
 | 04_synapse_fts5 | 122 | 84 | 31.1% | small grep → gmax |
-| 02_superweb_readme | 94 | 74 | 21.3% | gh api → ghx |
+| 02_public_repo_readme | 94 | 74 | 21.3% | gh api → ghx |
 | 03_chartlab_quantagent | 87 | 82 | 5.7% | small grep → gmax |
 | 05_codex_pro_providers | 87 | 88 | -1.1% | `ls` → gmax, parity |
 | 08_ats_hooks | 101 | 265 | -162.4% | `ls` → gmax, see analysis |

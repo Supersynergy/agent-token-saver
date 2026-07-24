@@ -82,6 +82,23 @@ def inspect_tool(name: str, spec: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
+RECON_SIDECARS = (
+    ("gmax", ("gmax", "grepmax"), "bun add -g grepmax  (or: npm i -g grepmax)"),
+    ("ghx", ("ghx",), "bun add -g @gkoreli/ghx  (or: npm i -g @gkoreli/ghx)"),
+    ("supacrawl", ("supacrawl",), "uv tool install supacrawl  (or: pip install supacrawl)"),
+)
+
+
+def inspect_recon() -> list[dict[str, Any]]:
+    result = []
+    for name, probes, hint in RECON_SIDECARS:
+        location = next((shutil.which(p) for p in probes if shutil.which(p)), None)
+        result.append(
+            {"name": name, "installed": bool(location), "location": location, "install": hint}
+        )
+    return result
+
+
 def inspect_hooks(home: Path | None = None) -> dict[str, Any]:
     home = home or Path.home()
     targets = {
@@ -402,6 +419,7 @@ def build_report(
     return {
         "profile": profile,
         "tools": tools,
+        "recon": inspect_recon(),
         "missing_required": missing_required,
         "missing_optional": missing_optional,
         "hooks": hooks,
@@ -443,12 +461,26 @@ def main() -> int:
             marker = "ok" if item["installed"] else ("MISSING" if item["required"] else "optional")
             version = f" | {item['version']}" if item["version"] else ""
             print(f"{marker:8} {item['name']:18} {item['activation']}{version}")
+        for item in report["recon"]:
+            if item["installed"]:
+                print(f"recon    {item['name']:18} ok | {item['location']}")
+            else:
+                print(f"recon    {item['name']:18} MISSING → {item['install']}")
         for agent, hook in report["hooks"].items():
             if hook.get("integration") == "skill":
                 marker = "installed" if hook["exists"] else "optional"
                 print(f"skill    {agent:18} {marker}")
             else:
                 print(f"hooks    {agent:18} {len(hook['commands'])} agent-token-saver entries")
+        recon_ok = sum(1 for r in report["recon"] if r["installed"])
+        layers_ok = sum(1 for t in report["tools"] if t["installed"])
+        summary = (
+            f"onboarding: {layers_ok}/{len(report['tools'])} layers · "
+            f"{recon_ok}/{len(report['recon'])} recon sidecars"
+        )
+        if recon_ok < len(report["recon"]) or layers_ok < len(report["tools"]):
+            summary += " — install MISSING lines above, then rerun: agent-token-saver doctor"
+        print(summary)
         for error in report["integrity"]["errors"]:
             print(f"BLOCKED  integrity          {error}")
         for warning in report["integrity"]["warnings"]:
