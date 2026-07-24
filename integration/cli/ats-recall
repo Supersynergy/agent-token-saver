@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# ats-recall — "your agents already solved this." Search the Synapse corpus
+# (now including the ingested Codex/Claude/aider/opencode CLI histories) plus
+# the verified brain, and surface past solutions before you re-solve them.
+#
+# Pairs with synapse-ingest-cli-logs.py: that fills the corpus, this reads it.
+# The deja-vu front-end — recall over your own agent history, no LLM, no API.
+#
+# Usage:
+#   ats-recall "<question>"                 corpus + brain (default)
+#   ats-recall --corpus "<q>"               only the raw CLI-log corpus
+#   ats-recall --brain "<q>"                only verified memory (synxp)
+#   ats-recall --limit N "<q>"              top N hits (default 6)
+#
+# Output: one deduped block per source document — title + best snippet.
+
+set -euo pipefail
+
+src="both" limit=6 words=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --corpus) src="corpus"; shift ;;
+    --brain) src="brain"; shift ;;
+    --limit) limit="$2"; shift 2 ;;
+    -h|--help) sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) words+=("$1"); shift ;;
+  esac
+done
+[[ ${#words[@]} -ge 1 ]] || { echo 'usage: ats-recall [--corpus|--brain] [--limit N] "<question>"' >&2; exit 1; }
+q="${words[*]}"
+
+command -v synx >/dev/null 2>&1 || { echo "ats-recall: synx (Synapse) not on PATH" >&2; exit 1; }
+
+if [[ "$src" == "corpus" || "$src" == "both" ]]; then
+  echo "══ past agent sessions (corpus) ══"
+  synx corpus search "$q" --json --limit "$((limit * 3))" 2>/dev/null | python3 -c '
+import json, sys
+try:
+    rows = json.load(sys.stdin)
+except Exception:
+    rows = []
+seen, shown, limit = set(), 0, int(sys.argv[1])
+for r in rows:
+    doc = r.get("document_id")
+    if doc in seen:
+        continue
+    seen.add(doc)
+    text = " ".join((r.get("text") or "").split())[:180]
+    title = r.get("title", "?")
+    print("  · " + title)
+    print("    " + text)
+    shown += 1
+    if shown >= limit:
+        break
+if not shown:
+    print("  (nothing in the corpus yet - run synapse-ingest-cli-logs.py)")
+' "$limit"
+fi
+
+if [[ "$src" == "brain" || "$src" == "both" ]]; then
+  echo "══ verified memory (brain) ══"
+  # synxp is the tuned recall front-end; fall back to raw hybrid if absent.
+  if command -v synxp >/dev/null 2>&1; then
+    synxp "$q" "$limit" 2>/dev/null | sed 's/\x1b\[[0-9;?]*[a-zA-Z]//g' | rg -v '^$' | head -"$((limit + 2))"
+  else
+    synx hybrid "$q" "$limit" 2>/dev/null | sed 's/\x1b\[[0-9;?]*[a-zA-Z]//g' | head -"$limit"
+  fi
+fi

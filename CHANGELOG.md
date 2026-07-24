@@ -1,5 +1,17 @@
 # Changelog
 
+## 4.18.0 — 2026-07-24
+
+### `ats-recall` — the recall front-end for the ingested CLI histories
+
+- **feat(cli): `ats-recall "<q>"`** — "your agents already solved this."
+  Searches the Synapse corpus (now holding the ingested Codex/Claude/aider/
+  opencode sessions) plus the verified brain, deduped one block per source
+  document (title + best snippet). `--corpus`/`--brain` to scope, `--limit N`.
+  No LLM, no API — the deja-vu recall pattern over your own agent history.
+  Pairs with `synapse-ingest-cli-logs.py` (that fills the corpus, this reads
+  it). Verified: surfaces past llmadapter/build sessions from the CLI logs.
+
 ## 4.17.0 — 2026-07-24
 
 ### Tiered fan-out engine + Synapse CLI-log ingest + measured savings
