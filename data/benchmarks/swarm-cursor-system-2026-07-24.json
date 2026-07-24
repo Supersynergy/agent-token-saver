@@ -1,0 +1,27 @@
+{
+  "results": [
+    {
+      "agent": "cursor_composer",
+      "iter_idx": 0,
+      "wall_s": 56.788,
+      "chars": 151,
+      "tokens_est": 37,
+      "exit_code": 0,
+      "success": true,
+      "json_valid": true,
+      "sample": "ZZTOP-9911  ```json {   \"name\": \"Acme Widget Pro\",   \"price\": 42.99,   \"features\": [\"durable\", \"lightweight\", \"eco-friendly\"],   \"in_stock\": true } ```",
+      "cost_usd": 0.0
+    }
+  ],
+  "aggregate": {
+    "cursor_composer": {
+      "n": 1,
+      "success_rate": 1.0,
+      "json_valid_rate": 1.0,
+      "wall_s_mean": 56.788,
+      "chars_mean": 151,
+      "tokens_est_mean": 37,
+      "cost_usd_sum": 0.0
+    }
+  }
+}

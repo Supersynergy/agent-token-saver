@@ -1,5 +1,32 @@
 # Changelog
 
+## 4.10.0 — 2026-07-24
+
+### System-prompt support + Cursor lane
+
+- **feat(swarm): `--system <text>`** — writes the instruction as an `AGENTS.md`
+  in a per-run dir AND prepends it to the prompt. Devin and Cursor honor the
+  native `AGENTS.md` rules mechanism; every other lane gets the prepended
+  instruction. Verified 2026-07-24: distinctive-token tests reflected the
+  system prompt (Devin `SYSCHECK-7788 PARIS`, Cursor `CURSORCHECK-4455 PARIS`,
+  swarm `--system` run `ZZTOP-9911` prefix on cursor output).
+- **feat(swarm+jury): `cursor_composer` lane** — `cursor-agent -p --force
+  --output-format text --model composer-2.5`. `--force` supplies
+  non-interactive workspace trust. Cursor's Composer 2.5 runs on the Cursor
+  subscription ($0 here). Measured: success 1.0, valid JSON.
+- **auth(cursor):** `cursor-agent login` is a browser-callback flow (no code
+  paste — the CLI polls the callback). Installed via `cursor agent` →
+  `~/.local/bin/cursor-agent`. The GUI app's `cursorAuth/accessToken` is a
+  session JWT, not accepted as `CURSOR_API_KEY`, so the login flow is
+  required.
+- **note(devin agent-config):** Devin also accepts `--agent-config <FILE>`
+  (JSON/YAML: system instructions, tool visibility, permissions) and
+  `.windsurf/rules/*.md`; the AGENTS.md path is the portable one shared with
+  Cursor.
+- **refactor:** `run_agent` takes explicit `prompt` + `run_cwd` (was hardcoded
+  `EXTRACT_PROMPT` / `/tmp`), enabling the system-prompt run dir.
+- Artifacts: `data/benchmarks/swarm-cursor-system-2026-07-24.json`.
+
 ## 4.9.0 — 2026-07-24
 
 ### Devin CLI wired headless + `devincontrol` + free GLM-5.2/SWE-1.7 lanes

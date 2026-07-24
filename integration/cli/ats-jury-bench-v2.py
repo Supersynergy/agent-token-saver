@@ -71,6 +71,21 @@ AGENT_CANDIDATES: list[tuple[str, list[str]]] = [
     ("fable", ["fable", "--print"]),
     # devin (chisel) via free GLM-5.2 High. Auth: `devin auth login`.
     ("devin_glm52", ["devin", "--print", "--model", "glm-5-2", "--", "__PROMPT__"]),
+    # cursor-agent headless (composer-2.5, Cursor subscription). --force for
+    # non-interactive workspace trust. Auth: `cursor-agent login`.
+    (
+        "cursor_composer",
+        [
+            "cursor-agent",
+            "-p",
+            "--force",
+            "--output-format",
+            "text",
+            "--model",
+            "composer-2.5",
+            "__PROMPT__",
+        ],
+    ),
     # gemini DISABLED 2026-07: Google killed the free individual Gemini-CLI
     # tier (IneligibleTierError → "migrate to Antigravity"). Left on PATH but
     # dead; keep out of the jury/reviewer set so it can't zero every score.

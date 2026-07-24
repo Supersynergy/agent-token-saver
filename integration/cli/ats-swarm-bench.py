@@ -132,6 +132,25 @@ AGENTS: list[tuple[str, list[str], dict[str, str]]] = [
         ["devin", "--print", "--model", "swe-1-7", "--", "__PROMPT__"],
         {},
     ),
+    # cursor-agent headless (`cursor-agent -p --force`). Needs --force in
+    # non-interactive mode (workspace trust). composer-2.5 is Cursor's own
+    # model on the Cursor subscription ($0 here). Auth: `cursor-agent login`
+    # (browser callback flow). Both Devin and Cursor honor an AGENTS.md in cwd
+    # as a system prompt (see --system).
+    (
+        "cursor_composer",
+        [
+            "cursor-agent",
+            "-p",
+            "--force",
+            "--output-format",
+            "text",
+            "--model",
+            "composer-2.5",
+            "__PROMPT__",
+        ],
+        {},
+    ),
     # Local lanes — no API key, no billing, available whenever installed.
     ("claude", ["claude", "-p"], {}),
     ("ollama_phi4", ["ollama", "run", "phi4-reasoning:plus"], {}),
@@ -202,7 +221,11 @@ EXTRACT_PROMPT = (
 
 
 def run_agent(
-    agent: tuple[str, list[str], dict[str, str]], iter_idx: int, timeout: int = 120
+    agent: tuple[str, list[str], dict[str, str]],
+    iter_idx: int,
+    timeout: int = 120,
+    prompt: str = EXTRACT_PROMPT,
+    run_cwd: str = "/tmp",
 ) -> SwarmResult:
     name, cmd, env_override = agent
     env = os.environ.copy()
@@ -211,7 +234,7 @@ def run_agent(
     # arg mode: "__PROMPT__" placeholder gets the prompt, stdin stays empty.
     arg_mode = any("__PROMPT__" in part for part in cmd)
     if arg_mode:
-        cmd = [part.replace("__PROMPT__", EXTRACT_PROMPT) for part in cmd]
+        cmd = [part.replace("__PROMPT__", prompt) for part in cmd]
     # hermes lanes: capture per-call cost via --usage-file.
     usage_file: Path | None = None
     if cmd[0] == "hermes":
@@ -222,11 +245,11 @@ def run_agent(
     try:
         proc = subprocess.run(
             cmd,
-            input=None if arg_mode else EXTRACT_PROMPT,
+            input=None if arg_mode else prompt,
             capture_output=True,
             text=True,
             timeout=timeout,
-            cwd="/tmp",
+            cwd=run_cwd,
             env=env,
             check=False,
         )
@@ -344,7 +367,25 @@ def main() -> int:
     ap.add_argument("--timeout", type=int, default=120, help="per-call timeout in seconds")
     ap.add_argument("--workers", type=int, default=0, help="parallel workers (0 = min(8, calls))")
     ap.add_argument("--sequential", action="store_true", help="disable parallel execution")
+    ap.add_argument(
+        "--system",
+        type=str,
+        default=None,
+        help="system instruction: written as AGENTS.md in the run dir (devin/cursor "
+        "honor it natively) AND prepended to the prompt (universal fallback)",
+    )
     args = ap.parse_args()
+
+    # System-prompt support. Rule-reading CLIs (devin, cursor) pick up an
+    # AGENTS.md in cwd; everyone else gets it prepended to the prompt. Both
+    # verified 2026-07-24 to reflect the instruction.
+    run_cwd = "/tmp"
+    prompt = EXTRACT_PROMPT
+    if args.system:
+        run_cwd = f"/tmp/ats-swarm-run-{os.getpid()}"
+        os.makedirs(run_cwd, exist_ok=True)
+        Path(run_cwd, "AGENTS.md").write_text(f"# System Rules\n{args.system}\n")
+        prompt = f"[System instruction]\n{args.system}\n\n{EXTRACT_PROMPT}"
 
     agents = [a for a in AGENTS if args.only is None or args.only in a[0]]
     if args.skip:
@@ -368,14 +409,15 @@ def main() -> int:
     if args.sequential:
         for i, agent in calls:
             print(f"  [{i + 1}/{args.iter}] {agent[0]}...", file=sys.stderr)
-            results.append(run_agent(agent, i, args.timeout))
+            results.append(run_agent(agent, i, args.timeout, prompt, run_cwd))
     else:
         # A swarm is parallel by definition: wall-clock = slowest agent,
         # not the sum. Threads are fine — the work is subprocess-bound.
         workers = args.workers or min(8, len(calls))
         with ThreadPoolExecutor(max_workers=workers) as pool:
             futures = {
-                pool.submit(run_agent, agent, i, args.timeout): (i, agent[0]) for i, agent in calls
+                pool.submit(run_agent, agent, i, args.timeout, prompt, run_cwd): (i, agent[0])
+                for i, agent in calls
             }
             for future in as_completed(futures):
                 r = future.result()
