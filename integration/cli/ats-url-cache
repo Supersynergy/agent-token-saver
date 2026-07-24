@@ -1,0 +1,110 @@
+#!/usr/bin/env python3
+"""URL→markdown cache for ats-recon scrape lanes.
+
+Design goals: lean, fail-open, minimal disk wear.
+- One SQLite file (WAL + synchronous=NORMAL → few fsyncs, low write amplification).
+- One INSERT per unique URL per TTL window; reads are pure page-cache hits.
+- `vacuum` is manual/monthly (never automatic) to avoid rewrite churn.
+
+Usage:
+  ats-url-cache get <url> [--ttl SECONDS]     -> body on hit (exit 0), exit 1 on miss
+  ats-url-cache put <url> [--ttl SECONDS]     -> body from stdin, stored
+  ats-url-cache stats                          -> row count, size, hit window
+  ats-url-cache vacuum [--ttl SECONDS]         -> drop expired rows + VACUUM
+
+Exit codes: 0 ok/hit, 1 miss, never >1 (fail-open: internal errors -> miss).
+Config: ATS_URL_CACHE_DB (default ~/.agent-token-saver/url-cache.db),
+        ATS_URL_CACHE_TTL (default 86400 seconds).
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import sqlite3
+import sys
+import time
+from pathlib import Path
+
+DB = Path(os.environ.get("ATS_URL_CACHE_DB", Path.home() / ".agent-token-saver" / "url-cache.db"))
+DEFAULT_TTL = int(os.environ.get("ATS_URL_CACHE_TTL", "86400"))
+
+
+def connect() -> sqlite3.Connection:
+    DB.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(DB, timeout=2)
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA synchronous=NORMAL")
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS urlcache ("
+        " url TEXT PRIMARY KEY, body BLOB NOT NULL, fetched_at INTEGER NOT NULL)"
+    )
+    return conn
+
+
+def cmd_get(url: str, ttl: int) -> int:
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT body, fetched_at FROM urlcache WHERE url = ?", (url,)
+        ).fetchone()
+    if row is None or time.time() - row[1] > ttl:
+        return 1
+    sys.stdout.buffer.write(row[0])
+    return 0
+
+
+def cmd_put(url: str) -> int:
+    body = sys.stdin.buffer.read()
+    if not body.strip():
+        return 1  # never cache empty results
+    with connect() as conn:
+        conn.execute(
+            "INSERT OR REPLACE INTO urlcache (url, body, fetched_at) VALUES (?, ?, ?)",
+            (url, body, int(time.time())),
+        )
+    return 0
+
+
+def cmd_stats() -> int:
+    with connect() as conn:
+        n, oldest = conn.execute(
+            "SELECT COUNT(*), COALESCE(MIN(fetched_at), 0) FROM urlcache"
+        ).fetchone()
+    size = DB.stat().st_size if DB.exists() else 0
+    print(f"rows={n} db_bytes={size} oldest_age_s={int(time.time() - oldest) if n else 0}")
+    return 0
+
+
+def cmd_vacuum(ttl: int) -> int:
+    with connect() as conn:
+        cur = conn.execute(
+            "DELETE FROM urlcache WHERE fetched_at <= ?", (int(time.time()) - ttl,)
+        )
+        n = cur.rowcount
+    with connect() as conn:
+        conn.execute("VACUUM")
+    print(f"expired={n}")
+    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(prog="ats-url-cache")
+    parser.add_argument("command", choices=("get", "put", "stats", "vacuum"))
+    parser.add_argument("url", nargs="?")
+    parser.add_argument("--ttl", type=int, default=DEFAULT_TTL)
+    args = parser.parse_args()
+    try:
+        if args.command == "get":
+            return cmd_get(args.url or "", args.ttl)
+        if args.command == "put":
+            return cmd_put(args.url or "")
+        if args.command == "stats":
+            return cmd_stats()
+        return cmd_vacuum(args.ttl)
+    except Exception as exc:  # fail-open: cache trouble must never block recon
+        print(f"ats-url-cache: {exc}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

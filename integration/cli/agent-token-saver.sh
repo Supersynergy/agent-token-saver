@@ -267,6 +267,8 @@ ats-synapse-remember() {
 _ats_script="${BASH_SOURCE[0]:-$0}"
 _ats_script_dir="${_ats_script%/*}"
 [[ "$_ats_script_dir" == "$_ats_script" ]] && _ats_script_dir="."
+# Remembered (absolute) for helpers that call sibling CLIs (ats-url-cache).
+ATS_CLI_DIR="${ATS_CLI_DIR:-$(cd "$_ats_script_dir" 2>/dev/null && pwd || echo "$_ats_script_dir")}"
 _goal_sh="$_ats_script_dir/goal.sh"
 if [[ -f "$_goal_sh" ]]; then
   # shellcheck source=/dev/null
@@ -727,11 +729,28 @@ EOF
 #   - URL or "extract from URL" → supacrawl scrape / extract
 #   - Web search query          → supacrawl search (if key) or hint to use superweb
 # Fails open: if the picked tool is missing, prints a hint and returns 0.
+# _ats_url_cache <get|put> <url> — thin fail-open shim around ats-url-cache.
+# ATS_FRESH=1 bypasses the cache entirely.
+_ats_url_cache() {
+  [[ -n "${ATS_FRESH:-}" ]] && return 1
+  local bin="${ATS_URL_CACHE_BIN:-$ATS_CLI_DIR/ats-url-cache}"
+  [[ -f "$bin" ]] || bin="$(command -v ats-url-cache 2>/dev/null)" || return 1
+  [[ -n "$bin" ]] || return 1
+  python3 "$bin" "$@" 2>/dev/null
+}
+
 # _ats_scrape_url <url> — cheapest working lane for a URL:
 # github blob URL → ghx read (structure-aware, ~10x faster than scraping the
-# HTML page); else supacrawl scrape; empty/blocked → superweb fetch fallback.
+# HTML page); else supacrawl scrape (URL-cached, TTL 24h, ATS_FRESH=1 to
+# bypass); empty/blocked → superweb fetch fallback (fast tier first, full
+# escalation ladder only if the fast tier comes back empty).
 _ats_scrape_url() {
   local url="$1"
+  local cached
+  if cached=$(_ats_url_cache get "$url") && [[ -n "$cached" ]]; then
+    printf '%s\n' "$cached"
+    return 0
+  fi
   if [[ "$url" =~ github\.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)/blob/[^/]+/([^#?]+) ]] && ats-have ghx; then
     local _r="${BASH_REMATCH[1]:-${match[1]:-}}" _f="${BASH_REMATCH[2]:-${match[2]:-}}"
     if [[ -n "$_r" && -n "$_f" ]]; then
@@ -748,17 +767,26 @@ _ats_scrape_url() {
   local out
   out=$(ats-supacrawl scrape "$url" --format markdown 2>/dev/null)
   if [[ -n "$out" ]]; then
+    printf '%s\n' "$out" | _ats_url_cache put "$url" >/dev/null || true
     printf '%s\n' "$out"
     return 0
   fi
   if command -v superweb >/dev/null 2>&1; then
-    superweb fetch "$url" --mode auto 2>/dev/null
-    return $?
+    # Fast HTTP tier first — measured 0.9s vs 23s for identical content on
+    # static pages; the full escalation ladder (browser tiers) only when the
+    # fast tier returns nothing (SPA/blocked pages).
+    out=$(superweb fetch "$url" --mode auto --max-tier 1 2>/dev/null)
+    [[ -z "$out" ]] && out=$(superweb fetch "$url" --mode auto 2>/dev/null)
+    if [[ -n "$out" ]]; then
+      printf '%s\n' "$out" | _ats_url_cache put "$url" >/dev/null || true
+      printf '%s\n' "$out"
+      return 0
+    fi
   fi
   return 1
 }
 
-ats-recon() {
+_ats_recon_route() {
   if [[ $# -lt 1 ]]; then
     cat <<'EOF'
 Usage: ats-recon "<question>" [--url <url>] [--repo <owner/repo>] [--extract "<prompt>"]
@@ -852,6 +880,66 @@ EOF
   fi
 }
 
+# ats-recon — instrumented wrapper around _ats_recon_route. Captures the
+# routed output once, appends one ~100-byte JSONL line to the monthly ledger
+# (negligible disk wear), then prints. Baseline factors are the measured
+# ratios from data/benchmarks/recon-2026-07-24: local gmax vs grep ×11.0,
+# repo ghx vs gh api ×2.9, url supacrawl vs curl ×4.8. Fail-open: ledger
+# trouble never blocks output.
+ats-recon() {
+  local _out _rc _shape="local" _q="${1:-}"
+  _out=$(_ats_recon_route "$@")
+  _rc=$?
+  if [[ -n "$_q" && $# -ge 1 ]]; then
+    if [[ "$_q" == http* ]]; then _shape="url"
+    elif [[ "$_q" == *github.com/* || "$_q" =~ (^|[[:space:]])[A-Za-z0-9-]+/[A-Za-z0-9_.-]+([[:space:]]|$) ]]; then _shape="repo"
+    fi
+    local _tok=$(( ${#_out} / 4 )) _factor
+    case "$_shape" in
+      local) _factor="11.0" ;;
+      repo)  _factor="2.9" ;;
+      url)   _factor="4.8" ;;
+    esac
+    local _dir="${ATS_LEDGER_DIR:-$HOME/.agent-token-saver/ledger}"
+    { mkdir -p "$_dir" 2>/dev/null && printf '{"ts":%s,"agent":"%s","shape":"%s","tok":%s,"factor":%s}\n' \
+        "$(date +%s)" "${ATS_AGENT_NAME:-unknown}" "$_shape" "$_tok" "$_factor" \
+        >> "$_dir/recon-$(date +%Y%m).jsonl"; } 2>/dev/null || true
+  fi
+  [[ -n "$_out" ]] && printf '%s\n' "$_out"
+  return $_rc
+}
+
+# ats-gain — aggregate the recon ledger into saved-token totals.
+# Savings are ESTIMATES: actual tokens × (factor − 1), factors from the
+# recorded benchmarks (see ats-recon comment). Not billing data.
+ats-gain() {
+  local _dir="${ATS_LEDGER_DIR:-$HOME/.agent-token-saver/ledger}"
+  if ! ls "$_dir"/recon-*.jsonl >/dev/null 2>&1; then
+    echo "ats-gain: no ledger yet — run some ats-recon queries first."
+    return 0
+  fi
+  cat "$_dir"/recon-*.jsonl | python3 -c '
+import json, sys
+ops = {}
+for line in sys.stdin:
+    try:
+        r = json.loads(line)
+    except ValueError:
+        continue
+    s = ops.setdefault(r.get("shape", "?"), [0, 0, 0])
+    tok = int(r.get("tok", 0)); f = float(r.get("factor", 1))
+    s[0] += 1; s[1] += tok; s[2] += int(tok * (f - 1))
+total_n = sum(v[0] for v in ops.values())
+total_tok = sum(v[1] for v in ops.values())
+total_saved = sum(v[2] for v in ops.values())
+print(f"ats-gain — {total_n} recon ops, {total_tok} tok spent, ~{total_saved} tok saved (estimated)")
+for shape, (n, tok, saved) in sorted(ops.items()):
+    print(f"  {shape:6} n={n:<5} tok={tok:<8} saved~{saved}")
+if total_tok + total_saved:
+    print(f"  reduction ~{100 * total_saved / (total_tok + total_saved):.0f}% vs baseline lanes")
+'
+}
+
 # ats-recon-doctor — quick health check for the three recon CLIs + stdio bridge.
 ats-recon-doctor() {
   echo "=== Recon CLIs (v3.8.0) ==="
@@ -907,7 +995,7 @@ ats-doctor() {
   echo "ATS_ACTIVE_SKILL: ${ATS_ACTIVE_SKILL:-none}"
   echo
   echo "Adaptive functions:"
-  declare -F ats-detect-agent ats-safe ats-have ats-prime-and-init ats-parallel ats-metareview ats-omnigoal-check ats-auto ats-gmax ats-ghx ats-supacrawl ats-supacrawl-extract ats-recon ats-recon-doctor ats-token-cfo ats-goal-archive 2>/dev/null | awk '{print "  "$3}'
+  declare -F ats-detect-agent ats-safe ats-have ats-prime-and-init ats-parallel ats-metareview ats-omnigoal-check ats-auto ats-gmax ats-ghx ats-supacrawl ats-supacrawl-extract ats-recon ats-recon-doctor ats-gain ats-token-cfo ats-goal-archive 2>/dev/null | awk '{print "  "$3}'
   echo
   echo "Aliases installed:"
   type ps 2>/dev/null | head -1

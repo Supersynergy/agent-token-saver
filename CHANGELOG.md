@@ -1,5 +1,38 @@
 # Changelog
 
+## 4.5.0 — 2026-07-24
+
+### Final product pass — ats-gain ledger + URL cache + fast-tier fallback, all agents
+
+Lean/low-wear by design: the ledger appends one ~100-byte JSONL line per
+recon op to a monthly file; the URL cache is one SQLite file in WAL mode with
+`synchronous=NORMAL` (few fsyncs), writes only on new-URL misses, and is
+vacuumed manually/monthly — never automatically.
+
+- **feat(cli): `ats-gain`** — recon savings report. `ats-recon` is now a thin
+  instrumented wrapper around the routing core: it counts output tokens per
+  call and logs shape (local/repo/url) plus the measured baseline factor
+  (gmax vs grep ×11.0, ghx vs gh api ×2.9, supacrawl vs curl ×4.8 — from
+  `data/benchmarks/recon-2026-07-24`). `ats-gain` aggregates: ops, tokens
+  spent, estimated tokens saved, reduction %. Estimates are labeled as such.
+  Fail-open: ledger trouble never blocks output. `ATS_LEDGER_DIR` overrides.
+- **feat(cli): `ats-url-cache`** — URL→markdown cache (get/put/stats/vacuum)
+  at `~/.agent-token-saver/url-cache.db`. `_ats_scrape_url` checks it before
+  scraping and stores successful scrape/fallback bodies (TTL 24h,
+  `ATS_FRESH=1` bypass, `ATS_URL_CACHE_DB`/`ATS_URL_CACHE_TTL` overrides).
+  Empty bodies are never cached. Measured: bun.com/blog miss 1.26s → hit
+  0.04s (31×), identical 59.6k chars, repeat scrapes cost 0 network.
+- **feat(recon): superweb fast-tier fallback** — the superweb lane tries
+  `--max-tier 1` first (measured 0.9s vs 23s for identical content on static
+  pages) and only climbs the full escalation ladder when the fast tier
+  returns nothing (SPA/blocked pages).
+- **fix(shell): `ATS_CLI_DIR`** — absolute sibling-CLI dir resolved at source
+  time; helpers work from any cwd.
+- **tests:** `tests/test_url_cache.py` (roundtrip, TTL expiry, empty-body
+  guard, vacuum). Vacuum uses `<=` so `--ttl 0` expires same-second rows.
+- **install:** applied with `--profile heavy --agent all`
+  (codex/claude/hermes/ggcoder + repo), onboarding 7/7 layers · 3/3 sidecars.
+
 ## 4.4.0 — 2026-07-24
 
 ### Smart URL lanes + bench-fleet expansion
