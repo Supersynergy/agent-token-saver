@@ -50,7 +50,19 @@ AGENTS: list[tuple[str, list[str], dict[str, str]]] = [
     ("hermes_codex",
      ["hermes", "-z", "-", "-m", "openai-codex:gpt-5.5", "--cli"],
      {}),
+    # antigravity: Google's VSCode-fork GUI IDE. No headless CLI. Launch via
+    # `open -a`. Availability = .app bundle exists. Non-interactive — recorded
+    # as success=False with sample="<gui-launch: antigravity>".
+    ("antigravity",
+     ["open", "-a", "Antigravity"],
+     {}),
 ]
+
+_ANTIGRAVITY_APP_BUNDLE = "/Applications/Antigravity.app"
+
+
+def _antigravity_available() -> bool:
+    return Path(_ANTIGRAVITY_APP_BUNDLE).is_dir()
 
 # The probe: a realistic extraction task
 EXTRACT_PROMPT = (
@@ -65,6 +77,30 @@ def run_agent(agent: tuple[str, list[str], dict[str, str]], iter_idx: int) -> Sw
     name, cmd, env_override = agent
     env = os.environ.copy()
     env.update(env_override)
+
+    # antigravity: GUI IDE, no headless stdin/stdout. Launch the app and
+    # record a marker. success=False, json_valid=False — honest.
+    if cmd[:2] == ["open", "-a"] and "Antigravity" in cmd:
+        t0 = time.time()
+        try:
+            proc = subprocess.run(
+                cmd, capture_output=True, text=True,
+                timeout=10, cwd="/tmp", env=env, check=False,
+            )
+            wall = time.time() - t0
+            return SwarmResult(
+                agent=name,
+                iter_idx=iter_idx,
+                wall_s=round(wall, 3),
+                chars=0,
+                tokens_est=0,
+                exit_code=proc.returncode,
+                success=False,
+                json_valid=False,
+                sample="<gui-launch: antigravity>",
+            )
+        except Exception as e:
+            return SwarmResult(name, iter_idx, 0.0, 0, 0, -1, False, False, f"<gui-error: {e}>")
 
     t0 = time.time()
     try:
@@ -161,6 +197,8 @@ def main() -> int:
     args = ap.parse_args()
 
     agents = [a for a in AGENTS if args.only is None or args.only in a[0]]
+    # Filter antigravity by app-bundle presence (GUI, not on PATH).
+    agents = [a for a in agents if a[0] != "antigravity" or _antigravity_available()]
     if not agents:
         print(f"No agents match --only={args.only!r}", file=sys.stderr)
         return 1

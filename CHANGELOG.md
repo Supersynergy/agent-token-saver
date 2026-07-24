@@ -1,5 +1,35 @@
 # Changelog
 
+## 4.4.0 — 2026-07-24
+
+### Smart URL lanes + bench-fleet expansion
+
+- **feat(recon): `_ats_scrape_url` smart URL lane** — every URL entering
+  `ats-recon` (via `--url` or as the query) now routes through one helper:
+  1. `github.com/<o>/<r>/blob/<branch>/<file>` → `ghx read` (structure-aware,
+     measured 1.8-3s vs 31s supacrawl on the same file);
+  2. `github.com/<o>/<r>` repo-root → `ghx explore` (tree+README in 1 call
+     instead of scraping the HTML UI);
+  3. everything else → `supacrawl scrape`;
+  4. empty/blocked scrape → `superweb fetch --mode auto` fallback (fail-open,
+     only if `superweb` is on PATH).
+  Fixes a lane-order bug where the `github.com` query regex hijacked full
+  URLs before the URL lane could run (blob URLs landed in `ghx inspect` with
+  the raw URL as concern).
+- **feat(bench): fleet expansion** — `ats-poweruser-bench.py` grows to 10
+  agents (adds `claude -p`, `hermes_terra`, 5 local Ollama models);
+  `ats-jury-bench-v2.py` + `ats-swarm-bench.py` add `antigravity` (GUI IDE,
+  launch-only; recorded honestly as success=False, excluded as blind
+  reviewer).
+- **bench(superweb vs supacrawl, 2026-07-24, this machine):** example.com
+  240 ch/2.8s warm (superweb) vs 168 ch/0.9s (supacrawl); bun.com/blog 52.0k
+  ch/24s vs 59.7k ch/2.8s; GitHub README page 9.4k ch/4.3s vs 13.0k ch/31s —
+  while `ghx read` returns the same file as 11.1k ch in 3.0s without a
+  browser. Conclusion encoded in the router: GitHub → ghx, static/bulk →
+  supacrawl, JS-heavy/blocked → superweb.
+- **docs(agents):** ghx 2.9 budget-compaction default documented (old
+  `--map` flag removed).
+
 ## 4.3.0 — 2026-07-24
 
 ### Recon router hardening + locale fix + fresh benchmarks

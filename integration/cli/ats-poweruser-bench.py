@@ -110,10 +110,21 @@ CASES: list[dict[str, Any]] = [
 
 AGENTS: list[tuple[str, list[str], str]] = [
     # name, base_cmd, input_mode ("stdin" or "arg")
+    # 10 agents — mix of hosted CLIs and local Ollama models, all non-interactive.
     ("codex", ["codex", "exec", "--skip-git-repo-check", "-"], "stdin"),
     ("kimi", ["kimi", "--quiet", "--input-format", "text"], "stdin"),
+    ("claude", ["claude", "-p", "__PROMPT__"], "arg"),
     ("hermes_luna", ["hermes", "-z", "__PROMPT__", "-m",
                      "openai/gpt-5.6-luna", "--cli"], "arg"),
+    ("hermes_terra", ["hermes", "-z", "__PROMPT__", "-m",
+                      "openai/gpt-5.6-terra", "--cli"], "arg"),
+    ("ollama_gemma4", ["ollama", "run", "gemma4-31b-fast", "__PROMPT__"], "arg"),
+    ("ollama_qwen36", ["ollama", "run", "qwen36-nothink", "__PROMPT__"], "arg"),
+    ("ollama_phi4", ["ollama", "run", "phi4-reasoning:plus", "__PROMPT__"], "arg"),
+    ("ollama_dolphin3", ["ollama", "run", "dolphin3:8b", "__PROMPT__"], "arg"),
+    ("ollama_daredevil", ["ollama", "run",
+                          "richardyoung/qwen3.6-27b-abliterated:latest",
+                          "__PROMPT__"], "arg"),
 ]
 
 

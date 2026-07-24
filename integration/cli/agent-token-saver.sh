@@ -727,6 +727,37 @@ EOF
 #   - URL or "extract from URL" → supacrawl scrape / extract
 #   - Web search query          → supacrawl search (if key) or hint to use superweb
 # Fails open: if the picked tool is missing, prints a hint and returns 0.
+# _ats_scrape_url <url> — cheapest working lane for a URL:
+# github blob URL → ghx read (structure-aware, ~10x faster than scraping the
+# HTML page); else supacrawl scrape; empty/blocked → superweb fetch fallback.
+_ats_scrape_url() {
+  local url="$1"
+  if [[ "$url" =~ github\.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)/blob/[^/]+/([^#?]+) ]] && ats-have ghx; then
+    local _r="${BASH_REMATCH[1]:-${match[1]:-}}" _f="${BASH_REMATCH[2]:-${match[2]:-}}"
+    if [[ -n "$_r" && -n "$_f" ]]; then
+      ghx read "$_r" "$_f" 2>/dev/null && return 0
+    fi
+  fi
+  # github repo-root URL (no /blob/) → ghx explore beats scraping the HTML UI.
+  if [[ "$url" =~ github\.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)/?$ ]] && ats-have ghx; then
+    local _r2="${BASH_REMATCH[1]:-${match[1]:-}}"
+    if [[ -n "$_r2" ]]; then
+      ghx explore "$_r2" 2>/dev/null && return 0
+    fi
+  fi
+  local out
+  out=$(ats-supacrawl scrape "$url" --format markdown 2>/dev/null)
+  if [[ -n "$out" ]]; then
+    printf '%s\n' "$out"
+    return 0
+  fi
+  if command -v superweb >/dev/null 2>&1; then
+    superweb fetch "$url" --mode auto 2>/dev/null
+    return $?
+  fi
+  return 1
+}
+
 ats-recon() {
   if [[ $# -lt 1 ]]; then
     cat <<'EOF'
@@ -774,8 +805,8 @@ EOF
     return $?
   fi
   if [[ -n "$url" ]]; then
-    # Plain scrape
-    ats-supacrawl scrape "$url" --format markdown 2>/dev/null
+    # Plain scrape (ghx for github blobs, supacrawl, superweb fallback)
+    _ats_scrape_url "$url"
     return $?
   fi
   if [[ -n "$repo" ]]; then
@@ -787,17 +818,18 @@ EOF
     ghx inspect "$repo" "$query" 2>/dev/null
     return $?
   fi
-  # Auto-detect from query
+  # Auto-detect from query. A query that IS a URL goes to the URL lane first
+  # (which itself routes github blob/root URLs to ghx read/explore).
+  if [[ "$query" =~ ^https?:// ]]; then
+    _ats_scrape_url "$query"
+    return $?
+  fi
   if [[ "$query" =~ github\.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+) ]]; then
     repo="${BASH_REMATCH[1]:-${match[1]:-}}"
     if [[ -n "$repo" ]] && ats-have ghx; then
       ghx inspect "$repo" "$query" 2>/dev/null
       return $?
     fi
-  fi
-  if [[ "$query" =~ ^https?:// ]]; then
-    ats-supacrawl scrape "$query" --format markdown 2>/dev/null
-    return $?
   fi
   # Bare owner/repo token (e.g. "anthropics/claude-code where are hooks documented"):
   # one slash, owner segment without dot, not an existing local path.

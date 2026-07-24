@@ -27,8 +27,9 @@ Three fail-open recon tools are wrapped as `ats-*` helpers in
   (replaces Cascade `code_search` for indexed projects). Index once:
   `gmax add /path/to/project`. Query: `gmax "<q>" --agent`.
 - `ats-ghx explore|read|inspect|search <owner/repo>` — GitHub reconnaissance
-  sidecar. `--map` output ~92% token reduction. Uses `gh` CLI auth, no extra
-  API key.
+  sidecar. Budget compaction (~92% token reduction) is the default since
+  ghx 2.9 (`--budget <chars>`, `--full` disables; the old `--map` flag is
+  gone). Uses `gh` CLI auth, no extra API key.
 - `ats-supacrawl scrape|map|crawl|batch <url>` — HTTP-first web scraper,
   markdown output. No API key. Complements heavier research tooling for
   quick single-page pulls.
@@ -91,6 +92,7 @@ tools degrade gracefully, never block the agent.
   `synx put` durable-fact writeback.
 - **`ats-jury-bench-v2.py`** — jury of agents with ABBA-adaptive ordering
   and a blind reviewer score. Broader jury: `codex`, `claude`, `kimi`,
-  `gemini`, `fable`. Flags: `--agents`, `--reviewer`, `--iter`, `--no-abba`.
+  `gemini`, `fable`, `antigravity` (GUI IDE, launch-only, non-interactive).
+  Flags: `--agents`, `--reviewer`, `--iter`, `--no-abba`.
 
 <!-- REPO-POLISH-AGENTS:END -->

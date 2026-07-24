@@ -72,7 +72,18 @@ AGENT_CANDIDATES: list[tuple[str, list[str]]] = [
     ("hermes_kimi", ["hermes", "-z", "-", "-m", "kimi-k3", "--cli"]),
     ("hermes_luna", ["hermes", "-z", "-", "-m", "openai/gpt-5.6-luna", "--cli"]),
     ("hermes_terra", ["hermes", "-z", "-", "-m", "openai/gpt-5.6-terra", "--cli"]),
+    # antigravity: Google's VSCode-fork GUI IDE. No headless CLI, so launch
+    # via `open -a`. Availability = .app bundle exists. Non-interactive —
+    # ask_agent will record success=False, sample="<gui-launch>".
+    ("antigravity", ["open", "-a", "Antigravity"]),
 ]
+
+# Paths checked for antigravity availability (GUI app, not on PATH).
+_ANTIGRAVITY_APP_BUNDLE = "/Applications/Antigravity.app"
+
+
+def _antigravity_available() -> bool:
+    return Path(_ANTIGRAVITY_APP_BUNDLE).is_dir()
 
 
 @dataclass
@@ -96,6 +107,10 @@ def agents_available(requested: str | None) -> list[tuple[str, list[str]]]:
     out: list[tuple[str, list[str]]] = []
     for name, cmd in AGENT_CANDIDATES:
         if requested and name not in requested:
+            continue
+        if name == "antigravity":
+            if _antigravity_available():
+                out.append((name, cmd))
             continue
         if shutil.which(cmd[0]):
             out.append((name, cmd))
@@ -125,6 +140,17 @@ def ask_agent(agent_cmd: list[str], question: str, context: str) -> tuple[str, f
         f"Context (tool output):\n{context[:8000]}\n\n"
         f"Answer in 2-3 sentences. Be specific."
     )
+    # antigravity: GUI IDE, no headless stdin/stdout. Launch the app and
+    # return a marker — the bench records success=False, which is honest.
+    if agent_cmd and agent_cmd[:2] == ["open", "-a"] and "Antigravity" in agent_cmd:
+        t0 = time.time()
+        try:
+            subprocess.run(agent_cmd, capture_output=True, text=True,
+                           timeout=10, cwd="/tmp", check=False)
+            wall = time.time() - t0
+            return "<gui-launch: antigravity>", round(wall, 3), 0
+        except Exception as e:
+            return f"<gui-error: {e}>", 0.0, 0
     t0 = time.time()
     try:
         proc = subprocess.run(
@@ -140,7 +166,12 @@ def ask_agent(agent_cmd: list[str], question: str, context: str) -> tuple[str, f
 
 def blind_review(reviewer_cmd: list[str], question: str, answer: str) -> float:
     """Ask a reviewer agent to rate the answer 1-5 without knowing the path."""
-    if not reviewer_cmd or not shutil.which(reviewer_cmd[0]):
+    if not reviewer_cmd:
+        return 0.0
+    # antigravity can't blind-review (GUI, no stdout). Skip cleanly.
+    if reviewer_cmd[:2] == ["open", "-a"] and "Antigravity" in reviewer_cmd:
+        return 0.0
+    if not shutil.which(reviewer_cmd[0]):
         return 0.0
     prompt = (
         f"You are a blind reviewer. Rate the following answer to the question "
@@ -190,8 +221,11 @@ def main() -> int:
         return 1
 
     # Pick reviewer: first agent not in the jury, or fall back to jury[0].
+    # antigravity is skipped as reviewer — GUI can't blind-score.
     reviewer_cmd: list[str] = []
     for name, cmd in AGENT_CANDIDATES:
+        if name == "antigravity":
+            continue
         if args.reviewer and name != args.reviewer:
             continue
         if not args.reviewer and any(name == a[0] for a in agents):
