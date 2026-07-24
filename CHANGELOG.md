@@ -1,5 +1,28 @@
 # Changelog
 
+## 4.14.0 — 2026-07-24
+
+### One fan-out engine: ats-pipe routes through llmadapter (all features together)
+
+Consolidates the two fan-out paths. `llmadapter` (fast, cached, direct
+OpenRouter HTTP, `--aggregate` consensus, `--first N` hedged race) becomes the
+default FANOUT engine for `ats-pipe`; the Python `ats-swarm-bench` stays as the
+metrics/jury tool and the fail-open fallback.
+
+- **feat(cli): `ats-pipe` engine = llmadapter** — GATHER (recon) → FANOUT
+  (`llmadapter ask`) → SYNTH (`--aggregate`). New flags: `--lanes
+  free|paid|local|cli|all|name,…`, `--first N` (race), `--engine
+  auto|llmadapter|swarm`. `--only <lane>` maps to `--lanes`; `--synth` maps to
+  `--aggregate`. Verified 2026-07-24: local gather + `--first 3` → 3 answers in
+  4.2s (was 22-100s on the Python path); `--synth` → 4 answers 1.2s + consensus
+  "Paris"; `--engine swarm` fallback still fans out.
+- **behavior:** `--engine auto` picks llmadapter when on PATH, else swarm.
+  Swarm-only flags remain `--system/--workers/--timeout`; the swarm fallback
+  now maps a specific `--lanes <name>` to its `--only`.
+- This supersedes the v4.13.0 Python `--synth` path (kept as fallback). The
+  parallel `llmadapter` (v4.12.0) is now the shared engine — no second
+  fan-out system to maintain.
+
 ## 4.13.0 — 2026-07-24
 
 ### Pipeline complete: `--synth` merges the fan-out into one consensus answer

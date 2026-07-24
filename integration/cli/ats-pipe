@@ -15,13 +15,15 @@
 #   ats-pipe --github "<query>"           gather via ghmax code recon
 #   ats-pipe --url <url> "<question>"     gather a page, ask about it
 #   ats-pipe --gather-only "<q>"          just the context (no fanout)
-#   ats-pipe --synth "<q>"                fan out, then merge answers into one
-#   ats-pipe --only <lane> "<q>"          fan out to one lane (e.g. devin_glm52)
-#   ats-pipe --system "<rule>" "<q>"      apply a system instruction to the fanout
+#   ats-pipe --synth "<q>"                fan out, then merge into one consensus
+#   ats-pipe --lanes free|local|all "<q>" pick the lane group (llmadapter)
+#   ats-pipe --first 3 "<q>"              hedged race: stop after 3 answers
+#   ats-pipe --only <lane> "<q>"          one lane/group
 #
-# Full pipeline: GATHER (recon) → FANOUT ($0 models) → SYNTH (one model merges
-# the answers into a consensus). --synth-model / ATS_PIPE_SYNTH_MODEL pick the
-# judge (default free glm-5-2 via devin).
+# Full pipeline: GATHER (recon) → FANOUT → SYNTH. FANOUT runs through
+# `llmadapter` (fast, cached, --aggregate = consensus); the Python swarm-bench
+# is the fallback + the metrics/jury tool. Pick with --engine auto|llmadapter|
+# swarm. Swarm-only flags: --system/--workers/--timeout.
 #
 # Flags after the question pass through to ats-swarm-bench (--only/--skip/
 # --system/--workers/--timeout). Config: ATS_PIPE_SWARM points at the bench.
@@ -42,8 +44,8 @@ _ats_pipe_scrape() {
 }
 
 mode="local" url="" gather_only=0 synth=0
-synth_model="${ATS_PIPE_SYNTH_MODEL:-glm-5-2}"
-passthru=() words=()
+lanes="free" first="" engine="${ATS_PIPE_ENGINE:-auto}"
+swarm_passthru=() words=()
 # Flags may appear anywhere (before or after the question); everything that is
 # not a recognised flag is joined into the question.
 while [[ $# -gt 0 ]]; do
@@ -53,10 +55,13 @@ while [[ $# -gt 0 ]]; do
     --url) mode="url"; url="$2"; shift 2 ;;
     --gather-only) gather_only=1; shift ;;
     --synth) synth=1; shift ;;
-    --synth-model) synth_model="$2"; shift 2 ;;
-    --only|--skip|--system|--workers|--timeout)
-      passthru+=("$1" "$2"); shift 2 ;;
-    -h|--help) sed -n '2,26p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    --lanes) lanes="$2"; shift 2 ;;         # llmadapter: free|paid|local|cli|all|name,…
+    --only) lanes="$2"; shift 2 ;;           # alias for a single lane/group
+    --first) first="$2"; shift 2 ;;          # hedged race: stop after N answers
+    --engine) engine="$2"; shift 2 ;;        # auto|llmadapter|swarm
+    --skip|--system|--workers|--timeout)
+      swarm_passthru+=("$1" "$2"); shift 2 ;;  # swarm-engine only
+    -h|--help) sed -n '2,30p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) words+=("$1"); shift ;;
   esac
 done
@@ -81,8 +86,6 @@ if [[ "$gather_only" == 1 ]]; then
   exit 0
 fi
 
-# --- FAN OUT ----------------------------------------------------------------
-echo "· fan out across \$0 lanes …" >&2
 prompt="Question: $question
 
 Context (from recon tools; may be empty):
@@ -90,45 +93,28 @@ $context
 
 Answer concisely and specifically using the context where relevant."
 
-if [[ "$synth" == 0 ]]; then
-  printf '%s' "$prompt" | python3 "$SWARM" --iter 1 --prompt - "${passthru[@]}"
+# --- FAN OUT (engine = llmadapter, the fast cached one; swarm as fallback) ---
+# llmadapter does fanout + --aggregate (consensus merge) itself, faster and
+# cached; the Python swarm-bench stays for metrics/jury runs. --engine picks.
+have_llm=0; command -v llmadapter >/dev/null 2>&1 && have_llm=1
+[[ "$engine" == "auto" ]] && engine=$([[ $have_llm == 1 ]] && echo llmadapter || echo swarm)
+
+if [[ "$engine" == "llmadapter" ]]; then
+  msg="lanes=$lanes"; [[ "$synth" == 1 ]] && msg="$msg +aggregate"; [[ -n "$first" ]] && msg="$msg first=$first"
+  echo "· fan out via llmadapter ($msg) …" >&2
+  llm_args=(ask "$prompt" --lanes "$lanes")
+  [[ "$synth" == 1 ]] && llm_args+=(--aggregate)
+  [[ -n "$first" ]] && llm_args+=(--first "$first")
+  llmadapter "${llm_args[@]}"
   exit $?
 fi
 
-# --- SYNTH ------------------------------------------------------------------
-# Collect every successful lane answer, then have ONE free model merge them
-# into a single consensus answer. Full answers need a larger sample cap.
-out_json="$(mktemp -t ats-pipe.XXXXXX).json"
-printf '%s' "$prompt" | python3 "$SWARM" --iter 1 --prompt - --sample-chars 4000 \
-  --out "$out_json" "${passthru[@]}" >/dev/null 2>&1 || true
-answers="$(python3 - "$out_json" <<'PY'
-import json, sys
-try:
-    d = json.load(open(sys.argv[1]))
-except Exception:
-    sys.exit(0)
-for r in d.get("results", []):
-    if r.get("success") and r.get("sample", "").strip():
-        print(f"### {r['agent']}\n{r['sample'].strip()}\n")
-PY
-)"
-rm -f "$out_json"
-if [[ -z "$answers" ]]; then
-  echo "ats-pipe: no successful lane answers to synthesize" >&2
-  exit 1
-fi
-echo "· synth ($synth_model) merges $(printf '%s' "$answers" | grep -c '^### ') answers …" >&2
-synth_prompt="You are a synthesis judge. Below are independent answers from several AI models to the same question. Produce ONE best consensus answer: keep what they agree on, resolve conflicts by correctness, drop hallucinations.
-
-Question: $question
-
-$answers
-
-Final consensus answer:"
-if command -v devin >/dev/null 2>&1; then
-  devin --print --model "$synth_model" -- "$synth_prompt" 2>/dev/null \
-    | sed 's/\x1b\[[0-9;?]*[a-zA-Z]//g'
-else
-  printf '%s\n' "$answers"
-  echo "(no devin CLI for synth — raw answers above)" >&2
-fi
+# Fallback engine: Python swarm-bench (--system/--workers/--timeout apply here).
+echo "· fan out via swarm (\$0 lanes) …" >&2
+# Map a specific lane name to the swarm's --only (group keywords don't apply).
+case "$lanes" in
+  free|paid|local|cli|all) : ;;
+  *) swarm_passthru+=(--only "$lanes") ;;
+esac
+[[ "$synth" == 1 ]] && swarm_passthru+=(--sample-chars 4000)
+printf '%s' "$prompt" | python3 "$SWARM" --iter 1 --prompt - "${swarm_passthru[@]}"
