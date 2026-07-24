@@ -1,0 +1,177 @@
+{
+  "results": [
+    {
+      "agent": "codex",
+      "iter_idx": 0,
+      "wall_s": 14.162,
+      "chars": 108,
+      "tokens_est": 27,
+      "exit_code": 0,
+      "success": true,
+      "json_valid": true,
+      "sample": "{\"name\":\"Acme Widget Pro\",\"price\":42.99,\"features\":[\"durable\",\"lightweight\",\"eco-friendly\"],\"in_stock\":true}"
+    },
+    {
+      "agent": "hermes_kimi",
+      "iter_idx": 0,
+      "wall_s": 6.633,
+      "chars": 110,
+      "tokens_est": 27,
+      "exit_code": 0,
+      "success": false,
+      "json_valid": false,
+      "sample": "HTTP 401: The API Key appears to be invalid or may have expired. Please verify your credentials and try again."
+    },
+    {
+      "agent": "hermes_luna",
+      "iter_idx": 0,
+      "wall_s": 6.62,
+      "chars": 542,
+      "tokens_est": 135,
+      "exit_code": 0,
+      "success": false,
+      "json_valid": false,
+      "sample": "Billing or credits exhausted: HTTP 402: This request requires more credits, or fewer max_tokens. You requested up to 65536 tokens, but can only afford 64646. To increase, visit https://openrouter.ai/s"
+    },
+    {
+      "agent": "hermes_terra",
+      "iter_idx": 0,
+      "wall_s": 6.626,
+      "chars": 543,
+      "tokens_est": 135,
+      "exit_code": 0,
+      "success": false,
+      "json_valid": false,
+      "sample": "Billing or credits exhausted: HTTP 402: This request requires more credits, or fewer max_tokens. You requested up to 65536 tokens, but can only afford 25858. To increase, visit https://openrouter.ai/s"
+    },
+    {
+      "agent": "hermes_codex",
+      "iter_idx": 0,
+      "wall_s": 6.209,
+      "chars": 110,
+      "tokens_est": 27,
+      "exit_code": 0,
+      "success": false,
+      "json_valid": false,
+      "sample": "HTTP 401: The API Key appears to be invalid or may have expired. Please verify your credentials and try again."
+    },
+    {
+      "agent": "antigravity",
+      "iter_idx": 0,
+      "wall_s": 0.188,
+      "chars": 0,
+      "tokens_est": 0,
+      "exit_code": 0,
+      "success": false,
+      "json_valid": false,
+      "sample": "<gui-launch: antigravity>"
+    },
+    {
+      "agent": "claude",
+      "iter_idx": 0,
+      "wall_s": 10.164,
+      "chars": 139,
+      "tokens_est": 34,
+      "exit_code": 0,
+      "success": true,
+      "json_valid": true,
+      "sample": "```json {   \"name\": \"Acme Widget Pro\",   \"price\": 42.99,   \"features\": [\"durable\", \"lightweight\", \"eco-friendly\"],   \"in_stock\": true } ```"
+    },
+    {
+      "agent": "ollama_phi4",
+      "iter_idx": 0,
+      "wall_s": 32.175,
+      "chars": 4502,
+      "tokens_est": 1125,
+      "exit_code": 0,
+      "success": true,
+      "json_valid": false,
+      "sample": "We are Phi. We need to extract product information from text provided: \"Acme Widget Pro \u2014 $42.99 \u2014 The best widget on the market. Features: durabl\u001b[6D\u001b[K durable, lightweight, eco-friendly. In stock.\""
+    },
+    {
+      "agent": "ollama_dolphin3",
+      "iter_idx": 0,
+      "wall_s": 9.641,
+      "chars": 90,
+      "tokens_est": 22,
+      "exit_code": 0,
+      "success": true,
+      "json_valid": true,
+      "sample": "{   \"name\": \"Acme Widget Pro\",   \"price\": \"$42.99\",   \"features\": [],   \"in_stock\": true }"
+    }
+  ],
+  "aggregate": {
+    "codex": {
+      "n": 1,
+      "success_rate": 1.0,
+      "json_valid_rate": 1.0,
+      "wall_s_mean": 14.162,
+      "chars_mean": 108,
+      "tokens_est_mean": 27
+    },
+    "hermes_kimi": {
+      "n": 1,
+      "success_rate": 0.0,
+      "json_valid_rate": 0.0,
+      "wall_s_mean": 6.633,
+      "chars_mean": 110,
+      "tokens_est_mean": 27
+    },
+    "hermes_luna": {
+      "n": 1,
+      "success_rate": 0.0,
+      "json_valid_rate": 0.0,
+      "wall_s_mean": 6.62,
+      "chars_mean": 542,
+      "tokens_est_mean": 135
+    },
+    "hermes_terra": {
+      "n": 1,
+      "success_rate": 0.0,
+      "json_valid_rate": 0.0,
+      "wall_s_mean": 6.626,
+      "chars_mean": 543,
+      "tokens_est_mean": 135
+    },
+    "hermes_codex": {
+      "n": 1,
+      "success_rate": 0.0,
+      "json_valid_rate": 0.0,
+      "wall_s_mean": 6.209,
+      "chars_mean": 110,
+      "tokens_est_mean": 27
+    },
+    "antigravity": {
+      "n": 1,
+      "success_rate": 0.0,
+      "json_valid_rate": 0.0,
+      "wall_s_mean": 0.188,
+      "chars_mean": 0,
+      "tokens_est_mean": 0
+    },
+    "claude": {
+      "n": 1,
+      "success_rate": 1.0,
+      "json_valid_rate": 1.0,
+      "wall_s_mean": 10.164,
+      "chars_mean": 139,
+      "tokens_est_mean": 34
+    },
+    "ollama_phi4": {
+      "n": 1,
+      "success_rate": 1.0,
+      "json_valid_rate": 0.0,
+      "wall_s_mean": 32.175,
+      "chars_mean": 4502,
+      "tokens_est_mean": 1125
+    },
+    "ollama_dolphin3": {
+      "n": 1,
+      "success_rate": 1.0,
+      "json_valid_rate": 1.0,
+      "wall_s_mean": 9.641,
+      "chars_mean": 90,
+      "tokens_est_mean": 22
+    }
+  }
+}

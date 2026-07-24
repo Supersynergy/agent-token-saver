@@ -1,5 +1,33 @@
 # Changelog
 
+## 4.6.0 — 2026-07-24
+
+### Swarm bench: parallel by default + honest success metric
+
+- **feat(swarm): parallel execution** — `ats-swarm-bench.py` runs all
+  (agent × iteration) calls through a `ThreadPoolExecutor` (default
+  `min(8, calls)`, `--workers N` override, `--sequential` opt-out).
+  Wall-clock becomes the slowest agent instead of the sum: measured
+  2026-07-24, 9 agents × 1 iter = ~92s of agent work in 32s wall (2.9×);
+  the old sequential loop needed 31s for only 6 agents. Report order stays
+  deterministic regardless of completion order.
+- **fix(swarm): honest success metric** — hosted CLIs (hermes lanes) print
+  HTTP 401/402 billing errors to STDOUT and exit 0; the bench counted them
+  as success=1.0. New `ERROR_MARKERS` head-scan flips these to failures:
+  hermes_kimi/luna/terra/codex now correctly report 0.0 while codex,
+  claude and ollama_dolphin3 hold real 1.0 with valid JSON.
+- **feat(swarm): local lanes** — adds `claude -p`, `ollama_phi4`,
+  `ollama_dolphin3` (no API key, no billing). Data point: phi4-reasoning
+  dumps its chain of thought (4.5k chars, invalid JSON) — a bad extraction
+  lane, dolphin3:8b answers clean JSON in 9.6s.
+- **feat(swarm): `--timeout N`** (default 120) — also fixes the timeout
+  result recording the hardcoded 120.0 instead of the actual limit.
+- **feat(swarm): PATH pre-filter** — missing CLIs are reported once and
+  skipped instead of burning a FileNotFoundError per iteration.
+- **tests:** `tests/test_swarm_bench.py` (error-marker semantics, head-only
+  scan, real answers pass). Artifacts:
+  `data/benchmarks/swarm-{seq,par}-2026-07-24.json`.
+
 ## 4.5.0 — 2026-07-24
 
 ### Final product pass — ats-gain ledger + URL cache + fast-tier fallback, all agents
