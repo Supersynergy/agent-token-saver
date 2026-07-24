@@ -1,5 +1,28 @@
 # Changelog
 
+## 4.7.2 — 2026-07-24
+
+### Jury reviewer fixed — dead gemini out, live kimi in
+
+- **fix(jury): dead reviewer zeroed every score** — `gemini --print` is on
+  PATH but Google killed the free individual Gemini-CLI tier
+  (`IneligibleTierError` → "migrate to Antigravity"), so the auto-picked
+  reviewer returned an error and every `reviewer_score` was 0.0 (visible in
+  the earlier smoke: "88% saved, ★ 0 vs 0"). gemini removed from the jury.
+- **fix(jury): wrong kimi binary** — the jury used `kimi --print` (no such
+  flag); corrected to the working `kimi-awake --quiet --input-format text`
+  (OAuth, reads stdin). Now the default reviewer for a codex+claude jury is
+  live kimi — verified: single blind-review call returns 5.0, was 0.0.
+- **fix(jury): hermes lanes hermetic + alive** — `hermes_kimi` (dead
+  kimi-k3 key) replaced by `hermes_free` (OpenRouter `ling-3.0-flash:free`);
+  all hermes jury lanes pass `--ignore-user-config` so the user-level
+  fallback chain can't turn a failure into a 120s retry.
+- **note:** Devin has no local CLI and no key here (checked env/keychain);
+  its official API is session-based, a poor fit for the one-shot extraction
+  swarm — not added. Antigravity's `language_server` exposes a CSRF-gated
+  HTTP API on a random port, but wrapping that reverse-engineered IDE
+  protocol is a liability, so antigravity stays a GUI-launch marker.
+
 ## 4.7.1 — 2026-07-24
 
 ### Kimi lane revived (OAuth) + hermes default fixed + hermetic bench lanes

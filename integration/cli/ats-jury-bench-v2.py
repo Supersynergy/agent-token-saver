@@ -65,13 +65,36 @@ QUESTIONS: list[dict[str, Any]] = [
 AGENT_CANDIDATES: list[tuple[str, list[str]]] = [
     ("codex", ["codex", "exec", "--skip-git-repo-check", "-"]),
     ("claude", ["claude", "--print"]),
-    ("kimi", ["kimi", "--print"]),
-    ("gemini", ["gemini", "--print"]),
+    # kimi via its OAuth CLI (reads stdin). `kimi --print` does not exist —
+    # the working binary is kimi-awake with --quiet --input-format text.
+    ("kimi", ["kimi-awake", "--quiet", "--input-format", "text"]),
     ("fable", ["fable", "--print"]),
-    # hermes variants from v1 kept for backward-compat
-    ("hermes_kimi", ["hermes", "-z", "-", "-m", "kimi-k3", "--cli"]),
-    ("hermes_luna", ["hermes", "-z", "-", "-m", "openai/gpt-5.6-luna", "--cli"]),
-    ("hermes_terra", ["hermes", "-z", "-", "-m", "openai/gpt-5.6-terra", "--cli"]),
+    # gemini DISABLED 2026-07: Google killed the free individual Gemini-CLI
+    # tier (IneligibleTierError → "migrate to Antigravity"). Left on PATH but
+    # dead; keep out of the jury/reviewer set so it can't zero every score.
+    # Re-enable only if a live Gemini credential is wired.
+    # ("gemini", ["gemini", "--print"]),
+    # hermes variants — --ignore-user-config so the user-level fallback chain
+    # can't turn a lane failure into a 120s retry loop. kimi-k3 key is dead;
+    # use an OpenRouter :free model for the hermes lane instead.
+    (
+        "hermes_free",
+        [
+            "hermes",
+            "-z",
+            "-",
+            "--provider",
+            "openrouter",
+            "-m",
+            "inclusionai/ling-3.0-flash:free",
+            "--cli",
+            "--ignore-user-config",
+        ],
+    ),
+    (
+        "hermes_luna",
+        ["hermes", "-z", "-", "-m", "openai/gpt-5.6-luna", "--cli", "--ignore-user-config"],
+    ),
     # antigravity: Google's VSCode-fork GUI IDE. No headless CLI, so launch
     # via `open -a`. Availability = .app bundle exists. Non-interactive —
     # ask_agent will record success=False, sample="<gui-launch>".
