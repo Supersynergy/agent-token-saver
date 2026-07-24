@@ -1,0 +1,237 @@
+{
+  "results": [
+    {
+      "agent": "codex",
+      "iter_idx": 0,
+      "wall_s": 45.013,
+      "chars": 108,
+      "tokens_est": 27,
+      "exit_code": 0,
+      "success": true,
+      "json_valid": true,
+      "sample": "{\"name\":\"Acme Widget Pro\",\"price\":42.99,\"features\":[\"durable\",\"lightweight\",\"eco-friendly\"],\"in_stock\":true}",
+      "cost_usd": 0.0
+    },
+    {
+      "agent": "kimi",
+      "iter_idx": 0,
+      "wall_s": 24.233,
+      "chars": 142,
+      "tokens_est": 35,
+      "exit_code": 0,
+      "success": true,
+      "json_valid": true,
+      "sample": "```json {   \"name\": \"Acme Widget Pro\",   \"price\": \"$42.99\",   \"features\": [\"durable\", \"lightweight\", \"eco-friendly\"],   \"in_stock\": true } ```",
+      "cost_usd": 0.0
+    },
+    {
+      "agent": "ggcoder_kimi",
+      "iter_idx": 0,
+      "wall_s": 15.084,
+      "chars": 139,
+      "tokens_est": 34,
+      "exit_code": 0,
+      "success": true,
+      "json_valid": true,
+      "sample": "```json {   \"name\": \"Acme Widget Pro\",   \"price\": 42.99,   \"features\": [\"durable\", \"lightweight\", \"eco-friendly\"],   \"in_stock\": true } ```",
+      "cost_usd": 0.0
+    },
+    {
+      "agent": "hermes_luna",
+      "iter_idx": 0,
+      "wall_s": 90.0,
+      "chars": 0,
+      "tokens_est": 0,
+      "exit_code": -1,
+      "success": false,
+      "json_valid": false,
+      "sample": "<timeout>",
+      "cost_usd": 0.0
+    },
+    {
+      "agent": "hermes_free_gemma4",
+      "iter_idx": 0,
+      "wall_s": 90.0,
+      "chars": 0,
+      "tokens_est": 0,
+      "exit_code": -1,
+      "success": false,
+      "json_valid": false,
+      "sample": "<timeout>",
+      "cost_usd": 0.0
+    },
+    {
+      "agent": "hermes_free_ling",
+      "iter_idx": 0,
+      "wall_s": 18.227,
+      "chars": 37,
+      "tokens_est": 9,
+      "exit_code": 0,
+      "success": true,
+      "json_valid": false,
+      "sample": "Hermes standing by. What do you need?",
+      "cost_usd": 0.0
+    },
+    {
+      "agent": "agy_gemini_flash",
+      "iter_idx": 0,
+      "wall_s": 35.348,
+      "chars": 155,
+      "tokens_est": 38,
+      "exit_code": 0,
+      "success": true,
+      "json_valid": true,
+      "sample": "```json {   \"name\": \"Acme Widget Pro\",   \"price\": 42.99,   \"features\": [     \"durable\",     \"lightweight\",     \"eco-friendly\"   ],   \"in_stock\": true } ```",
+      "cost_usd": 0.0
+    },
+    {
+      "agent": "agy_claude_sonnet",
+      "iter_idx": 0,
+      "wall_s": 42.436,
+      "chars": 139,
+      "tokens_est": 34,
+      "exit_code": 0,
+      "success": true,
+      "json_valid": true,
+      "sample": "```json {   \"name\": \"Acme Widget Pro\",   \"price\": 42.99,   \"features\": [\"durable\", \"lightweight\", \"eco-friendly\"],   \"in_stock\": true } ```",
+      "cost_usd": 0.0
+    },
+    {
+      "agent": "claude",
+      "iter_idx": 0,
+      "wall_s": 20.448,
+      "chars": 139,
+      "tokens_est": 34,
+      "exit_code": 0,
+      "success": true,
+      "json_valid": true,
+      "sample": "```json {   \"name\": \"Acme Widget Pro\",   \"price\": 42.99,   \"features\": [\"durable\", \"lightweight\", \"eco-friendly\"],   \"in_stock\": true } ```",
+      "cost_usd": 0.0
+    },
+    {
+      "agent": "ollama_phi4",
+      "iter_idx": 0,
+      "wall_s": 20.006,
+      "chars": 2183,
+      "tokens_est": 545,
+      "exit_code": 0,
+      "success": true,
+      "json_valid": false,
+      "sample": "User says: \"You are Phi... Provide extraction product information from text\u001b[4D\u001b[K text:  'Acme Widget Pro \u2014 $42.99 \u2014 The best widget on the market. Features: durabl\u001b[6D\u001b[K durable, lightweight, eco-f",
+      "cost_usd": 0.0
+    },
+    {
+      "agent": "ollama_dolphin3",
+      "iter_idx": 0,
+      "wall_s": 4.151,
+      "chars": 95,
+      "tokens_est": 23,
+      "exit_code": 0,
+      "success": true,
+      "json_valid": true,
+      "sample": "{     \"name\": \"Acme Widget Pro\",     \"price\": 42.99,     \"features\": [],     \"in_stock\": true }",
+      "cost_usd": 0.0
+    }
+  ],
+  "aggregate": {
+    "codex": {
+      "n": 1,
+      "success_rate": 1.0,
+      "json_valid_rate": 1.0,
+      "wall_s_mean": 45.013,
+      "chars_mean": 108,
+      "tokens_est_mean": 27,
+      "cost_usd_sum": 0.0
+    },
+    "kimi": {
+      "n": 1,
+      "success_rate": 1.0,
+      "json_valid_rate": 1.0,
+      "wall_s_mean": 24.233,
+      "chars_mean": 142,
+      "tokens_est_mean": 35,
+      "cost_usd_sum": 0.0
+    },
+    "ggcoder_kimi": {
+      "n": 1,
+      "success_rate": 1.0,
+      "json_valid_rate": 1.0,
+      "wall_s_mean": 15.084,
+      "chars_mean": 139,
+      "tokens_est_mean": 34,
+      "cost_usd_sum": 0.0
+    },
+    "hermes_luna": {
+      "n": 1,
+      "success_rate": 0.0,
+      "json_valid_rate": 0.0,
+      "wall_s_mean": 90.0,
+      "chars_mean": 0,
+      "tokens_est_mean": 0,
+      "cost_usd_sum": 0.0
+    },
+    "hermes_free_gemma4": {
+      "n": 1,
+      "success_rate": 0.0,
+      "json_valid_rate": 0.0,
+      "wall_s_mean": 90.0,
+      "chars_mean": 0,
+      "tokens_est_mean": 0,
+      "cost_usd_sum": 0.0
+    },
+    "hermes_free_ling": {
+      "n": 1,
+      "success_rate": 1.0,
+      "json_valid_rate": 0.0,
+      "wall_s_mean": 18.227,
+      "chars_mean": 37,
+      "tokens_est_mean": 9,
+      "cost_usd_sum": 0.0
+    },
+    "agy_gemini_flash": {
+      "n": 1,
+      "success_rate": 1.0,
+      "json_valid_rate": 1.0,
+      "wall_s_mean": 35.348,
+      "chars_mean": 155,
+      "tokens_est_mean": 38,
+      "cost_usd_sum": 0.0
+    },
+    "agy_claude_sonnet": {
+      "n": 1,
+      "success_rate": 1.0,
+      "json_valid_rate": 1.0,
+      "wall_s_mean": 42.436,
+      "chars_mean": 139,
+      "tokens_est_mean": 34,
+      "cost_usd_sum": 0.0
+    },
+    "claude": {
+      "n": 1,
+      "success_rate": 1.0,
+      "json_valid_rate": 1.0,
+      "wall_s_mean": 20.448,
+      "chars_mean": 139,
+      "tokens_est_mean": 34,
+      "cost_usd_sum": 0.0
+    },
+    "ollama_phi4": {
+      "n": 1,
+      "success_rate": 1.0,
+      "json_valid_rate": 0.0,
+      "wall_s_mean": 20.006,
+      "chars_mean": 2183,
+      "tokens_est_mean": 545,
+      "cost_usd_sum": 0.0
+    },
+    "ollama_dolphin3": {
+      "n": 1,
+      "success_rate": 1.0,
+      "json_valid_rate": 1.0,
+      "wall_s_mean": 4.151,
+      "chars_mean": 95,
+      "tokens_est_mean": 23,
+      "cost_usd_sum": 0.0
+    }
+  }
+}

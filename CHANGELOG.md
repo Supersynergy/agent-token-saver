@@ -1,5 +1,33 @@
 # Changelog
 
+## 4.8.0 — 2026-07-24
+
+### agy is a real headless lane — antigravity GUI marker deleted
+
+The earlier claim that Antigravity is "GUI-only" was wrong. `agy` is
+Antigravity's headless CLI (`agy -p <prompt>`, flags BEFORE `-p` or it eats
+the next flag as the prompt) and is the free Gemini path now that Google
+retired the standalone gemini CLI. Models include gemini-3.6-flash,
+gemini-3.1-pro, claude-sonnet-4-6, opus-4-6-thinking, gpt-oss-120b — all on
+the Antigravity subscription ($0 per call here).
+
+- **feat(swarm): real agy lanes** — `agy_gemini_flash`
+  (gemini-3.6-flash-low) and `agy_claude_sonnet` (claude-sonnet-4-6) replace
+  the `antigravity` `open -a` marker. Measured: both success 1.0, valid JSON,
+  ~35-42s, $0. Run 2026-07-24: 9/11 lanes successful at $0.0000.
+- **feat(jury): agy candidate** — replaces the antigravity marker; verified
+  in both roles (ask_agent answer + blind_review returns 5.0).
+- **refactor:** deleted the GUI-launch special cases
+  (`_antigravity_available`, the `open -a` branch in `run_agent`/`ask_agent`,
+  the reviewer/aggregate skips). `ask_agent` and `blind_review` gained
+  `__PROMPT__` arg-mode so arg-based CLIs (agy) work alongside stdin CLIs.
+- **note(devin):** local `Devin.app` exists (VS Code fork) and is logged in
+  (macOS Keychain has a `Devin` item), but its agent CLI is `chisel` speaking
+  ACP (JSON-RPC) authenticated with a windsurf-api-key — there is no
+  `agy -p`-style prompt frontend (`devin-desktop` only does diff/merge/goto
+  window ops). A headless Devin lane would need an ACP client + the extracted
+  chisel binary; it is paid and session-async, a poor swarm fit. Not built.
+
 ## 4.7.2 — 2026-07-24
 
 ### Jury reviewer fixed — dead gemini out, live kimi in

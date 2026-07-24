@@ -51,7 +51,11 @@ AGENTS: list[tuple[str, list[str], dict[str, str]]] = [
     ("kimi", ["kimi-awake", "--quiet", "--input-format", "text"], {}),
     ("ggcoder_kimi", ["ggcoder", "--json", "--provider", "moonshot", "__PROMPT__"], {}),
     # paid reference lane (needs OpenRouter credits; honest 402 without)
-    ("hermes_luna", ["hermes", "-z", "-", "-m", "openai/gpt-5.6-luna", "--cli", "--ignore-user-config"], {}),
+    (
+        "hermes_luna",
+        ["hermes", "-z", "-", "-m", "openai/gpt-5.6-luna", "--cli", "--ignore-user-config"],
+        {},
+    ),
     # $0 lanes via OpenRouter :free (rate-limited at peak times — honest 429)
     (
         "hermes_free_gemma4",
@@ -83,10 +87,35 @@ AGENTS: list[tuple[str, list[str], dict[str, str]]] = [
         ],
         {},
     ),
-    # antigravity: Google's VSCode-fork GUI IDE. No headless CLI. Launch via
-    # `open -a`. Availability = .app bundle exists. Non-interactive — recorded
-    # as success=False with sample="<gui-launch: antigravity>".
-    ("antigravity", ["open", "-a", "Antigravity"], {}),
+    # agy = Antigravity's headless CLI (`agy -p`). This is the free Gemini
+    # path now that Google killed the standalone gemini CLI (backed by the
+    # Antigravity subscription). Flags MUST precede -p or -p eats the next
+    # flag as its prompt. gemini-3.6-flash is fast + free; claude-sonnet-4-6
+    # is also offered here.
+    (
+        "agy_gemini_flash",
+        [
+            "agy",
+            "--dangerously-skip-permissions",
+            "--model",
+            "gemini-3.6-flash-low",
+            "-p",
+            "__PROMPT__",
+        ],
+        {},
+    ),
+    (
+        "agy_claude_sonnet",
+        [
+            "agy",
+            "--dangerously-skip-permissions",
+            "--model",
+            "claude-sonnet-4-6",
+            "-p",
+            "__PROMPT__",
+        ],
+        {},
+    ),
     # Local lanes — no API key, no billing, available whenever installed.
     ("claude", ["claude", "-p"], {}),
     ("ollama_phi4", ["ollama", "run", "phi4-reasoning:plus"], {}),
@@ -139,13 +168,6 @@ def _read_usage_cost(path: Path) -> float:
         return 0.0
 
 
-_ANTIGRAVITY_APP_BUNDLE = "/Applications/Antigravity.app"
-
-
-def _antigravity_available() -> bool:
-    return Path(_ANTIGRAVITY_APP_BUNDLE).is_dir()
-
-
 # The probe: a realistic extraction task
 EXTRACT_PROMPT = (
     "Extract product information from this text:\n\n"
@@ -161,35 +183,6 @@ def run_agent(
     name, cmd, env_override = agent
     env = os.environ.copy()
     env.update(env_override)
-
-    # antigravity: GUI IDE, no headless stdin/stdout. Launch the app and
-    # record a marker. success=False, json_valid=False — honest.
-    if cmd[:2] == ["open", "-a"] and "Antigravity" in cmd:
-        t0 = time.time()
-        try:
-            proc = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=10,
-                cwd="/tmp",
-                env=env,
-                check=False,
-            )
-            wall = time.time() - t0
-            return SwarmResult(
-                agent=name,
-                iter_idx=iter_idx,
-                wall_s=round(wall, 3),
-                chars=0,
-                tokens_est=0,
-                exit_code=proc.returncode,
-                success=False,
-                json_valid=False,
-                sample="<gui-launch: antigravity>",
-            )
-        except Exception as e:
-            return SwarmResult(name, iter_idx, 0.0, 0, 0, -1, False, False, f"<gui-error: {e}>")
 
     # arg mode: "__PROMPT__" placeholder gets the prompt, stdin stays empty.
     arg_mode = any("__PROMPT__" in part for part in cmd)
@@ -300,9 +293,7 @@ def markdown_table(agg: dict[str, dict[str, Any]]) -> str:
         )
     total = sum(s.get("cost_usd_sum", 0.0) for s in agg.values())
     free_ok = sum(
-        s["n"] * s["success_rate"]
-        for a, s in agg.items()
-        if s.get("cost_usd_sum", 0.0) == 0 and a != "antigravity"
+        s["n"] * s["success_rate"] for s in agg.values() if s.get("cost_usd_sum", 0.0) == 0
     )
     lines.append("")
     lines.append(
@@ -324,11 +315,9 @@ def main() -> int:
     args = ap.parse_args()
 
     agents = [a for a in AGENTS if args.only is None or args.only in a[0]]
-    # Filter antigravity by app-bundle presence (GUI, not on PATH).
-    agents = [a for a in agents if a[0] != "antigravity" or _antigravity_available()]
     # Skip CLIs that are not installed — a swarm bench should report the
     # missing lane once, not burn a slot on FileNotFoundError per iteration.
-    missing = [a[0] for a in agents if a[0] != "antigravity" and not shutil.which(a[1][0])]
+    missing = [a[0] for a in agents if not shutil.which(a[1][0])]
     if missing:
         print(f"skipping (not on PATH): {', '.join(missing)}", file=sys.stderr)
         agents = [a for a in agents if a[0] not in missing]
