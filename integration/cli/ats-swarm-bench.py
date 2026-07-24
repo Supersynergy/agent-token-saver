@@ -374,18 +374,33 @@ def main() -> int:
         help="system instruction: written as AGENTS.md in the run dir (devin/cursor "
         "honor it natively) AND prepended to the prompt (universal fallback)",
     )
+    ap.add_argument(
+        "--prompt",
+        type=str,
+        default=None,
+        help="override the built-in extraction probe with an arbitrary prompt — "
+        "turns the bench into a general $0 fan-out engine ('-' reads stdin)",
+    )
     args = ap.parse_args()
+
+    # General fan-out: any prompt across every $0 lane. Default is the fixed
+    # extraction probe (a benchmark); --prompt makes it a real pipeline stage.
+    base_prompt = EXTRACT_PROMPT
+    if args.prompt == "-":
+        base_prompt = sys.stdin.read()
+    elif args.prompt:
+        base_prompt = args.prompt
 
     # System-prompt support. Rule-reading CLIs (devin, cursor) pick up an
     # AGENTS.md in cwd; everyone else gets it prepended to the prompt. Both
     # verified 2026-07-24 to reflect the instruction.
     run_cwd = "/tmp"
-    prompt = EXTRACT_PROMPT
+    prompt = base_prompt
     if args.system:
         run_cwd = f"/tmp/ats-swarm-run-{os.getpid()}"
         os.makedirs(run_cwd, exist_ok=True)
         Path(run_cwd, "AGENTS.md").write_text(f"# System Rules\n{args.system}\n")
-        prompt = f"[System instruction]\n{args.system}\n\n{EXTRACT_PROMPT}"
+        prompt = f"[System instruction]\n{args.system}\n\n{base_prompt}"
 
     agents = [a for a in AGENTS if args.only is None or args.only in a[0]]
     if args.skip:

@@ -1,5 +1,28 @@
 # Changelog
 
+## 4.11.0 — 2026-07-24
+
+### General fan-out + `ats-pipe` research pipeline shim
+
+Turns the swarm from a fixed benchmark into a reusable pipeline stage.
+
+- **feat(swarm): `--prompt <text>`** (`-` reads stdin) — override the built-in
+  extraction probe with any prompt. The bench becomes a general $0 fan-out
+  engine: one prompt across every free/subscription/local lane in parallel.
+- **feat(cli): `ats-pipe`** — one-shot GATHER→FANOUT pipeline bundling the
+  tools already installed:
+  - GATHER: `ats-recon` (gmax/ghx/supacrawl, default) · `--web` superweb
+    research/qa · `--github` ghmax code recon · `--url <u>` scrape one page.
+  - FANOUT: pipes `question + gathered context` into `ats-swarm-bench
+    --prompt -` across the $0 lanes.
+  - Flags anywhere (before/after the question); `--only/--skip/--system/
+    --workers/--timeout` pass through; `--gather-only` stops after context.
+  - Every stage fail-open: dead gather → no-context fan-out; dead lane →
+    honest failure; ANSI-stripped and capped at 6k chars so noisy tool output
+    never floods model context. Symlinked to `~/.local/bin/ats-pipe`.
+- Verified 2026-07-24: `--github` gather returns ghmax recon; end-to-end
+  gather→fanout→claude answered in 9s at $0.
+
 ## 4.10.0 — 2026-07-24
 
 ### System-prompt support + Cursor lane

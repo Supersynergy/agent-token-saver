@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+# ats-pipe — one-shot research→reason pipeline: GATHER context with the
+# cheapest recon tool, then FAN OUT the question across every $0 agent lane.
+#
+# Bundles the tools you already have into a single entry point:
+#   GATHER : ats-recon (gmax/ghx/supacrawl) · superweb (web) · ghmax (github)
+#   FANOUT : ats-swarm-bench --prompt -   (11 free/subscription/local models)
+#
+# Each stage is fail-open: a dead gather tool degrades to no-context, a dead
+# lane is reported honestly by the swarm. No paid calls unless you add one.
+#
+# Usage:
+#   ats-pipe "<question>"                 auto: local gather (ats-recon) → fanout
+#   ats-pipe --web "<question>"           gather via superweb research
+#   ats-pipe --github "<query>"           gather via ghmax code recon
+#   ats-pipe --url <url> "<question>"     gather a page, ask about it
+#   ats-pipe --gather-only "<q>"          just the context (no fanout)
+#   ats-pipe --only <lane> "<q>"          fan out to one lane (e.g. devin_glm52)
+#   ats-pipe --system "<rule>" "<q>"      apply a system instruction to the fanout
+#
+# Flags after the question pass through to ats-swarm-bench (--only/--skip/
+# --system/--workers/--timeout). Config: ATS_PIPE_SWARM points at the bench.
+
+set -euo pipefail
+
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+SWARM="${ATS_PIPE_SWARM:-$HERE/ats-swarm-bench.py}"
+
+# Prefers ghx for github blobs, else supacrawl, else superweb fetch (fast tier).
+_ats_pipe_scrape() {
+  local u="$1"
+  if [[ "$u" =~ github\.com/([^/]+/[^/]+)/blob/[^/]+/(.+) ]] && command -v ghx >/dev/null 2>&1; then
+    ghx read "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" 2>/dev/null && return 0
+  fi
+  supacrawl scrape "$u" --format markdown 2>/dev/null && return 0
+  command -v superweb >/dev/null 2>&1 && superweb fetch "$u" --mode auto --max-tier 1 2>/dev/null
+}
+
+mode="local" url="" gather_only=0
+passthru=() words=()
+# Flags may appear anywhere (before or after the question); everything that is
+# not a recognised flag is joined into the question.
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --web) mode="web"; shift ;;
+    --github|--gh) mode="github"; shift ;;
+    --url) mode="url"; url="$2"; shift 2 ;;
+    --gather-only) gather_only=1; shift ;;
+    --only|--skip|--system|--workers|--timeout)
+      passthru+=("$1" "$2"); shift 2 ;;
+    -h|--help) sed -n '2,26p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) words+=("$1"); shift ;;
+  esac
+done
+[[ ${#words[@]} -ge 1 ]] || { echo 'usage: ats-pipe [--web|--github|--url <u>] "<question>"' >&2; exit 1; }
+question="${words[*]}"
+
+# --- GATHER -----------------------------------------------------------------
+echo "· gather ($mode) …" >&2
+context=""
+case "$mode" in
+  url)     context="$(_ats_pipe_scrape "$url" 2>/dev/null || true)" ;;
+  web)     context="$(superweb research "$question" 2>/dev/null || superweb qa "$question" 2>/dev/null || true)" ;;
+  github)  context="$(ghmax "$question" --format agent -n 8 2>/dev/null || true)" ;;
+  local|*) context="$(ats-recon "$question" 2>/dev/null || true)" ;;
+esac
+# strip ansi + cap size so noisy tool output never floods the model context
+context="$(printf '%s' "$context" | sed 's/\x1b\[[0-9;?]*[a-zA-Z]//g' | head -c 6000)"
+[[ -n "$context" ]] || echo "  (no context — fanning out on the question alone)" >&2
+
+if [[ "$gather_only" == 1 ]]; then
+  printf '%s\n' "$context"
+  exit 0
+fi
+
+# --- FAN OUT ----------------------------------------------------------------
+echo "· fan out across \$0 lanes …" >&2
+prompt="Question: $question
+
+Context (from recon tools; may be empty):
+$context
+
+Answer concisely and specifically using the context where relevant."
+printf '%s' "$prompt" | python3 "$SWARM" --iter 1 --prompt - "${passthru[@]}"
