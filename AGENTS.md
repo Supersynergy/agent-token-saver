@@ -95,4 +95,39 @@ tools degrade gracefully, never block the agent.
   `gemini`, `fable`, `antigravity` (GUI IDE, launch-only, non-interactive).
   Flags: `--agents`, `--reviewer`, `--iter`, `--no-abba`.
 
+## Recall + fan-out loop (v4.12–4.20)
+
+- **`ats-recall "<q>"`** — recall over the ingested agent-CLI histories
+  (Codex/Claude/aider/opencode) plus the verified brain. Brain-first
+  (`cli-log://` in `synx hybrid`, ~0s); `--corpus`/`--both`/`--limit N`.
+  Filled by `integration/cli/synapse-ingest-cli-logs.py`; kept fresh by
+  `scripts/install-ingest-cron.sh` (launchd `de.supersynergy.synapse-cli-log-ingest`,
+  daily 04:30). Ladder step 1 — recall before re-deriving.
+- **`llmadapter`** (`scripts/llmadapter.ts`) — one interface over 23 lanes
+  (14 free OpenRouter, kimi paid, ollama local, 6 CLI lanes). `--aggregate`
+  consensus, `--tier` (cheap proposers → aggregate → cross-family verify),
+  `--verify` fresh-context gate, `lanes|doctor|stats`. Private lanes stay in
+  `~/.agent-token-saver/local-lanes.json`, outside the repo.
+  **PII shield is mandatory on remote lanes** — missing shield aborts the
+  lane instead of sending plaintext (`ATS_SHIELD_PATH`, opt-out
+  `ATS_PII_SHIELD=0`).
+- **`ats-pipe`** — GATHER → FANOUT → SYNTH in one call:
+  `--recall`, `--web`, `--github`, `--url`, `--gather-only`, `--synth`,
+  `--tier`, `--verify`, `--lanes`, `--first`, `--only`.
+- **`ats-url-cache get|put|stats|vacuum`** — SQLite URL→markdown cache
+  (WAL, TTL 86400s) so a repeated fetch never costs context twice.
+
+## Worker contract hook + model split (2026-07-25)
+
+- **`integration/hooks/agent-worker-capsule.py`** — PreToolUse hook, matcher
+  `Agent`. Injects the SKILL.md worker contract into every spawn and counts
+  spawns per session (`~/.agent-token-saver/cache/spawns-<session>.json`);
+  warns above `ATS_TEAM_MAX_WORKERS` (default 3). Fail-open everywhere,
+  disable with `ATS_CAPSULE_OFF=1`.
+- **Model split**: controller (Opus/Fable) plans, routes, verifies; workers
+  run Sonnet. Enforce with `CLAUDE_CODE_SUBAGENT_MODEL=sonnet` — it overrides
+  subagent frontmatter *and* the per-invocation `model` parameter, so it is
+  the only non-bypassable enforcement point. Shell-projection lanes go to
+  `kimi-worker` (16% of a Claude team's gross input, measured 2026-07-19).
+
 <!-- REPO-POLISH-AGENTS:END -->

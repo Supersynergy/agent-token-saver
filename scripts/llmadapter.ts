@@ -130,6 +130,65 @@ function ledgerWrite(r: Result): void {
   } catch {} // ledger is observability, never fails the call
 }
 
+// ---------------------------------------------------------------- PII shield
+// Every lane except ollama sends the prompt to a third party. OpenRouter routes
+// free models to providers that may train on prompts unless the account opts
+// out, and that setting is separate for free and paid models. Measured
+// 2026-07-25: leads-fanout-classifier.py pushed 301 German company names — for
+// sole traders that is personal data — through free lanes with no masking.
+//
+// So: pseudonymise before the request leaves this machine, restore the tokens in
+// the answer. The shield lives in ggadapter; it is loaded lazily so a machine
+// without it only pays when a remote lane actually runs.
+const SHIELD_PATH = process.env.ATS_SHIELD_PATH
+  ?? join(homedir(), "BASE", "ggprojects", "ggadapter", "adapter", "dsgvo-shield.mjs");
+const SHIELD_OFF = process.env.ATS_PII_SHIELD === "0";
+const LOCAL_KINDS = new Set<Lane["kind"]>(["ollama"]);
+
+let shieldMod: any; // undefined = not tried yet, null = unavailable
+async function loadShield(): Promise<any> {
+  if (shieldMod !== undefined) return shieldMod;
+  try {
+    shieldMod = await import(SHIELD_PATH);
+  } catch {
+    shieldMod = null;
+  }
+  return shieldMod;
+}
+
+type Shielded = { prompt: string; restore: (answer: string) => string; masked: number };
+
+async function shieldPrompt(lane: Lane, prompt: string): Promise<Shielded> {
+  const asIs: Shielded = { prompt, restore: (a) => a, masked: 0 };
+  if (SHIELD_OFF || LOCAL_KINDS.has(lane.kind)) return asIs;
+
+  const mod = await loadShield();
+  // Fail closed: a remote lane must not see raw text just because the shield is
+  // missing. ATS_PII_SHIELD=0 is the deliberate, visible way to opt out.
+  if (!mod) {
+    throw new Error(
+      `PII shield unavailable at ${SHIELD_PATH} — refusing to send to remote lane "${lane.name}". `
+      + `Set ATS_SHIELD_PATH, or ATS_PII_SHIELD=0 to send unmasked on purpose.`,
+    );
+  }
+
+  const policy = { dsgvoShield: { ...mod.DEFAULT_DSGVO_POLICY, enabled: true } };
+  const res = mod.protectOutgoingText(prompt, policy, `llmadapter-${lane.name}`, { includeReplacementMap: true });
+  if (!res.changed) return asIs;
+  const map = res.replacementMap;
+  return {
+    prompt: res.text,
+    masked: map?.entryCount ?? 0,
+    restore: (answer) => {
+      try {
+        return mod.applyDsgvoRestoreMap(answer, map, { fillPlaceholders: false }).text;
+      } catch {
+        return answer; // a failed restore leaves tokens visible; it never leaks
+      }
+    },
+  };
+}
+
 async function runLane(lane: Lane, prompt: string, timeoutMs: number | undefined, useCache: boolean, maxTokens: number): Promise<Result> {
   const tmo = timeoutMs ?? KIND_TIMEOUT_MS[lane.kind];
   const cp = cachePath(lane, prompt);
@@ -145,6 +204,10 @@ async function runLane(lane: Lane, prompt: string, timeoutMs: number | undefined
   const t0 = Date.now();
   let result: Result;
   try {
+    // `sent` is what actually leaves the machine; `prompt` stays local (cache
+    // key, token estimate). A throw here aborts the lane before any egress.
+    const shielded = await shieldPrompt(lane, prompt);
+    const sent = shielded.prompt;
     let answer = "";
     let inTok: number | undefined, outTok: number | undefined, est = false;
     if (lane.kind === "openrouter") {
@@ -154,7 +217,7 @@ async function runLane(lane: Lane, prompt: string, timeoutMs: number | undefined
         const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
           method: "POST",
           headers: { Authorization: `Bearer ${orKey()}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ model: lane.model, max_tokens: maxTokens, messages: [{ role: "user", content: prompt }] }),
+          body: JSON.stringify({ model: lane.model, max_tokens: maxTokens, messages: [{ role: "user", content: sent }] }),
           signal: AbortSignal.timeout(tmo),
         });
         const j: any = await res.json();
@@ -175,7 +238,7 @@ async function runLane(lane: Lane, prompt: string, timeoutMs: number | undefined
     } else if (lane.kind === "ollama") {
       const res = await fetch("http://localhost:11434/api/generate", {
         method: "POST",
-        body: JSON.stringify({ model: lane.model, prompt, stream: false }),
+        body: JSON.stringify({ model: lane.model, prompt: sent, stream: false }),
         signal: AbortSignal.timeout(tmo),
       });
       const j: any = await res.json();
@@ -183,7 +246,7 @@ async function runLane(lane: Lane, prompt: string, timeoutMs: number | undefined
       inTok = j.prompt_eval_count;
       outTok = j.eval_count;
     } else {
-      const proc = Bun.spawn(lane.cmd!(prompt), { stdout: "pipe", stderr: "pipe", stdin: "ignore" });
+      const proc = Bun.spawn(lane.cmd!(sent), { stdout: "pipe", stderr: "pipe", stdin: "ignore" });
       const killer = setTimeout(() => proc.kill(), tmo);
       const [out, err] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
       const code = await proc.exited;
@@ -196,11 +259,15 @@ async function runLane(lane: Lane, prompt: string, timeoutMs: number | undefined
         return result;
       }
       answer = (lane.parse ? lane.parse(raw) : out).trim();
-      inTok = Math.round(prompt.length / 4); // ats convention: bytes/4 estimate
+      inTok = Math.round(sent.length / 4); // ats convention: bytes/4 estimate
       outTok = Math.round(answer.length / 4);
       est = true;
     }
     const ms = Date.now() - t0;
+    // Put the real values back before anything downstream (cache, caller) sees
+    // the answer — the cache is keyed on the unmasked prompt, so it must hold
+    // the unmasked answer to stay consistent.
+    answer = shielded.restore(answer);
     if (!answer.trim()) {
       result = { lane: lane.name, model: lane.model, ok: false, ms, error: "empty" };
     } else {
