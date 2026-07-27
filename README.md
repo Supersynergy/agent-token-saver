@@ -158,6 +158,33 @@ This is a no-provider-call projection, not a cost or quality claim. Full
 artifact:
 [swarm-control-2026-07-27.md](data/benchmarks/swarm-control-2026-07-27.md).
 
+### 4. Why heavier retrieval stays on demand
+
+The local retrieval benchmark on an already-indexed repository shows why one
+tool should not be forced onto every task. Visible output again uses the
+`bytes / 4` proxy; Gmax index/update cost is excluded:
+
+| Probe | Accepted | Warm median | Estimated visible output | Median peak RSS |
+|---|:--:|---:|---:|---:|
+| Tilth, symbol neighborhood | yes | 27 ms | 475 | 4.0 MB |
+| Gmax, symbol neighborhood | yes | 372 ms | 395 | 110 MB |
+| Tilth, natural-language recall | no | 13 ms | 191 | 2.8 MB |
+| Gmax, natural-language recall | yes | 3,807 ms | 113 | 90 MB |
+
+Tilth is the better Lean route for bounded symbol and file structure. Gmax
+earns its cost for semantic recall or a prebuilt call graph. In this run, Gmax
+also left five background processes using about 2.65 GiB combined, so it remains
+an explicit session tool.
+
+A separate code-only Graphify pilot compressed a 169,165-unit raw graph to a
+477-unit bounded answer — **99.72% less visible output** — but needed an
+8.3-second, 100-MiB graph build. That makes it valuable for repeated deep
+analysis, not for every one-symbol question.
+
+Artifacts:
+[Tilth vs. Gmax](data/benchmarks/tilth-vs-gmax-2026-07-27.md) and
+[Graphify code-only](data/benchmarks/graphify-code-only-2026-07-27.md).
+
 ## Choose a profile
 
 Start with `lean`. Change profiles only for a concrete need.
@@ -222,8 +249,8 @@ sessions work.
 
 - Hooks are fail-open and preserve host approval, sandbox and Stop ownership.
 - No expensive maintenance scan belongs in a hot hook.
-- Public artifacts must not contain private paths, credentials, process IDs or
-  raw controller/transcript output.
+- Release gate: scan public artifacts for private paths, credentials, process
+  IDs and raw controller/transcript output before publishing.
 - The installer merges recognized config sections and creates backups.
 - Optional tools remain optional; no always-on broad tool catalog.
 - Savings depend on workload. Quality gates come before token counts.
