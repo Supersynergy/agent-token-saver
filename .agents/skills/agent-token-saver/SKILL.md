@@ -1,7 +1,7 @@
 ---
 name: agent-token-saver
 description: Route token-heavy context, noisy shell logs and output through the smallest measured CLI or projection before loading heavy tools; recall past agent sessions before re-deriving; fan out to free lanes; benchmark cheap subagent workflows without broad prompt bloat.
-version: 4.21.0
+version: 4.22.0
 author: Supersynergy
 license: MIT
 metadata:

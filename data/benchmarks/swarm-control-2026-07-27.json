@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "asof_utc": "2026-07-27T12:12:08.994202+00:00",
+  "measurement": "utf8_bytes_div_4_visible_input_proxy",
+  "not_measured": [
+    "provider billing",
+    "cache tokens",
+    "model quality",
+    "execution latency"
+  ],
+  "agentmaster": {
+    "model_count": 11,
+    "dry_run_has_lanes": true
+  },
+  "worker_context": {
+    "all_registry_visible_input_tokens": 956,
+    "naive_three_workers_registry_plus_contract": 3588,
+    "routed_three_workers_contract_only": 720,
+    "avoided_visible_input_tokens": 2868,
+    "reduction_percent": 79.9,
+    "rows": [
+      {
+        "case": "source",
+        "routed_visible_input_tokens": 243,
+        "route": "local source"
+      },
+      {
+        "case": "graph",
+        "routed_visible_input_tokens": 238,
+        "route": "impact graph"
+      },
+      {
+        "case": "fresh",
+        "routed_visible_input_tokens": 239,
+        "route": "fresh external fact"
+      }
+    ]
+  },
+  "acceptance": {
+    "agentmaster_models_nonempty": true,
+    "three_task_specific_routes": true,
+    "dry_run_has_lanes": true
+  }
+}

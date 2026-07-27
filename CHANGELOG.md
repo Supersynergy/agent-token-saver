@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 4.22.0 — 2026-07-27
 
 - **fix: doctor blocks `synx doctor` in an active managed Codex/Claude hook.**
   `agent-token-saver doctor` now parses active hook command fields read-only and
@@ -9,6 +9,13 @@
   `forbidden_hot_path_synx_doctor:<agent>` and is not healthy. Use `synx doctor`
   only as an explicit, operator-run maintenance action — never per prompt/tool
   event.
+- **feat: bounded worker guidance.** The Claude teams hook adds one scoped
+  local/impact/freshness hint and a compact result contract; freshness asks the
+  controller for a primary-source artifact rather than invoking a web tool.
+- **fix: public benchmark hygiene.** Published artifacts retain aggregate
+  measurements but exclude private paths, process IDs and raw controller output.
+- **docs: lean public surface.** README, agent instructions and operating docs
+  now keep the install, verification, boundary and measurement contract only.
 
 ## 4.21.0 — 2026-07-25
 

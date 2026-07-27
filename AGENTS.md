@@ -1,133 +1,42 @@
 <!-- REPO-POLISH-AGENTS:START -->
-# AGENTS.md
+# Agent Token Saver
 
-Agent Token Saver is an agent-neutral toolkit for measured context reduction, safe hook wiring, and bounded research/news projection.
+Portable context reduction. Hooks stay fail-open; optional tools stay optional.
 
 ## Commands
 
-- `setup`: `uv sync --extra dev`
-- `test`: `uv run pytest`
-- `lint`: `uv run ruff check scripts integration tests`
-- `smoke`: `bash scripts/neutral_install_smoke.sh`
+- setup: `uv sync --extra dev`
+- test: `uv run pytest -q`
+- lint: `uv run ruff check scripts integration tests`
+- smoke: `bash scripts/neutral_install_smoke.sh`
+- live install check: `agent-token-saver doctor --profile teams --json`
 
-## Repo Rules
+## Rules
 
-- Optimize for Time-to-First-Success: keep setup and verification commands obvious.
-- Keep changes scoped to the domain being edited; avoid catch-all `utils`, `helpers`, and `misc` buckets.
-- Preserve existing user changes in this repository. Do not run destructive git commands.
-- Add or update tests when behavior changes.
-- Put durable architecture rationale in `docs/adr/`.
+- Preserve user changes. No destructive Git.
+- Smallest change. Tests for behavior. ADR for durable design decisions.
+- Public files: no private paths, credentials, PIDs, transcripts or host-only claims.
+- Portable core first. Third-party CLIs are detected, never silently installed.
+- Hook code receives JSON, returns JSON or nothing, and never changes approval,
+  sandbox or stop ownership.
+- No maintenance scan in a hook. `synx doctor` is manual-only.
+- One controller; workers get one capsule, one oracle, zero or one skill and a
+  compact evidence result. Three independent workers maximum by default.
 
-## Recon CLIs (v3.8.0+)
+## Product boundary
 
-Three fail-open recon tools are wrapped as `ats-*` helpers in
-`integration/cli/agent-token-saver.sh` and exposed via `ats-doctor`:
+- `minimal`: CLI/ledger only.
+- `lean`: prompt gate, session guard and optional routing/projection CLIs.
+- `teams`: Lean plus Claude's worker-capsule hook; no automatic fan-out.
+- `heavy`: opt-in graph/large-context tools for one session.
 
-- `ats-gmax "<question>"` — semantic search over indexed local codebases
-  (replaces Cascade `code_search` for indexed projects). Index once:
-  `gmax add /path/to/project`. Query: `gmax "<q>" --agent`.
-- `ats-ghx explore|read|inspect|search <owner/repo>` — GitHub reconnaissance
-  sidecar. Budget compaction (~92% token reduction) is the default since
-  ghx 2.9 (`--budget <chars>`, `--full` disables; the old `--map` flag is
-  gone). Uses `gh` CLI auth, no extra API key.
-- `ats-supacrawl scrape|map|crawl|batch <url>` — HTTP-first web scraper,
-  markdown output. No API key. Complements heavier research tooling for
-  quick single-page pulls.
+Codex and Claude use merged JSON hooks. Hermes and GG Coder use installed
+skills. Verify active configuration with the doctor; files on disk are not proof.
 
-All fail-open: missing CLI → passthrough, never error. MCP deliberately not
-used — CLIs keep agent context clean. `ats-recon-doctor` shows install state.
+## References
 
-## stdio LLM bridge + auto-router (v3.8.1+)
-
-- `ats-llm-pipe` — Python bridge at `integration/cli/ats-llm-pipe`. Reads
-  OpenAI-style messages JSON from stdin, routes to the first available CLI
-  LLM (codex, kimi, claude, llm). Enables supacrawl LLM extraction without
-  Ollama or API keys. Symlink into `~/.local/bin/` to use.
-- `ats-supacrawl-extract <url> "<prompt>"` — scrape + LLM extraction in one
-  call via the stdio bridge. Config: `SUPACRAWL_LLM_PROVIDER=stdio`,
-  `SUPACRAWL_LLM_STDIO_CMD=ats-llm-pipe`.
-- `ats-recon "<query>"` — auto-routing pipeline. URL → supacrawl scrape
-  (or `--extract`); `owner/repo` → ghx explore (or inspect if question
-  contains "where"/"how"); else → gmax semantic search. Fail-open.
-- `ats-recon-doctor` — now checks `ats-llm-pipe` and stdio LLM CLIs.
-
-## Benchmarks (v3.8.1+)
-
-- `integration/cli/ats-recon-bench.py` — gmax vs grep, ghx vs `gh api`,
-  supacrawl vs curl, stdio extraction. JSON + Markdown output.
-- `integration/cli/ats-swarm-bench.py` — stdio bridge across agent CLIs
-  (codex, hermes+kimi/luna/terra).
-- `integration/cli/ats-jury-bench.py` — jury of agents answers questions
-  via baseline vs ats-recon. Token savings per probe.
-- `integration/cli/ats-poweruser-bench.py` — 10 real power-user cases
-  across codex/kimi/hermes_luna. Compares baseline (grep/gh api/curl) vs
-  ats-recon (gmax/ghx/supacrawl). JSON + Markdown report. Results
-  2026-07-23: codex 80.7% saved, kimi 84.6% saved, hermes_luna 75.1%
-  saved; best cases 86-97% saved.
-
-Benchmark results (2026-07-23, 1 iter, 4 agents): local_search 82% saved,
-github_recon 99% saved, web_scrape 59% saved.
-
-## Superintelligent Stack (v4.0.0+)
-
-Five feature axes combined into one major release. All fail-open: missing
-tools degrade gracefully, never block the agent.
-
-- **`ats-token-cfo <subcommand>`** — wraps the `token-cfo` Python package
-  (routing audit + cost simulation + sales-ready report). Subcommands:
-  `audit`, `simulate`, `plan`, `report`, `pricing`. Config:
-  `ATS_TOKEN_CFO_DIR` (default: `$HOME/projects/token-cfo`). Missing
-  package → warning + return 0.
-- **`ats-goal-archive <slug> [--all]`** — archives closed goals to a
-  DuckLake catalog (default: `~/.synapse/goal-archive.duckdb`). Time-travel
-  queries over closed goals. Config: `ATS_GOAL_ARCHIVE_DB`,
-  `ATS_GOAL_ARCHIVE_TABLE`. Missing `duckdb` → warning + return 0.
-- **`ats-metareview <slug> --via metareview`** — adds the `metareview`
-  skill as a reviewer backend (in addition to `agentmaster`, `grepgod`,
-  `si`, `manual`). Config: `METAREVIEW_ROOT` (default:
-  `~/.claude/skills/metareview`).
-- **`goal-close --decision "<text>"`** — compounding writeback now appends
-  a dated insight block to `$HOME/docs/universal-goal-science.md`
-  (configurable via `GOAL_SCIENCE_DOC`), in addition to the existing
-  `synx put` durable-fact writeback.
-- **`ats-jury-bench-v2.py`** — jury of agents with ABBA-adaptive ordering
-  and a blind reviewer score. Broader jury: `codex`, `claude`, `kimi`,
-  `gemini`, `fable`, `antigravity` (GUI IDE, launch-only, non-interactive).
-  Flags: `--agents`, `--reviewer`, `--iter`, `--no-abba`.
-
-## Recall + fan-out loop (v4.12–4.20)
-
-- **`ats-recall "<q>"`** — recall over the ingested agent-CLI histories
-  (Codex/Claude/aider/opencode) plus the verified brain. Brain-first
-  (`cli-log://` in `synx hybrid`, ~0s); `--corpus`/`--both`/`--limit N`.
-  Filled by `integration/cli/synapse-ingest-cli-logs.py`; kept fresh by
-  `scripts/install-ingest-cron.sh` (launchd `de.supersynergy.synapse-cli-log-ingest`,
-  daily 04:30). Ladder step 1 — recall before re-deriving.
-- **`llmadapter`** (`scripts/llmadapter.ts`) — one interface over 23 lanes
-  (14 free OpenRouter, kimi paid, ollama local, 6 CLI lanes). `--aggregate`
-  consensus, `--tier` (cheap proposers → aggregate → cross-family verify),
-  `--verify` fresh-context gate, `lanes|doctor|stats`. Private lanes stay in
-  `~/.agent-token-saver/local-lanes.json`, outside the repo.
-  **PII shield is mandatory on remote lanes** — missing shield aborts the
-  lane instead of sending plaintext (`ATS_SHIELD_PATH`, opt-out
-  `ATS_PII_SHIELD=0`).
-- **`ats-pipe`** — GATHER → FANOUT → SYNTH in one call:
-  `--recall`, `--web`, `--github`, `--url`, `--gather-only`, `--synth`,
-  `--tier`, `--verify`, `--lanes`, `--first`, `--only`.
-- **`ats-url-cache get|put|stats|vacuum`** — SQLite URL→markdown cache
-  (WAL, TTL 86400s) so a repeated fetch never costs context twice.
-
-## Worker contract hook + model split (2026-07-25)
-
-- **`integration/hooks/agent-worker-capsule.py`** — PreToolUse hook, matcher
-  `Agent`. Injects the SKILL.md worker contract into every spawn and counts
-  spawns per session (`~/.agent-token-saver/cache/spawns-<session>.json`);
-  warns above `ATS_TEAM_MAX_WORKERS` (default 3). Fail-open everywhere,
-  disable with `ATS_CAPSULE_OFF=1`.
-- **Model split**: controller (Opus/Fable) plans, routes, verifies; workers
-  run Sonnet. Enforce with `CLAUDE_CODE_SUBAGENT_MODEL=sonnet` — it overrides
-  subagent frontmatter *and* the per-invocation `model` parameter, so it is
-  the only non-bypassable enforcement point. Shell-projection lanes go to
-  `kimi-worker` (16% of a Claude team's gross input, measured 2026-07-19).
-
+- [README](README.md): install and user-facing contract.
+- [hooks](docs/HOOKS_AND_AGENTS.md): host matrix.
+- [tooling](docs/TOOLING_AND_WIRING.md): default versus optional layers.
+- [measurement](docs/FULL_CONTEXT_MEASUREMENT.md): method and limits.
 <!-- REPO-POLISH-AGENTS:END -->

@@ -1,0 +1,20 @@
+{
+  "tool": "graphify",
+  "version": "0.9.25",
+  "mode": "code-only,no-cluster",
+  "scope": "agent-token-saver",
+  "code_files": 93,
+  "nodes": 641,
+  "edges": 1482,
+  "build_elapsed_ms": 8300,
+  "peak_rss_mib": 100,
+  "raw_bytes": 676659,
+  "raw_est_tokens": 169165,
+  "query_est_tokens": 477,
+  "query_elapsed_ms": 844,
+  "reduction_percent": 99.72,
+  "ratio": 354.6,
+  "query": "How does stack_doctor build and validate the installed profile?",
+  "required_term": "build_report",
+  "accepted": true
+}

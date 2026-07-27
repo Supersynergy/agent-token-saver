@@ -276,3 +276,30 @@ def test_si_launcher_wins_over_legacy_alias(tmp_path: Path) -> None:
 
     assert str(selected) in context
     assert str(legacy_selected) not in context
+
+
+def test_canonical_superskills_root_is_accepted(tmp_path: Path) -> None:
+    selected = tmp_path / "superskills" / "skills" / "example-skill" / "SKILL.md"
+    selected.parent.mkdir(parents=True)
+    selected.write_text("---\nname: example-skill\n---\n")
+    router = tmp_path / "router.py"
+    router.write_text(
+        f"print({json.dumps({'selected': [{'name': 'example-skill', 'path': str(selected)}]})!r})\n"
+    )
+
+    output = run_hook(tmp_path, "$example-skill inspect the active source", router)
+    context = json.loads(output)["hookSpecificOutput"]["additionalContext"]
+
+    assert str(selected.resolve()) in context
+
+
+def test_deep_research_gets_safe_low_cost_route(tmp_path: Path) -> None:
+    router = tmp_path / "router.py"
+    router.write_text("print('{\"selected\": []}')\n")
+
+    output = run_hook(tmp_path, "Perform deep research on independent tools", router)
+    context = json.loads(output)["hookSpecificOutput"]["additionalContext"]
+
+    assert "agent_cost_route" in context
+    assert "free/local llmadapter" in context
+    assert "Never send PII" in context

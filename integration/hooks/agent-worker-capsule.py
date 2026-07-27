@@ -21,12 +21,13 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 import time
 from pathlib import Path
 
 CONTRACT = (
-    "agent-token-saver worker contract (v4.21.0): give this worker ONE closed "
+    "agent-token-saver worker contract (v4.22.0): give this worker ONE closed "
     "objective and a 300-700 token capsule with exact paths, constraints and a "
     "PASS/FAIL oracle. Never pass the controller's transcript or skill catalog. "
     "Zero or one routed primary skill. Max 3 attempts, result <=500 tokens "
@@ -34,6 +35,43 @@ CONTRACT = (
     "controller keeps Opus/Fable for planning and verification. Spawn parallel "
     "workers in ONE message. If the check is small or overlaps existing "
     "context, do it inline instead — a spawn costs a full system prompt."
+)
+
+RESULT_CONTRACT = (
+    " Return compactly: STATUS: PASS|FAIL|BLOCKED; EVIDENCE: exact path or "
+    "command+exit; HANDOFF: none or one precise question. Do not chat with "
+    "peer workers or repeat their work; the controller may route one targeted "
+    "handoff only when HANDOFF is non-none."
+)
+
+# One task-specific hint is cheaper and less error-prone than handing every
+# worker a global tool catalog. The hook only suggests a lane; execution stays
+# with the worker/controller.
+ROUTES: tuple[tuple[re.Pattern[str], str], ...] = (
+    (
+        re.compile(r"\b(?:caller|callee|impact|dependency|dependencies|graph)\b", re.I),
+        " Tool lane: impact graph. Start `synx ground`; use `graphify query` only "
+        "when this repo already has graphify-out/graph.json.",
+    ),
+    (
+        re.compile(r"\b(?:log|stack ?trace|stderr|stdout|noisy output)\b", re.I),
+        " Tool lane: noisy output. Bound the command first; use `rtk` for supported "
+        "projections and preserve the raw artifact outside prompt context.",
+    ),
+    (
+        re.compile(
+            r"\b(?:file|source|code|function|test|bug|repo|repository|import|symbol)\b", re.I
+        ),
+        " Tool lane: local source. Start with exact `rg`; for structural symbols or "
+        "imports use scoped `tilth --budget 4000` on the concrete project only.",
+    ),
+    (
+        re.compile(
+            r"\b(?:fresh|latest|current|documentation|docs|research|recherche|api|package)\b", re.I
+        ),
+        " Tool lane: fresh external fact. Ask the controller for one bounded primary-source "
+        "artifact before making a version, API, price, or policy claim.",
+    ),
 )
 
 
@@ -66,6 +104,28 @@ def bump(session_id: str) -> int:
         return 0
 
 
+def task_text(payload: dict[object, object]) -> str:
+    """Extract bounded Agent input without reflecting a full parent transcript."""
+    raw = payload.get("tool_input", {})
+    if isinstance(raw, dict):
+        parts = []
+        for key in ("description", "prompt", "task", "instructions"):
+            value = raw.get(key)
+            if isinstance(value, str):
+                parts.append(value)
+        return "\n".join(parts)[:4_000]
+    return raw[:4_000] if isinstance(raw, str) else ""
+
+
+def tool_route(payload: dict[object, object]) -> str:
+    """Return at most one compact route, or nothing for an ambiguous task."""
+    text = task_text(payload)
+    for pattern, instruction in ROUTES:
+        if pattern.search(text):
+            return instruction
+    return ""
+
+
 def main() -> int:
     if os.environ.get("ATS_CAPSULE_OFF") == "1":
         return 0
@@ -83,7 +143,7 @@ def main() -> int:
     except ValueError:
         max_workers = 3
 
-    context = CONTRACT
+    context = CONTRACT + RESULT_CONTRACT + tool_route(payload)
     count = bump(str(payload.get("session_id", "")))
     if count > max_workers > 0:
         context += (

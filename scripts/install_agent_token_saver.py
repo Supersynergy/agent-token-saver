@@ -160,6 +160,26 @@ def remove_session_guard_hooks(entries: list[Any]) -> None:
     entries[:] = kept_entries
 
 
+def remove_worker_capsule_hooks(entries: list[Any]) -> None:
+    """Remove only our old worker hook so profile switches stay idempotent."""
+    kept_entries: list[Any] = []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            kept_entries.append(entry)
+            continue
+        kept_hooks = []
+        for hook in entry.get("hooks", []):
+            if not isinstance(hook, dict):
+                kept_hooks.append(hook)
+                continue
+            if "agent-worker-capsule.py" not in str(hook.get("command", "")):
+                kept_hooks.append(hook)
+        if kept_hooks:
+            entry["hooks"] = kept_hooks
+            kept_entries.append(entry)
+    entries[:] = kept_entries
+
+
 def merge_hooks(path: Path, agent: str, profile: str, dry_run: bool) -> None:
     data = load_json(path)
     hooks = data.setdefault("hooks", {})
@@ -168,16 +188,20 @@ def merge_hooks(path: Path, agent: str, profile: str, dry_run: bool) -> None:
     stop = hooks.setdefault("Stop", [])
     prompt_command = str(INSTALL_HOME / "hooks" / "token-stack-prompt.py")
     guard_command = str(INSTALL_HOME / "hooks" / "token-session-guard.py")
+    worker_command = str(INSTALL_HOME / "hooks" / "agent-worker-capsule.py")
     matcher = (
         "Bash"
         if agent == "claude"
         else r"Bash|Shell|shell|shell_command|exec_command|functions\.exec_command"
     )
     remove_repo_rtk_hooks(pre)
+    remove_worker_capsule_hooks(pre)
     remove_prompt_hooks(prompt)
     remove_session_guard_hooks(stop)
     if agent == "claude" and shutil.which("rtk") and not has_command(pre, "rtk hook claude"):
         pre.append(hook_entry(matcher, "rtk hook claude", 5))
+    if agent == "claude" and profile == "teams":
+        pre.append(hook_entry("Agent", worker_command, 4))
     if profile != "minimal":
         prompt.append(hook_entry(None, prompt_command, 6))
         stop.append(hook_entry(None, guard_command, 8))
@@ -219,6 +243,9 @@ def install_files(dry_run: bool) -> None:
         ROOT / "integration" / "hooks" / "token-session-guard.py": INSTALL_HOME
         / "hooks"
         / "token-session-guard.py",
+        ROOT / "integration" / "hooks" / "agent-worker-capsule.py": INSTALL_HOME
+        / "hooks"
+        / "agent-worker-capsule.py",
         ROOT / "skills" / "agent-token-saver" / "SKILL.md": INSTALL_HOME
         / "skills"
         / "agent-token-saver"
@@ -346,6 +373,7 @@ def write_config(profile: str, agents: list[str], project: Path, dry_run: bool) 
         "audit": ROOT / "scripts" / "external_usage_gate.py",
         "prompt_hook": ROOT / "integration" / "hooks" / "token-stack-prompt.py",
         "session_guard": ROOT / "integration" / "hooks" / "token-session-guard.py",
+        "worker_capsule": ROOT / "integration" / "hooks" / "agent-worker-capsule.py",
     }
     managed_asset_targets = {
         "doctor": INSTALL_HOME / "bin" / "agent-token-saver",
@@ -353,6 +381,7 @@ def write_config(profile: str, agents: list[str], project: Path, dry_run: bool) 
         "audit": INSTALL_HOME / "bin" / "agent-token-audit",
         "prompt_hook": INSTALL_HOME / "hooks" / "token-stack-prompt.py",
         "session_guard": INSTALL_HOME / "hooks" / "token-session-guard.py",
+        "worker_capsule": INSTALL_HOME / "hooks" / "agent-worker-capsule.py",
     }
     atomic_json(
         INSTALL_HOME / "config.json",

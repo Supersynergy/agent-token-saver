@@ -1,37 +1,16 @@
-# agent-token-saver — AI Cheatsheet
+# Agent Token Saver — cheatsheet
 
-**Stack:** Python 3.13 + skill-router + CLI/JSON-Interfaces. 199.1x payload capacity gemessen.
-**VCS:** Git + jj (Tier A, AI-Dev 6,5).
-**Funcmap:** 273 defs, 377 edges. Hotspots: `write_text` (external_usage_gate.py:418), `run_hook` (test_prompt_hook.py:12), `run_installer` (test_installer.py:13), `build_report` (stack_doctor.py:377), `run` (codex_provider_ab.py:74).
+```bash
+uv run pytest -q
+uv run ruff check scripts integration tests
+bash scripts/neutral_install_smoke.sh
+agent-token-saver doctor --profile teams --json
+agent-token-ledger --usage run.jsonl --provider codex --format json-compact
+```
 
-## Commands
-- `pytest tests/` — alle Tests
-- `pytest -k abba` — nur ABBA-A/B-Tests
-- `python -m agent_token_saver.cli audit` — Usage-Audit
-- `python -m agent_token_saver.cli route` — Skill-Routing
-- `just test` / `just lint` (falls justfile)
-- `ruff check .` — Lint
-- `mypy .` — Types
+Default: exact local evidence → deterministic projection/RTK → one routed skill
+→ bounded structural read. Graph, browser, remote research and fan-out are
+explicit. Provider counters beat local token estimates.
 
-## Routing
-| Intent | Skill |
-|---|---|
-| Skill-Routing optimieren | `agent-token-saver-skill-router` + `speedtuning` |
-| A/B-Fixture bauen | `superfast` + `verification-loop` |
-| Statistik/Signifikanz | `ab-testing` + `superml` |
-| Provider-Integration | `ponytail` + `clear-thought` |
-| Funcmap-Rebuild | `grepgod funcmap .` |
-| Foreign-Review | `metareview` + `three-brain` (Codex) |
-
-## superfast-Oracle-Beispiele
-- `pytest tests/test_abba.py -k claude` exits 0 mit p<0.05
-- `python -m agent_token_saver.cli audit --usage data/benchmarks/` → JSON mit p50/p95
-- `ruff check .` exits 0
-- `pytest tests/` → alle grün
-
-## Top-Bottleneck (TOC)
-`scripts/external_usage_gate.py:418` — 56× `write_text` = I/O-Hotspot, Hauptlatenz-Quelle.
-
-## Open
-- Claude ABBA-A/B-Fixture (gegen Codex-Baseline)
-- Fresh-Host-A/B für Hermes + GG Coder
+Done means: same oracle passes; latency and provider usage are recorded; active
+hooks are verified; parent, children and retries are included in the ledger.

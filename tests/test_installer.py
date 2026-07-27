@@ -58,7 +58,7 @@ def test_all_agents_install_without_overwriting_existing_settings(tmp_path: Path
     assert config["profile"] == "lean"
     assert config["agents"] == ["codex", "claude", "hermes", "ggcoder", "repo"]
     assert config["project_root"] == str(project.resolve())
-    assert config["canonical_skill"]["version"] == "4.21.0"
+    assert config["canonical_skill"]["version"] == "4.22.0"
     assert config["canonical_skill"]["sha256"] == hashlib.sha256(
         (ROOT / "skills" / "agent-token-saver" / "SKILL.md").read_bytes()
     ).hexdigest()
@@ -73,6 +73,7 @@ def test_all_agents_install_without_overwriting_existing_settings(tmp_path: Path
         "audit",
         "prompt_hook",
         "session_guard",
+        "worker_capsule",
     }
     for asset in config["managed_assets"]:
         assert Path(asset["path"]).is_file()
@@ -259,6 +260,23 @@ def test_team_profile_is_a_supported_lean_runtime(tmp_path: Path) -> None:
     config = json.loads((tmp_path / "home" / ".agent-token-saver" / "config.json").read_text())
     assert config["profile"] == "teams"
     assert (tmp_path / "home" / ".codex" / "hooks.json").is_file()
+
+
+def test_teams_profile_registers_worker_capsule_once_for_claude(tmp_path: Path) -> None:
+    first = run_installer(tmp_path, "--agent", "claude", "--profile", "teams")
+    second = run_installer(tmp_path, "--agent", "claude", "--profile", "teams")
+    assert first.returncode == second.returncode == 0
+
+    hooks = json.loads((tmp_path / "home" / ".claude" / "settings.json").read_text())["hooks"]
+    entries = [
+        entry
+        for entry in hooks["PreToolUse"]
+        if entry.get("matcher") == "Agent"
+        and any("agent-worker-capsule.py" in hook.get("command", "") for hook in entry["hooks"])
+    ]
+    assert len(entries) == 1
+    command = entries[0]["hooks"][0]["command"]
+    assert Path(command).is_file()
 
 
 def test_switching_to_minimal_removes_only_managed_visible_skills(tmp_path: Path) -> None:

@@ -24,6 +24,12 @@ ATS_TRIGGER = re.compile(
 )
 EXPLICIT_SKILL = re.compile(r"\$[a-z0-9][a-z0-9_.-]*", re.IGNORECASE)
 FRONTMATTER_NAME = re.compile(r"^name:\s*['\"]?([^'\"\s]+)", re.MULTILINE)
+RECON_TRIGGER = re.compile(
+    r"\b(?:deep\s+research|detailed\s+(?:research|analysis)|research\s+in\s+detail|"
+    r"recherche\s+(?:im\s+detail|tief)|tiefenrecherche|markt(?:-|\s)analyse|"
+    r"competitive\s+landscape|optionen\s+vergleichen|compare\s+(?:options|tools|agents))\b",
+    re.IGNORECASE,
+)
 
 
 def audit(event: str, reason: str, name: str = "") -> None:
@@ -60,6 +66,7 @@ def allowed_skill_roots() -> list[Path]:
     home = Path.home()
     roots = [
         home / ".agent-token-saver" / "skills",
+        home / "superskills" / "skills",
         home / ".agents" / "skills",
         home / ".codex" / "skills",
         home / ".claude" / "skills",
@@ -189,6 +196,19 @@ def emit_token_saver_fallback(*, load_skill: bool = False) -> bool:
     return True
 
 
+def emit_low_cost_recon_route() -> None:
+    """Offer cheap proposals only where their failure mode is safe."""
+    emit(
+        "<agent_cost_route>"
+        "For a read-only, independently divisible research lane expected to take over five "
+        "minutes: first make one 300-700-token capsule with an oracle, then use at most three "
+        "free/local llmadapter proposals. Keep source verification, synthesis, and the final "
+        "decision with the controller. Never send PII, credentials, or use this route for "
+        "mutations, security, legal, medical, financial, or authoritative-final claims."
+        "</agent_cost_route>"
+    )
+
+
 def main() -> int:
     try:
         event = json.load(sys.stdin)
@@ -249,6 +269,8 @@ def main() -> int:
                 return 0
     if ATS_TRIGGER.search(prompt) and not explicit_skill:
         emit_token_saver_fallback()
+    elif RECON_TRIGGER.search(prompt) and not explicit_skill:
+        emit_low_cost_recon_route()
     return 0
 
 
