@@ -177,6 +177,25 @@ def test_missing_optional_tool_is_core_ready(monkeypatch):
     assert report["missing_optional"] == ["optional-cli"]
 
 
+def test_require_llmadapter_fails_closed_when_adapter_is_not_ready(
+    tmp_path: Path,
+) -> None:
+    catalog = {
+        "profiles": {"lean": ["native"]},
+        "tools": {"native": {"kind": "builtin", "required": True}},
+    }
+    report = build_report(
+        catalog,
+        "lean",
+        require_llmadapter=True,
+        home=tmp_path,
+    )
+    assert report["llmadapter"]["ready"] is False
+    assert report["llmadapter_required"] is True
+    assert report["healthy"] is False
+    assert report["status"] == "blocked"
+
+
 def test_end_to_end_integrity_accepts_canonical_hook_route(tmp_path: Path) -> None:
     home = tmp_path / "home"
     install_fixture(home)

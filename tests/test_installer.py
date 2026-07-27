@@ -53,6 +53,7 @@ def test_all_agents_install_without_overwriting_existing_settings(tmp_path: Path
     assert (project / ".agents" / "skills" / "agent-token-saver" / "SKILL.md").is_file()
     assert (home / ".local" / "bin" / "agent-token-ledger").is_symlink()
     assert (home / ".local" / "bin" / "agent-token-audit").is_symlink()
+    assert (home / ".local" / "bin" / "llmadapter").is_symlink()
     config = json.loads((home / ".agent-token-saver" / "config.json").read_text())
     assert config["schema_version"] == 2
     assert config["profile"] == "lean"
@@ -71,6 +72,7 @@ def test_all_agents_install_without_overwriting_existing_settings(tmp_path: Path
         "doctor",
         "ledger",
         "audit",
+        "llmadapter",
         "prompt_hook",
         "session_guard",
         "worker_capsule",
@@ -130,6 +132,22 @@ def test_existing_host_heavy_launcher_is_preserved(tmp_path: Path) -> None:
     assert portable.read_text() == (
         ROOT / "integration" / "cli" / "codex-heavy-context"
     ).read_text()
+
+
+def test_existing_llmadapter_override_is_preserved_but_canonical_copy_is_installed(
+    tmp_path: Path,
+) -> None:
+    launcher = tmp_path / "home" / ".local" / "bin" / "llmadapter"
+    launcher.parent.mkdir(parents=True)
+    override = "#!/bin/sh\nprintf custom\n"
+    launcher.write_text(override)
+
+    result = run_installer(tmp_path, "--agent", "codex")
+
+    assert result.returncode == 0, result.stderr
+    assert launcher.read_text() == override
+    canonical = tmp_path / "home" / ".agent-token-saver" / "bin" / "llmadapter"
+    assert canonical.read_text() == (ROOT / "scripts" / "llmadapter.ts").read_text()
 
 
 def test_public_heavy_launcher_has_no_host_paths() -> None:

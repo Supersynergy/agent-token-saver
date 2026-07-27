@@ -20,13 +20,14 @@
 #   ats-pipe --first 3 "<q>"              hedged race: stop after 3 answers
 #   ats-pipe --only <lane> "<q>"          one lane/group
 #
-# Full pipeline: GATHER (recon) → FANOUT → SYNTH. FANOUT runs through
-# `llmadapter` (fast, cached, --aggregate = consensus); the Python swarm-bench
-# is the fallback + the metrics/jury tool. Pick with --engine auto|llmadapter|
-# swarm. Swarm-only flags: --system/--workers/--timeout.
+# Full pipeline: GATHER (recon) → FANOUT → SYNTH. `llmadapter` runs the bounded
+# worker mode (three lanes by default); the Python swarm-bench is the explicit
+# wide-fanout fallback + metrics/jury tool. Pick
+# with --engine auto|llmadapter|swarm. Swarm-only flags: --system/--workers/--timeout.
 #
 # Flags after the question pass through to ats-swarm-bench (--only/--skip/
-# --system/--workers/--timeout). Config: ATS_PIPE_SWARM points at the bench.
+# --system/--workers/--timeout). `--fanout` makes a wide llmadapter run explicit.
+# Config: ATS_PIPE_SWARM points at the bench.
 
 set -euo pipefail
 
@@ -43,7 +44,7 @@ _ats_pipe_scrape() {
   command -v superweb >/dev/null 2>&1 && superweb fetch "$u" --mode auto --max-tier 1 2>/dev/null
 }
 
-mode="local" url="" gather_only=0 synth=0 verify=0 tier=0 recall=0
+mode="local" url="" gather_only=0 synth=0 verify=0 tier=0 recall=0 fanout=0
 lanes="free" first="" engine="${ATS_PIPE_ENGINE:-auto}"
 verify_lane="${ATS_PIPE_VERIFY_LANE:-nemotron-3-super-120b-a12b}"
 swarm_passthru=() words=()
@@ -63,6 +64,7 @@ while [[ $# -gt 0 ]]; do
     --lanes) lanes="$2"; shift 2 ;;         # llmadapter: free|paid|local|cli|all|name,…
     --only) lanes="$2"; shift 2 ;;           # alias for a single lane/group
     --first) first="$2"; shift 2 ;;          # hedged race: stop after N answers
+    --fanout) fanout=1; shift ;;               # explicit wide llmadapter benchmark
     --engine) engine="$2"; shift 2 ;;        # auto|llmadapter|swarm
     --skip|--system|--workers|--timeout)
       swarm_passthru+=("$1" "$2"); shift 2 ;;  # swarm-engine only
@@ -120,14 +122,16 @@ have_llm=0; command -v llmadapter >/dev/null 2>&1 && have_llm=1
 if [[ "$engine" == "llmadapter" ]]; then
   # --verify (fresh-context verifier) and --tier (cheap-propose → aggregate →
   # verify) are implemented IN llmadapter — one engine, cached + ledgered.
-  msg="lanes=$lanes"; [[ "$synth" == 1 ]] && msg="$msg +aggregate"
+  msg="lanes=$lanes bounded=3"; [[ "$fanout" == 1 ]] && msg="$msg +fanout"
+  [[ "$synth" == 1 ]] && msg="$msg +aggregate"
   [[ "$verify" == 1 ]] && msg="$msg +verify"; [[ "$tier" == 1 ]] && msg="tier"
   [[ -n "$first" ]] && msg="$msg first=$first"
   echo "· fan out via llmadapter ($msg) …" >&2
   if [[ "$tier" == 1 ]]; then
     llm_args=(ask "$prompt" --tier)
   else
-    llm_args=(ask "$prompt" --lanes "$lanes")
+    llm_args=(ask "$prompt" --swarm --lanes "$lanes")
+    [[ "$fanout" == 1 ]] && llm_args+=(--fanout)
     [[ "$synth" == 1 ]] && llm_args+=(--aggregate)
     [[ "$verify" == 1 ]] && llm_args+=(--verify)
     [[ -n "$verify_lane" ]] && [[ "$verify" == 1 ]] && export LLMADAPTER_VERIFY_LANE="$verify_lane"

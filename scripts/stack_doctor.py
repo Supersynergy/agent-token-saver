@@ -198,6 +198,82 @@ def owned_nonwritable_file(path: Path) -> bool:
     return path.is_file() and metadata.st_uid == os.getuid() and not metadata.st_mode & 0o022
 
 
+def inspect_llmadapter(home: Path, *, allow_probe: bool) -> dict[str, Any]:
+    canonical = home / ".agent-token-saver" / "bin" / "llmadapter"
+    launcher = home / ".local" / "bin" / "llmadapter"
+    bun = shutil.which("bun")
+    report: dict[str, Any] = {
+        "installed": canonical.is_file(),
+        "canonical": str(canonical),
+        "launcher": str(launcher),
+        "launcher_canonical": same_resolved_path(launcher, canonical)
+        if launcher.exists() or launcher.is_symlink()
+        else False,
+        "runtime": bun,
+        "ready": False,
+        "capability": None,
+        "error": None,
+    }
+    if not report["installed"]:
+        report["error"] = "canonical_missing"
+        return report
+    if not owned_nonwritable_file(canonical):
+        report["error"] = "canonical_unsafe_owner_or_mode"
+        return report
+    if not report["launcher_canonical"]:
+        report["error"] = "launcher_path_mismatch"
+        return report
+    if not bun:
+        report["error"] = "bun_missing"
+        return report
+    if not allow_probe:
+        report["error"] = "probe_blocked_by_integrity"
+        return report
+    try:
+        result = subprocess.run(
+            [bun, str(canonical), "contract", "agent-token-saver doctor probe"],
+            capture_output=True,
+            text=True,
+            timeout=6,
+            check=False,
+            env={**os.environ, "HOME": str(home)},
+        )
+        capability = json.loads(result.stdout)
+    except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError):
+        report["error"] = "capability_probe_failed"
+        return report
+    workers = capability.get("max_workers")
+    result_tokens = capability.get("max_result_tokens")
+    prompt_bytes = capability.get("max_prompt_bytes")
+    valid = (
+        result.returncode == 0
+        and capability.get("schema_version") == 2
+        and capability.get("ask_v2") is True
+        and isinstance(workers, int)
+        and not isinstance(workers, bool)
+        and 1 <= workers <= 3
+        and isinstance(result_tokens, int)
+        and not isinstance(result_tokens, bool)
+        and 1 <= result_tokens <= 500
+        and isinstance(prompt_bytes, int)
+        and not isinstance(prompt_bytes, bool)
+        and 1 <= prompt_bytes <= 1_800
+    )
+    report["capability"] = {
+        key: capability.get(key)
+        for key in (
+            "schema_version",
+            "ask_v2",
+            "max_workers",
+            "max_result_tokens",
+            "max_prompt_bytes",
+        )
+    }
+    report["ready"] = valid
+    report["error"] = None if valid else "capability_contract_mismatch"
+    return report
+
+
 def command_is_exact_file(command: str, target: Path | None) -> bool:
     if target is None:
         return False
@@ -441,6 +517,7 @@ def build_report(
     profile: str,
     *,
     check_integrations: bool = False,
+    require_llmadapter: bool = False,
     home: Path | None = None,
 ) -> dict[str, Any]:
     names = catalog["profiles"][profile]
@@ -459,7 +536,12 @@ def build_report(
         if check_integrations
         else {"ok": True, "errors": [], "warnings": [], "prompt_hook_smoke": {}}
     )
-    healthy = not missing_required and integrity["ok"]
+    llmadapter = inspect_llmadapter(home, allow_probe=integrity["ok"])
+    healthy = (
+        not missing_required
+        and integrity["ok"]
+        and (llmadapter["ready"] or not require_llmadapter)
+    )
     profile_complete = healthy and not missing_optional
     return {
         "profile": profile,
@@ -469,6 +551,8 @@ def build_report(
         "missing_optional": missing_optional,
         "hooks": hooks,
         "integrity": integrity,
+        "llmadapter": llmadapter,
+        "llmadapter_required": require_llmadapter,
         "healthy": healthy,
         "profile_complete": profile_complete,
         "status": "full" if profile_complete else ("core-ready" if healthy else "blocked"),
@@ -488,13 +572,23 @@ def main() -> int:
     )
     doctor.add_argument("--catalog", type=Path, default=DEFAULT_CATALOG)
     doctor.add_argument("--json", action="store_true")
+    doctor.add_argument(
+        "--require-llmadapter",
+        action="store_true",
+        help="fail unless the managed v2 adapter and Bun runtime are ready",
+    )
     args = parser.parse_args()
     if args.command != "doctor":
         parser.print_help()
         return 0
     catalog = json.loads(args.catalog.read_text())
     profile = args.profile or configured_profile()
-    report = build_report(catalog, profile, check_integrations=True)
+    report = build_report(
+        catalog,
+        profile,
+        check_integrations=True,
+        require_llmadapter=args.require_llmadapter,
+    )
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=2))
     else:
@@ -530,6 +624,11 @@ def main() -> int:
             print(f"BLOCKED  integrity          {error}")
         for warning in report["integrity"]["warnings"]:
             print(f"warning  integrity          {warning}")
+        adapter = report["llmadapter"]
+        print(
+            f"adapter  llmadapter         "
+            f"{'ready' if adapter['ready'] else adapter['error']}"
+        )
     return 0 if report["healthy"] else 1
 
 

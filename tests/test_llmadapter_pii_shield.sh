@@ -41,6 +41,7 @@ cat > "$TMP/.agent-token-saver/local-lanes.json" <<EOF
   "cmd": ["/bin/sh", "-c", "printf '%s' \"\$1\" > $WIRE; printf 'Ich habe die Anfrage von __PROMPT__ geprueft.'", "sh", "__PROMPT__"]
 } ] }
 EOF
+chmod 600 "$TMP/.agent-token-saver/local-lanes.json"
 
 # Shaped like a real German customer request; values are sentinels.
 NAME="Frau Test Person"

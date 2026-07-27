@@ -237,6 +237,7 @@ def install_files(dry_run: bool) -> None:
         ROOT / "scripts" / "stack_doctor.py": INSTALL_HOME / "bin" / "agent-token-saver",
         ROOT / "scripts" / "full_context_ledger.py": INSTALL_HOME / "bin" / "agent-token-ledger",
         ROOT / "scripts" / "external_usage_gate.py": INSTALL_HOME / "bin" / "agent-token-audit",
+        ROOT / "scripts" / "llmadapter.ts": INSTALL_HOME / "bin" / "llmadapter",
         ROOT / "integration" / "hooks" / "token-stack-prompt.py": INSTALL_HOME
         / "hooks"
         / "token-stack-prompt.py",
@@ -281,6 +282,23 @@ def install_files(dry_run: bool) -> None:
         audit_launcher.unlink(missing_ok=True)
         audit_launcher.symlink_to(audit_target)
         print(f"linked {audit_launcher}")
+    adapter_launcher = HOME / ".local" / "bin" / "llmadapter"
+    adapter_source = ROOT / "scripts" / "llmadapter.ts"
+    adapter_target = copies[adapter_source]
+    adoptable = not (adapter_launcher.exists() or adapter_launcher.is_symlink())
+    if adapter_launcher.is_symlink():
+        adoptable = adapter_launcher.resolve(strict=False) in {
+            adapter_source.resolve(),
+            adapter_target.resolve(),
+        }
+    if not adoptable:
+        print(f"kept user-owned host override {adapter_launcher}")
+    elif dry_run:
+        print(f"would link {adapter_launcher} -> {adapter_target}")
+    else:
+        adapter_launcher.unlink(missing_ok=True)
+        adapter_launcher.symlink_to(adapter_target)
+        print(f"linked {adapter_launcher}")
     heavy_launcher = HOME / ".local" / "bin" / "codex-heavy-context"
     heavy_target = copies[ROOT / "integration" / "cli" / "codex-heavy-context"]
     if heavy_launcher.exists() or heavy_launcher.is_symlink():
@@ -371,6 +389,7 @@ def write_config(profile: str, agents: list[str], project: Path, dry_run: bool) 
         "doctor": ROOT / "scripts" / "stack_doctor.py",
         "ledger": ROOT / "scripts" / "full_context_ledger.py",
         "audit": ROOT / "scripts" / "external_usage_gate.py",
+        "llmadapter": ROOT / "scripts" / "llmadapter.ts",
         "prompt_hook": ROOT / "integration" / "hooks" / "token-stack-prompt.py",
         "session_guard": ROOT / "integration" / "hooks" / "token-session-guard.py",
         "worker_capsule": ROOT / "integration" / "hooks" / "agent-worker-capsule.py",
@@ -379,6 +398,7 @@ def write_config(profile: str, agents: list[str], project: Path, dry_run: bool) 
         "doctor": INSTALL_HOME / "bin" / "agent-token-saver",
         "ledger": INSTALL_HOME / "bin" / "agent-token-ledger",
         "audit": INSTALL_HOME / "bin" / "agent-token-audit",
+        "llmadapter": INSTALL_HOME / "bin" / "llmadapter",
         "prompt_hook": INSTALL_HOME / "hooks" / "token-stack-prompt.py",
         "session_guard": INSTALL_HOME / "hooks" / "token-session-guard.py",
         "worker_capsule": INSTALL_HOME / "hooks" / "agent-worker-capsule.py",

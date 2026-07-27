@@ -1,0 +1,163 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Supersynergy/agent-token-saver/schemas/llmadapter-result-v2.schema.json",
+  "title": "llmadapter ask-v2 result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "status",
+    "exit_code",
+    "prompt",
+    "stage",
+    "lanes",
+    "ok",
+    "total",
+    "results",
+    "accounting"
+  ],
+  "properties": {
+    "schema": { "const": "llmadapter.result" },
+    "schema_version": { "const": 2 },
+    "status": { "enum": ["ok", "partial", "failed", "invalid"] },
+    "exit_code": { "type": "integer", "minimum": 0, "maximum": 255 },
+    "error": { "type": "string", "maxLength": 80 },
+    "prompt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sha256", "bytes", "transport"],
+      "properties": {
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "bytes": { "type": "integer", "minimum": 0, "maximum": 1800 },
+        "transport": { "enum": ["stdin", "prompt_file", "unknown"] }
+      }
+    },
+    "stage": { "const": "worker" },
+    "lanes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requested", "selected", "cap", "fanout"],
+      "properties": {
+        "requested": { "type": "string", "minLength": 1 },
+        "selected": { "type": "integer", "minimum": 0 },
+        "cap": { "type": "integer", "minimum": 0, "maximum": 64 },
+        "fanout": { "type": "boolean" }
+      }
+    },
+    "ok": { "type": "integer", "minimum": 0 },
+    "total": { "type": "integer", "minimum": 0 },
+    "results": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/result" }
+    },
+    "accounting": { "$ref": "#/$defs/accounting" }
+  },
+  "$defs": {
+    "tokenCoverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reported", "estimated", "unknown_calls"],
+      "properties": {
+        "reported": { "type": "integer", "minimum": 0 },
+        "estimated": { "type": "integer", "minimum": 0 },
+        "unknown_calls": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "accounting": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "schema_version",
+        "status",
+        "terminal_records_complete",
+        "prompt_sha256",
+        "prompt_bytes",
+        "transport",
+        "stage",
+        "requested_lane_spec",
+        "selected_lane_count",
+        "lane_cap",
+        "fanout",
+        "max_tokens",
+        "calls_started",
+        "calls_completed",
+        "cache_hits",
+        "input_tokens",
+        "output_tokens",
+        "estimated_cost_usd",
+        "cost_status",
+        "completed",
+        "failed"
+      ],
+      "properties": {
+        "schema": { "const": "llmadapter.accounting" },
+        "schema_version": { "const": 2 },
+        "status": { "const": "complete" },
+        "terminal_records_complete": { "const": true },
+        "prompt_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "prompt_bytes": { "type": "integer", "minimum": 0, "maximum": 1800 },
+        "transport": { "enum": ["stdin", "prompt_file", "unknown"] },
+        "stage": { "const": "worker" },
+        "requested_lane_spec": { "type": "string", "minLength": 1 },
+        "selected_lane_count": { "type": "integer", "minimum": 0 },
+        "lane_cap": { "type": "integer", "minimum": 0, "maximum": 64 },
+        "fanout": { "type": "boolean" },
+        "max_tokens": { "type": "integer", "minimum": 0, "maximum": 500 },
+        "calls_started": { "type": "integer", "minimum": 0 },
+        "calls_completed": { "type": "integer", "minimum": 0 },
+        "cache_hits": { "type": "integer", "minimum": 0 },
+        "input_tokens": { "$ref": "#/$defs/tokenCoverage" },
+        "output_tokens": { "$ref": "#/$defs/tokenCoverage" },
+        "estimated_cost_usd": { "type": "null" },
+        "cost_status": { "const": "unknown" },
+        "completed": { "const": true },
+        "failed": { "type": "boolean" }
+      }
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lane",
+        "kind",
+        "class",
+        "ok",
+        "terminal",
+        "ms",
+        "call_started",
+        "input_tokens",
+        "output_tokens",
+        "token_count_source",
+        "max_tokens",
+        "cap_mode"
+      ],
+      "properties": {
+        "lane": { "type": "string", "minLength": 1 },
+        "model": { "type": "string" },
+        "kind": { "enum": ["openrouter", "ollama", "cli"] },
+        "class": { "enum": ["free", "paid", "local", "cli"] },
+        "ok": { "type": "boolean" },
+        "terminal": {
+          "enum": ["succeeded", "failed", "timeout", "output_limit", "cached"]
+        },
+        "ms": { "type": "integer", "minimum": 0 },
+        "answer": { "type": "string" },
+        "error": { "type": "string", "maxLength": 80 },
+        "detail": { "type": "string", "maxLength": 80 },
+        "cached": { "type": "boolean" },
+        "call_started": { "type": "boolean" },
+        "input_tokens": { "type": ["integer", "null"], "minimum": 0 },
+        "output_tokens": { "type": ["integer", "null"], "minimum": 0 },
+        "token_count_source": {
+          "enum": ["provider_reported", "estimated", "unknown"]
+        },
+        "max_tokens": { "type": "integer", "minimum": 1, "maximum": 500 },
+        "cap_mode": {
+          "enum": ["provider_server", "local_native", "advisory_only"]
+        }
+      }
+    }
+  }
+}

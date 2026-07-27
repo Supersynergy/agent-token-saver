@@ -1,5 +1,34 @@
 # Changelog
 
+## Unreleased
+
+- **feat: strict `llmadapter ask-v2` controller protocol.** Prompts use stdin or
+  a regular file rather than argv; local lanes and a three-worker bound are the
+  defaults. Remote and paid egress require explicit gates. One schema-versioned
+  JSON result includes prompt hash metadata, per-lane terminal state and honest
+  reported/estimated/unknown token coverage.
+- **fix: bounded and complete worker accounting.** OpenRouter receives
+  `max_tokens`, Ollama receives `options.num_predict`, CLI output and time are
+  bounded, and any nonzero CLI exit fails. Accounting is written atomically
+  with mode `0600` only after every selected lane reaches a terminal record;
+  unknown cost is `null`, never synthetic zero.
+- **security: v2 trust and lifecycle hardening.** Selection cap is total rather
+  than concurrency-only. Egress gates follow lane kind and endpoint, CLI
+  descendants run in a detached process group, HTTP and CLI bodies are bounded,
+  prompt files are private/current-user only, and cache hits require the full
+  protocol/capsule/command fingerprint plus a bounded string answer.
+- **fix: independently verifiable accounting.** Every v2 lane record now exposes
+  `call_started`; controllers can derive calls, cache hits and token coverage
+  from terminal records and reject fabricated summaries. Pre-transport shield,
+  key and spawn failures no longer count as calls.
+- **fix: reproducible CLI wiring.** The installer now copies and links
+  `llmadapter`; doctor probes only the hash-managed copy's providerless v2
+  contract and reports Bun, launcher and capability readiness.
+  `--require-llmadapter` makes that readiness fail closed.
+- **security: redirect and host-lane trust.** HTTP redirects are rejected, and
+  local lanes load only from a bounded, current-user-owned, non-symlink `0600`
+  file opened with `O_NOFOLLOW` plus inode verification.
+
 ## 4.22.0 — 2026-07-27
 
 - **fix: doctor blocks `synx doctor` in an active managed Codex/Claude hook.**

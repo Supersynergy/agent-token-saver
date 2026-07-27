@@ -13,7 +13,8 @@ python3 "$ROOT/scripts/install_agent_token_saver.py" \
   --profile lean --agent all --project "$PROJECT" >/dev/null
 
 REPORT="$TMP_ROOT/doctor.json"
-"$HOME/.local/bin/agent-token-saver" doctor --profile lean --json >"$REPORT"
+"$HOME/.local/bin/agent-token-saver" doctor \
+  --profile lean --require-llmadapter --json >"$REPORT"
 
 python3 - "$HOME" "$PROJECT" "$REPORT" <<'PY'
 import json
@@ -24,10 +25,13 @@ home, project, report_path = map(Path, sys.argv[1:])
 report = json.loads(report_path.read_text())
 assert report["healthy"] is True, report
 assert report["status"] in {"core-ready", "full"}, report
+assert report["llmadapter"]["ready"] is True, report["llmadapter"]
+assert report["llmadapter"]["capability"]["schema_version"] == 2
 required = [
     home / ".local/bin/agent-token-saver",
     home / ".local/bin/agent-token-ledger",
     home / ".local/bin/agent-token-audit",
+    home / ".local/bin/llmadapter",
     home / ".agent-token-saver/skills/agent-token-saver/SKILL.md",
     home / ".codex/hooks.json",
     home / ".claude/settings.json",
@@ -53,3 +57,4 @@ PY
 
 "$HOME/.local/bin/agent-token-ledger" --help >/dev/null
 "$HOME/.local/bin/agent-token-audit" --help >/dev/null
+"$HOME/.local/bin/llmadapter" contract "neutral install smoke" >/dev/null

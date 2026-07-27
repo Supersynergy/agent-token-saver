@@ -216,6 +216,51 @@ Start with `lean`. Change profiles only for a concrete need.
 See [Hooks and agents](docs/HOOKS_AND_AGENTS.md). Files on disk are not proof of
 active wiring; the doctor checks the installed paths and hooks.
 
+## AgentMaster protocol
+
+`llmadapter ask-v2` is the strict machine interface for an external controller.
+The universal installer places a managed copy on `PATH`; this optional adapter
+requires [Bun](https://bun.sh/) at runtime, and `agent-token-saver doctor --json`
+reports its exact capability/launcher status without starting a provider.
+Use `doctor --require-llmadapter` for fail-closed AgentMaster automation.
+It reads prompts from stdin or a regular file, never a positional argument.
+Input is limited to 1,800 UTF-8 bytes so the worker capsule never silently
+truncates it. Prompt files must be regular, owned by the current user and have
+no group/other permissions. Three selected workers, a 500-token requested
+ceiling and a 120-second global deadline are the defaults.
+
+```bash
+printf '%s' "$TASK" | llmadapter ask-v2 \
+  --stdin --swarm --lanes local --no-cache \
+  --usage-out run-accounting.json
+```
+
+`--cap` is the total selected-worker limit: at most three normally, or at most
+64 with explicit `--fanout`. OpenRouter is always remote; CLI agents are remote
+unless a private host lane explicitly declares `local_safe`; Ollama is local
+only on a loopback URL. Remote lanes require `--allow-remote`; paid lanes also
+require `--allow-paid`. HTTP redirects are rejected. Host lanes load only from
+a current-user-owned, regular, non-symlink `0600`
+`~/.agent-token-saver/local-lanes.json`.
+The command emits exactly one
+[`llmadapter.result` v2](schemas/llmadapter-result-v2.schema.json) JSON object.
+The private `0600` usage file contains its completed accounting object. Token
+counts remain `reported`, `estimated` or `unknown`; cost is `null` unless a
+future provider supplies authoritative billing. The requested output cap is
+server-side for OpenRouter, native for Ollama and advisory-only for CLI agents,
+whose captured output is still byte-bounded. Every lane record exposes
+`call_started`, so a controller can independently derive call counts, cache
+hits, and token-coverage totals instead of trusting the summary. Shield, key,
+configuration and spawn failures before transport starts remain false.
+
+Stdin/file transport prevents prompt leakage through process arguments. It does
+not stop a model from repeating input in its answer. With cache enabled, that
+answer is stored in the private cache and may therefore contain repeated input;
+use `--no-cache` for sensitive tasks.
+
+The repository defines 21 built-in lanes. A host may add local lanes through
+its private configuration; `llmadapter lanes` is the runtime inventory.
+
 ## Measure your own result
 
 The included ledger combines parent runs, workers, retries and fallbacks.
