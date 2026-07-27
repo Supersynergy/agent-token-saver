@@ -6,11 +6,10 @@ from __future__ import annotations
 import json
 import os
 import re
-import subprocess
 import sys
 import time
+from html import escape
 from pathlib import Path
-from xml.sax.saxutils import quoteattr
 
 TRIVIAL = re.compile(
     r"^\s*(?:ok|okay|yes|no|ja|nein|thanks|danke|continue|weiter|passt|done|fertig)[.!?\s]*$",
@@ -30,6 +29,11 @@ RECON_TRIGGER = re.compile(
     r"competitive\s+landscape|optionen\s+vergleichen|compare\s+(?:options|tools|agents))\b",
     re.IGNORECASE,
 )
+
+
+def quoteattr(value: str) -> str:
+    """Quote one XML attribute without importing the heavyweight xml.sax stack."""
+    return f'"{escape(value, quote=True)}"'
 
 
 def audit(event: str, reason: str, name: str = "") -> None:
@@ -229,6 +233,8 @@ def main() -> int:
             emit_token_saver_fallback(load_skill=explicit_token_saver)
         return 0
     try:
+        import subprocess
+
         result = subprocess.run(
             [
                 sys.executable,

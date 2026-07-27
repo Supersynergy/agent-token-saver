@@ -6,6 +6,8 @@ ROOT = Path(__file__).resolve().parents[1]
 ARTIFACTS = (
     ROOT / "data" / "benchmarks" / "graphify-code-only-2026-07-27.json",
     ROOT / "data" / "benchmarks" / "graphify-code-only-2026-07-27.md",
+    ROOT / "data" / "benchmarks" / "hook-and-capsule-hotpath-2026-07-27.json",
+    ROOT / "data" / "benchmarks" / "hook-and-capsule-hotpath-2026-07-27.md",
     ROOT / "data" / "benchmarks" / "swarm-control-2026-07-27.json",
     ROOT / "data" / "benchmarks" / "swarm-control-2026-07-27.md",
     ROOT / "data" / "benchmarks" / "tilth-vs-gmax-2026-07-27.json",

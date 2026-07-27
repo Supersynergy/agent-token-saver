@@ -19,10 +19,19 @@ def test_report_keeps_raw_controller_output_out_of_artifacts(monkeypatch) -> Non
     monkeypatch.setattr(
         bench,
         "worker_context",
-        lambda case, _prompt: f"contract Tool lane: {case}.",
+        lambda case, _prompt, *, compact: (
+            f"delta Tool lane: {case}."
+            if compact
+            else f"full worker contract with repeated rules Tool lane: {case}."
+        ),
     )
 
     report = bench.make_report("agentmaster")
 
     assert report["agentmaster"] == {"model_count": 1, "dry_run_has_lanes": True}
     assert "private transcript" not in str(report)
+    assert report["acceptance"]["compact_complete_packets_smaller"] is True
+    assert (
+        report["worker_context"]["routed_capsules_plus_compact_hook"]
+        < report["worker_context"]["routed_capsules_plus_full_hook"]
+    )

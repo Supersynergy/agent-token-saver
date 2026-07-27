@@ -44,6 +44,35 @@ RESULT_CONTRACT = (
     "handoff only when HANDOFF is non-none."
 )
 
+COMPACT_CONTRACT = (
+    "agent-token-saver capsule accepted: preserve its objective, scope and oracle; "
+    "never add the parent transcript; use zero or one skill and at most 3 attempts. "
+    "Return <=500 tokens with STATUS: PASS|FAIL|BLOCKED, exact EVIDENCE and at most "
+    "one HANDOFF. The controller keeps the final decision."
+)
+
+CAPSULE_FIELDS: tuple[re.Pattern[str], ...] = tuple(
+    re.compile(
+        rf"\b(?:{field})\b[\"']?[ \t]*[:=][ \t]*[\"']?([^\n,}}\"']+)",
+        re.IGNORECASE,
+    )
+    for field in (
+        r"objective|goal|ziel",
+        r"scope|inputs?",
+        r"oracle|dod|definition[ _-]of[ _-]done",
+        r"limits?|constraints?",
+        r"return|result|output",
+    )
+)
+OBJECTIVE_FIELD = re.compile(
+    r"\b(?:objective|goal|ziel)\b[\"']?[ \t]*[:=][ \t]*[\"']?([^\n,}}\"']+)",
+    re.IGNORECASE,
+)
+SCOPE_FIELD = re.compile(
+    r"\b(?:scope|inputs?)\b[\"']?[ \t]*[:=][ \t]*[\"']?([^\n,}}\"']+)",
+    re.IGNORECASE,
+)
+
 # One task-specific hint is cheaper and less error-prone than handing every
 # worker a global tool catalog. The hook only suggests a lane; execution stays
 # with the worker/controller.
@@ -60,7 +89,8 @@ ROUTES: tuple[tuple[re.Pattern[str], str], ...] = (
     ),
     (
         re.compile(
-            r"\b(?:file|source|code|function|test|bug|repo|repository|import|symbol)\b", re.I
+            r"\b(?:files?|source|src|code|functions?|tests?|bug|repo|repository|import|symbol)\b",
+            re.I,
         ),
         " Tool lane: local source. Start with exact `rg`; for structural symbols or "
         "imports use scoped `tilth --budget 4000` on the concrete project only.",
@@ -109,17 +139,47 @@ def task_text(payload: dict[object, object]) -> str:
     raw = payload.get("tool_input", {})
     if isinstance(raw, dict):
         parts = []
-        for key in ("description", "prompt", "task", "instructions"):
+        for key in (
+            "description",
+            "prompt",
+            "task",
+            "instructions",
+            "objective",
+            "scope",
+            "oracle",
+            "limits",
+            "return",
+        ):
             value = raw.get(key)
             if isinstance(value, str):
-                parts.append(value)
+                parts.append(f"{key}: {value}")
         return "\n".join(parts)[:4_000]
     return raw[:4_000] if isinstance(raw, str) else ""
 
 
+def has_complete_capsule(payload: dict[object, object]) -> bool:
+    """Recognize an explicit five-field capsule; false negatives keep the full contract."""
+    text = task_text(payload)
+    return bool(text) and all(
+        any(match.group(1).strip() for match in pattern.finditer(text))
+        for pattern in CAPSULE_FIELDS
+    )
+
+
+def routing_text(payload: dict[object, object]) -> str:
+    """Route from objective/scope, not from generic oracle/return vocabulary."""
+    text = task_text(payload)
+    selected = [
+        match.group(1).strip()
+        for pattern in (OBJECTIVE_FIELD, SCOPE_FIELD)
+        if (match := pattern.search(text)) and match.group(1).strip()
+    ]
+    return "\n".join(selected) if selected else text
+
+
 def tool_route(payload: dict[object, object]) -> str:
     """Return at most one compact route, or nothing for an ambiguous task."""
-    text = task_text(payload)
+    text = routing_text(payload)
     for pattern, instruction in ROUTES:
         if pattern.search(text):
             return instruction
@@ -143,7 +203,13 @@ def main() -> int:
     except ValueError:
         max_workers = 3
 
-    context = CONTRACT + RESULT_CONTRACT + tool_route(payload)
+    compact = os.environ.get("ATS_CAPSULE_COMPACT_OFF") != "1"
+    contract = (
+        COMPACT_CONTRACT
+        if compact and has_complete_capsule(payload)
+        else CONTRACT + RESULT_CONTRACT
+    )
+    context = contract + tool_route(payload)
     count = bump(str(payload.get("session_id", "")))
     if count > max_workers > 0:
         context += (

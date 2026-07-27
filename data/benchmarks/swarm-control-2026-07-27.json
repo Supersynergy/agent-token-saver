@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "asof_utc": "2026-07-27T12:12:08.994202+00:00",
+  "asof_utc": "2026-07-27T18:28:43.181907+00:00",
   "measurement": "utf8_bytes_div_4_visible_input_proxy",
   "not_measured": [
     "provider billing",
@@ -14,24 +14,36 @@
   },
   "worker_context": {
     "all_registry_visible_input_tokens": 956,
-    "naive_three_workers_registry_plus_contract": 3588,
-    "routed_three_workers_contract_only": 720,
-    "avoided_visible_input_tokens": 2868,
-    "reduction_percent": 79.9,
+    "task_capsules_visible_input_tokens": 208,
+    "full_hook_contract_tokens": 724,
+    "compact_hook_delta_tokens": 322,
+    "naive_registry_plus_capsules_plus_full_hook": 3800,
+    "routed_capsules_plus_full_hook": 932,
+    "routed_capsules_plus_compact_hook": 530,
+    "routed_full_reduction_vs_naive": 75.5,
+    "routed_compact_reduction_vs_naive": 86.1,
+    "capsule_dedup_avoided_tokens": 402,
+    "capsule_dedup_packet_reduction_percent": 43.1,
     "rows": [
       {
         "case": "source",
-        "routed_visible_input_tokens": 243,
+        "task_capsule_tokens": 70,
+        "full_hook_contract_tokens": 243,
+        "compact_hook_delta_tokens": 109,
         "route": "local source"
       },
       {
         "case": "graph",
-        "routed_visible_input_tokens": 238,
+        "task_capsule_tokens": 69,
+        "full_hook_contract_tokens": 238,
+        "compact_hook_delta_tokens": 104,
         "route": "impact graph"
       },
       {
         "case": "fresh",
-        "routed_visible_input_tokens": 239,
+        "task_capsule_tokens": 69,
+        "full_hook_contract_tokens": 243,
+        "compact_hook_delta_tokens": 109,
         "route": "fresh external fact"
       }
     ]
@@ -39,6 +51,8 @@
   "acceptance": {
     "agentmaster_models_nonempty": true,
     "three_task_specific_routes": true,
-    "dry_run_has_lanes": true
+    "dry_run_has_lanes": true,
+    "compact_hook_deltas_smaller": true,
+    "compact_complete_packets_smaller": true
   }
 }

@@ -65,6 +65,95 @@ def test_graph_route_wins_over_generic_source_terms(tmp_path: Path) -> None:
     assert "Tool lane: local source" not in message
 
 
+def test_precontracted_capsule_gets_only_compact_delta(tmp_path: Path) -> None:
+    output = run_hook(
+        tmp_path,
+        {
+            "tool_name": "Agent",
+            "session_id": "precontracted",
+            "tool_input": {
+                "prompt": (
+                    "Objective: trace the parser failure.\n"
+                    "Scope: src/parser.py and tests/test_parser.py.\n"
+                    "Oracle: pytest tests/test_parser.py exits 0.\n"
+                    "Limits: at most 3 tries; do not edit unrelated files.\n"
+                    "Return: STATUS, exact evidence path and exit code in <=500 tokens."
+                )
+            },
+        },
+    )
+
+    message = context(output)
+    assert "capsule accepted" in message
+    assert "preserve its objective, scope and oracle" in message
+    assert "worker contract (v4.22.0)" not in message
+    assert "Tool lane: local source" in message
+    assert len(message.encode("utf-8")) < 700
+
+
+def test_incomplete_capsule_keeps_full_contract(tmp_path: Path) -> None:
+    output = run_hook(
+        tmp_path,
+        {
+            "tool_name": "Agent",
+            "session_id": "incomplete",
+            "tool_input": {
+                "prompt": "Objective: inspect this source file. Scope: src/parser.py."
+            },
+        },
+    )
+
+    message = context(output)
+    assert "worker contract (v4.22.0)" in message
+    assert "STATUS: PASS|FAIL|BLOCKED" in message
+
+
+def test_empty_capsule_fields_keep_full_contract(tmp_path: Path) -> None:
+    output = run_hook(
+        tmp_path,
+        {
+            "tool_name": "Agent",
+            "session_id": "empty-fields",
+            "tool_input": {
+                "prompt": (
+                    "Objective: inspect the parser.\n"
+                    "Scope:\n"
+                    "Oracle: pytest exits 0.\n"
+                    "Limits: at most 3 tries.\n"
+                    "Return: STATUS and evidence."
+                )
+            },
+        },
+    )
+
+    message = context(output)
+    assert "worker contract (v4.22.0)" in message
+    assert "capsule accepted" not in message
+
+
+def test_capsule_contract_words_do_not_override_objective_route(tmp_path: Path) -> None:
+    output = run_hook(
+        tmp_path,
+        {
+            "tool_name": "Agent",
+            "session_id": "fresh-capsule",
+            "tool_input": {
+                "prompt": (
+                    "Objective: read the current API documentation for this package.\n"
+                    "Scope: official package documentation.\n"
+                    "Oracle: return the exact version and command exit code.\n"
+                    "Limits: at most 3 tries.\n"
+                    "Return: STATUS and evidence in <=500 tokens."
+                )
+            },
+        },
+    )
+
+    message = context(output)
+    assert "Tool lane: fresh external fact" in message
+    assert "Tool lane: local source" not in message
+
+
 def test_non_agent_emits_nothing(tmp_path: Path) -> None:
     assert run_hook(tmp_path, {"tool_name": "Bash", "session_id": "other"}) == {}
 

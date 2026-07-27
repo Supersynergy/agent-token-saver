@@ -150,13 +150,15 @@ small route hint per worker.
 
 | Three-worker packet | Estimated visible input |
 |---|---:|
-| Naive: full registry + contract for every worker | 3,588 |
-| Routed: contract + one task-specific hint | 720 |
-| **Avoided projection** | **2,868 (79.9%)** |
+| Naive: registry + same task capsules + full hook | 3,800 |
+| Routed: same task capsules + full hook | 932 |
+| Routed: same task capsules + compact hook | 530 |
+| **Avoided with compact hook** | **3,270 (86.1%)** |
 
-This is a no-provider-call projection, not a cost or quality claim. Full
-artifact:
-[swarm-control-2026-07-27.md](data/benchmarks/swarm-control-2026-07-27.md).
+Capsule deduplication removes another 43.1% from the complete routed packet.
+This is a no-provider-call projection, not a cost or quality claim.
+Artifacts: [swarm control](data/benchmarks/swarm-control-2026-07-27.md) and
+[hook hot path](data/benchmarks/hook-and-capsule-hotpath-2026-07-27.md).
 
 ### 4. Why heavier retrieval stays on demand
 

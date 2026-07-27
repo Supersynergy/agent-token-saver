@@ -47,10 +47,22 @@ def command_text(command: list[str]) -> str:
     return result.stdout
 
 
-def worker_context(case: str, prompt: str) -> str:
+def precontracted_prompt(prompt: str) -> str:
+    return (
+        f"Objective: {prompt}\n"
+        "Scope: the named evidence only.\n"
+        "Oracle: return PASS only with an exact path and exit code.\n"
+        "Limits: at most 3 tries; do not edit unrelated files.\n"
+        "Return: STATUS, EVIDENCE and at most one HANDOFF in <=500 tokens."
+    )
+
+
+def worker_context(case: str, prompt: str, *, compact: bool) -> str:
     with tempfile.TemporaryDirectory(prefix="ats-swarm-control-") as state:
         env = os.environ.copy()
         env["ATS_CAPSULE_STATE_DIR"] = state
+        if not compact:
+            env["ATS_CAPSULE_COMPACT_OFF"] = "1"
         event = {
             "tool_name": "Agent",
             "session_id": f"bench-{case}",
@@ -89,19 +101,33 @@ def make_report(agentmaster: str) -> dict[str, Any]:
             "review this repository and verify its tests",
         ]
     )
-    contexts = {name: worker_context(name, prompt) for name, prompt in CASES.items()}
+    capsules = {name: precontracted_prompt(prompt) for name, prompt in CASES.items()}
+    full_contracts = {
+        name: worker_context(f"{name}-full", capsules[name], compact=False)
+        for name in CASES
+    }
+    compact_deltas = {
+        name: worker_context(f"{name}-compact", capsules[name], compact=True)
+        for name in CASES
+    }
     registry_tokens = est_tokens(registry_text)
-    naive = sum(registry_tokens + est_tokens(context) for context in contexts.values())
-    routed = sum(est_tokens(context) for context in contexts.values())
+    capsule_tokens = sum(est_tokens(prompt) for prompt in capsules.values())
+    full_hook_tokens = sum(est_tokens(context) for context in full_contracts.values())
+    compact_hook_tokens = sum(est_tokens(context) for context in compact_deltas.values())
+    naive = registry_tokens * len(CASES) + capsule_tokens + full_hook_tokens
+    routed_full = capsule_tokens + full_hook_tokens
+    routed_compact = capsule_tokens + compact_hook_tokens
     rows = [
         {
             "case": name,
-            "routed_visible_input_tokens": est_tokens(context),
-            "route": context.split("Tool lane: ", 1)[1].split(".", 1)[0]
-            if "Tool lane: " in context
+            "task_capsule_tokens": est_tokens(capsules[name]),
+            "full_hook_contract_tokens": est_tokens(full_contracts[name]),
+            "compact_hook_delta_tokens": est_tokens(compact_deltas[name]),
+            "route": compact_deltas[name].split("Tool lane: ", 1)[1].split(".", 1)[0]
+            if "Tool lane: " in compact_deltas[name]
             else "missing",
         }
-        for name, context in contexts.items()
+        for name in CASES
     ]
     return {
         "schema_version": 1,
@@ -114,16 +140,28 @@ def make_report(agentmaster: str) -> dict[str, Any]:
         },
         "worker_context": {
             "all_registry_visible_input_tokens": registry_tokens,
-            "naive_three_workers_registry_plus_contract": naive,
-            "routed_three_workers_contract_only": routed,
-            "avoided_visible_input_tokens": naive - routed,
-            "reduction_percent": reduction_percent(naive, routed),
+            "task_capsules_visible_input_tokens": capsule_tokens,
+            "full_hook_contract_tokens": full_hook_tokens,
+            "compact_hook_delta_tokens": compact_hook_tokens,
+            "naive_registry_plus_capsules_plus_full_hook": naive,
+            "routed_capsules_plus_full_hook": routed_full,
+            "routed_capsules_plus_compact_hook": routed_compact,
+            "routed_full_reduction_vs_naive": reduction_percent(naive, routed_full),
+            "routed_compact_reduction_vs_naive": reduction_percent(
+                naive, routed_compact
+            ),
+            "capsule_dedup_avoided_tokens": routed_full - routed_compact,
+            "capsule_dedup_packet_reduction_percent": reduction_percent(
+                routed_full, routed_compact
+            ),
             "rows": rows,
         },
         "acceptance": {
             "agentmaster_models_nonempty": bool(registry),
             "three_task_specific_routes": all(row["route"] != "missing" for row in rows),
             "dry_run_has_lanes": "lanes" in dry_plan.lower(),
+            "compact_hook_deltas_smaller": compact_hook_tokens < full_hook_tokens,
+            "compact_complete_packets_smaller": routed_compact < routed_full,
         },
     }
 
@@ -139,21 +177,26 @@ def markdown(report: dict[str, Any]) -> str:
         "",
         f"Controller dry run exposed `{report['agentmaster']['model_count']}` model lanes.",
         "",
-        "| Worker task | Selected compact route | Visible input tokens |",
-        "|---|---|---:|",
+        "| Worker task | Selected route | Task capsule | Full hook contract | Compact hook delta |",
+        "|---|---|---:|---:|---:|",
     ]
     for row in context["rows"]:
         lines.append(
-            f"| {row['case']} | {row['route']} | {row['routed_visible_input_tokens']} |"
+            f"| {row['case']} | {row['route']} | {row['task_capsule_tokens']} | "
+            f"{row['full_hook_contract_tokens']} | {row['compact_hook_delta_tokens']} |"
         )
     lines.extend(
         [
             "",
             "| Three-worker packet | Visible input tokens |",
             "|---|---:|",
-            f"| Naive: full model registry + contract per worker | {context['naive_three_workers_registry_plus_contract']} |",
-            f"| Routed: contract + one task-specific tool hint | {context['routed_three_workers_contract_only']} |",
-            f"| Avoided projection | {context['avoided_visible_input_tokens']} ({context['reduction_percent']}%) |",
+            f"| Naive: registry + same capsules + full hook | {context['naive_registry_plus_capsules_plus_full_hook']} |",
+            f"| Routed: same capsules + full hook | {context['routed_capsules_plus_full_hook']} |",
+            f"| Routed: same capsules + compact hook | {context['routed_capsules_plus_compact_hook']} |",
+            f"| Routed full reduction vs naive | {context['routed_full_reduction_vs_naive']}% |",
+            f"| Routed compact reduction vs naive | {context['routed_compact_reduction_vs_naive']}% |",
+            f"| Additional capsule-dedup saving | {context['capsule_dedup_avoided_tokens']} "
+            f"({context['capsule_dedup_packet_reduction_percent']}% of complete routed packet) |",
             "",
             "This is a projection-capacity comparison, not a provider-cost or quality claim.",
         ]
