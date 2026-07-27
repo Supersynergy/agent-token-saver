@@ -148,6 +148,11 @@ Full artifact:
 The three-worker control-plane fixture compares repeated full context with one
 small route hint per worker.
 
+![Raw context compressed into bounded agent capsules and one verified result](docs/assets/agentmaster-swarm-flow.png)
+
+One controller. Compact capsules. Independent lanes. One machine-checkable
+oracle.
+
 | Three-worker packet | Estimated visible input |
 |---|---:|
 | Naive: registry + same task capsules + full hook | 3,800 |
