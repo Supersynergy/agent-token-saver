@@ -250,6 +250,32 @@ def test_end_to_end_integrity_rejects_missing_session_guard_wiring(tmp_path: Pat
     assert "session_guard_hook_missing" in report["integrity"]["errors"]
 
 
+def test_end_to_end_integrity_rejects_synx_doctor_in_active_hook(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    install_fixture(home)
+    hooks_path = home / ".codex" / "hooks.json"
+    hooks = json.loads(hooks_path.read_text())
+    hooks["hooks"]["PreToolUse"] = [
+        {"hooks": [{"type": "command", "command": "synx doctor --quick", "timeout": 6}]}
+    ]
+    hooks_path.write_text(json.dumps(hooks))
+    catalog = {
+        "profiles": {"lean": ["native"]},
+        "tools": {"native": {"kind": "builtin", "required": True}},
+    }
+
+    report = build_report(catalog, "lean", check_integrations=True, home=home)
+
+    assert report["healthy"] is False
+    assert "forbidden_hot_path_synx_doctor:codex" in report["integrity"]["errors"]
+    assert report["hooks"]["codex"]["hot_path"]["synx_doctor"] == 1
+    assert report["integrity"]["hot_path"]["synx_doctor"] == {"codex": 1}
+
+
+def test_hot_path_counter_does_not_match_synxp() -> None:
+    assert stack_doctor.hot_path_counts(["synxp 'doctor state'"])["synx_doctor"] == 0
+
+
 def test_end_to_end_integrity_rejects_unsafe_managed_asset(tmp_path: Path) -> None:
     home = tmp_path / "home"
     install_fixture(home)

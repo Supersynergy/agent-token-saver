@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shlex
 import shutil
 import subprocess
@@ -18,6 +19,9 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CATALOG = ROOT / "stack" / "catalog.json"
 DEFAULT_CONFIG = ROOT / "config.json"
 LEGACY_PROFILE_ALIASES = {"news": "teams"}
+HOT_PATH_RULES: tuple[tuple[str, re.Pattern[str]], ...] = (
+    ("synx_doctor", re.compile(r"(?<![\w-])synx\s+doctor\b", re.IGNORECASE)),
+)
 
 
 def configured_profile() -> str:
@@ -99,6 +103,32 @@ def inspect_recon() -> list[dict[str, Any]]:
     return result
 
 
+def hook_commands(hooks: Any) -> list[str]:
+    """Extract active hook commands without printing unrelated user commands."""
+    if not isinstance(hooks, dict):
+        return []
+    commands: list[str] = []
+    for entries in hooks.values():
+        if not isinstance(entries, list):
+            continue
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            for hook in entry.get("hooks", []):
+                command = hook.get("command") if isinstance(hook, dict) else None
+                if isinstance(command, str):
+                    commands.append(command)
+    return commands
+
+
+def hot_path_counts(commands: list[str]) -> dict[str, int]:
+    """Count forbidden commands in active hooks; never execute them."""
+    return {
+        name: sum(bool(pattern.search(command)) for command in commands)
+        for name, pattern in HOT_PATH_RULES
+    }
+
+
 def inspect_hooks(home: Path | None = None) -> dict[str, Any]:
     home = home or Path.home()
     targets = {
@@ -111,26 +141,33 @@ def inspect_hooks(home: Path | None = None) -> dict[str, Any]:
         try:
             data = json.loads(path.read_text())
         except (OSError, json.JSONDecodeError):
-            report[agent] = {"path": str(path), "exists": path.is_file(), "commands": []}
+            report[agent] = {
+                "path": str(path),
+                "exists": path.is_file(),
+                "commands": [],
+                "hot_path": hot_path_counts([]),
+            }
             continue
-        hooks = data.get("hooks", {})
-        for entries in hooks.values():
-            if not isinstance(entries, list):
-                continue
-            for entry in entries:
-                for hook in entry.get("hooks", []) if isinstance(entry, dict) else []:
-                    command = hook.get("command") if isinstance(hook, dict) else None
-                    if command and any(
-                        marker in command
-                        for marker in (
-                            "agent-token-saver",
-                            "rtk-rewrite",
-                            "rtk hook claude",
-                            "token-stack-prompt",
-                        )
-                    ):
-                        commands.append(command)
-        report[agent] = {"path": str(path), "exists": True, "commands": commands}
+        all_commands = hook_commands(data.get("hooks", {}))
+        commands = [
+            command
+            for command in all_commands
+            if any(
+                marker in command
+                for marker in (
+                    "agent-token-saver",
+                    "rtk-rewrite",
+                    "rtk hook claude",
+                    "token-stack-prompt",
+                )
+            )
+        ]
+        report[agent] = {
+            "path": str(path),
+            "exists": True,
+            "commands": commands,
+            "hot_path": hot_path_counts(all_commands),
+        }
     skill_targets = {
         "hermes": home / ".hermes" / "skills" / "agent-token-saver" / "SKILL.md",
         "ggcoder": home / ".gg" / "skills" / "agent-token-saver.md",
@@ -246,6 +283,13 @@ def inspect_integrity(profile: str, hooks: dict[str, Any], home: Path) -> dict[s
             asset_integrity[name] = True
 
     configured_agents = set(config.get("agents", [])) if isinstance(config, dict) else set()
+    hot_path = {
+        agent: int(hooks.get(agent, {}).get("hot_path", {}).get("synx_doctor", 0))
+        for agent in sorted(configured_agents & {"codex", "claude"})
+    }
+    for agent, count in hot_path.items():
+        if count:
+            errors.append(f"forbidden_hot_path_synx_doctor:{agent}")
     prompt_commands = [
         command
         for agent in configured_agents & {"codex", "claude"}
@@ -388,6 +432,7 @@ def inspect_integrity(profile: str, hooks: dict[str, Any], home: Path) -> dict[s
         },
         "prompt_hook_smoke": prompt_smoke,
         "session_guard_smoke": guard_smoke,
+        "hot_path": {"synx_doctor": hot_path},
     }
 
 

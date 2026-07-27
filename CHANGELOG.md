@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- **fix: doctor blocks `synx doctor` in an active managed Codex/Claude hook.**
+  `agent-token-saver doctor` now parses active hook command fields read-only and
+  counts this known high-cost maintenance command without executing it or
+  exposing unrelated commands. A configured agent with a match returns
+  `forbidden_hot_path_synx_doctor:<agent>` and is not healthy. Use `synx doctor`
+  only as an explicit, operator-run maintenance action — never per prompt/tool
+  event.
+
 ## 4.21.0 — 2026-07-25
 
 ### PII-Shield auf jeder Remote-Lane · Worker-Contract als Hook · Skill auf Repo-Stand
