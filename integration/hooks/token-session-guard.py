@@ -4,8 +4,10 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import os
+import stat
 import subprocess
 import sys
 import tempfile
@@ -14,6 +16,9 @@ from pathlib import Path
 from typing import Any
 
 MAX_EVENT_BYTES = 1_000_000
+MAX_INCREMENTAL_BYTES = 8_000_000
+STATE_MAX_BYTES = 16_384
+HASH_WINDOW_BYTES = 4_096
 ACTION_RANK = {"continue": 0, "warn": 1, "checkpoint_required": 2}
 
 
@@ -54,12 +59,28 @@ def safe_file(raw_path: Any, *, roots: list[Path] | None = None) -> Path | None:
     return path
 
 
-def run_ledger(transcript: Path, home: Path) -> dict[str, Any] | None:
-    ledger = safe_file(
+def ledger_path(home: Path) -> Path | None:
+    return safe_file(
         os.environ.get(
             "ATS_LEDGER_PATH", str(home / ".agent-token-saver" / "bin" / "agent-token-ledger")
         )
     )
+
+
+def load_ledger_module(ledger: Path) -> Any | None:
+    try:
+        spec = importlib.util.spec_from_file_location("ats_guard_ledger", ledger)
+        if spec is None or spec.loader is None:
+            return None
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+    except (ImportError, OSError, ValueError):
+        return None
+    return module
+
+
+def run_ledger(transcript: Path, home: Path) -> dict[str, Any] | None:
+    ledger = ledger_path(home)
     if ledger is None:
         return None
     provider = "claude" if ".claude" in transcript.parts else "codex"
@@ -86,11 +107,140 @@ def run_ledger(transcript: Path, home: Path) -> dict[str, Any] | None:
     return payload if isinstance(payload, dict) else None
 
 
+def file_identity(transcript: Path, metadata: os.stat_result) -> str:
+    path_hash = hashlib.sha256(str(transcript).encode()).hexdigest()
+    raw = f"{metadata.st_dev}:{metadata.st_ino}:{path_hash}".encode()
+    return hashlib.sha256(raw).hexdigest()
+
+
+def segment_hash(transcript: Path, end: int, *, window: int = HASH_WINDOW_BYTES) -> str | None:
+    if end < 0:
+        return None
+    try:
+        with transcript.open("rb") as handle:
+            handle.seek(max(0, end - window))
+            return hashlib.sha256(handle.read(min(window, end))).hexdigest()
+    except OSError:
+        return None
+
+
+def prefix_hash(transcript: Path) -> str | None:
+    try:
+        with transcript.open("rb") as handle:
+            return hashlib.sha256(handle.read(HASH_WINDOW_BYTES)).hexdigest()
+    except OSError:
+        return None
+
+
+def stable_stat(transcript: Path) -> os.stat_result | None:
+    try:
+        metadata = transcript.stat()
+    except OSError:
+        return None
+    if (
+        not stat.S_ISREG(metadata.st_mode)
+        or metadata.st_uid != os.getuid()
+        or metadata.st_mode & 0o022
+    ):
+        return None
+    return metadata
+
+
+def same_file(before: os.stat_result, after: os.stat_result) -> bool:
+    return (
+        before.st_dev,
+        before.st_ino,
+        before.st_size,
+        before.st_mtime_ns,
+        before.st_mode,
+        before.st_uid,
+    ) == (
+        after.st_dev,
+        after.st_ino,
+        after.st_size,
+        after.st_mtime_ns,
+        after.st_mode,
+        after.st_uid,
+    )
+
+
+def valid_cursor_state(state: dict[str, Any], transcript: Path, metadata: os.stat_result) -> bool:
+    if state.get("schema_version") != 2:
+        return False
+    cursor = state.get("cursor")
+    if not isinstance(cursor, dict):
+        return False
+    offset = cursor.get("byte_offset")
+    if (
+        not isinstance(offset, int)
+        or offset < 0
+        or offset > metadata.st_size
+        or state.get("transcript_bytes") != offset
+        or state.get("transcript_fingerprint") != file_identity(transcript, metadata)
+        or not isinstance(cursor.get("prefix_sha256"), str)
+        or not isinstance(cursor.get("tail_sha256"), str)
+    ):
+        return False
+    return cursor["prefix_sha256"] == prefix_hash(transcript) and cursor[
+        "tail_sha256"
+    ] == segment_hash(transcript, offset)
+
+
+def source_from_accumulator(
+    module: Any, transcript: Path, accumulator: dict[str, Any]
+) -> tuple[dict[str, int], list[dict[str, Any]]]:
+    usage, metadata = module.usage_from_accumulator(accumulator)
+    return usage, [
+        {"name": "parent", "path": str(transcript), "usage": usage, "metadata": metadata}
+    ]
+
+
+def build_full_ledger(
+    module: Any, transcript: Path, provider: str
+) -> tuple[dict[str, Any], dict[str, Any]] | None:
+    try:
+        accumulator = module.inspect_usage_accumulator(transcript)
+        usage, sources = source_from_accumulator(module, transcript, accumulator)
+        return module.build_ledger(usage, [], provider, usage_sources=sources), accumulator
+    except (AttributeError, OSError, ValueError, TypeError):
+        return None
+
+
+def build_incremental_ledger(
+    module: Any, transcript: Path, provider: str, state: dict[str, Any]
+) -> tuple[dict[str, Any], dict[str, Any], int] | None:
+    before = stable_stat(transcript)
+    if before is None or not valid_cursor_state(state, transcript, before):
+        return None
+    accumulator = state.get("accumulator")
+    if not isinstance(accumulator, dict):
+        return None
+    offset = state["cursor"]["byte_offset"]
+    try:
+        if before.st_size == offset:
+            module.usage_from_accumulator(accumulator)
+            next_accumulator = json.loads(json.dumps(accumulator, separators=(",", ":")))
+            next_offset = offset
+        else:
+            result = module.inspect_usage_suffix(
+                transcript, offset, accumulator, max_bytes=MAX_INCREMENTAL_BYTES
+            )
+            if result is None:
+                return None
+            next_accumulator, next_offset = result
+        after = stable_stat(transcript)
+        if after is None or not same_file(before, after) or next_offset != after.st_size:
+            return None
+        usage, sources = source_from_accumulator(module, transcript, next_accumulator)
+        ledger = module.build_ledger(usage, [], provider, usage_sources=sources)
+    except (AttributeError, OSError, TypeError, ValueError):
+        return None
+    return ledger, next_accumulator, next_offset
+
+
 def state_dir(home: Path) -> Path:
     path = Path(
-        os.environ.get(
-            "ATS_GUARD_STATE_DIR", str(home / ".local" / "state" / "agent-token-saver")
-        )
+        os.environ.get("ATS_GUARD_STATE_DIR", str(home / ".local" / "state" / "agent-token-saver"))
     ).expanduser()
     path.mkdir(parents=True, exist_ok=True, mode=0o700)
     path.chmod(0o700)
@@ -104,10 +254,66 @@ def state_key(event: dict[str, Any], transcript: Path) -> str:
 
 def load_previous(path: Path) -> dict[str, Any]:
     try:
+        if path.stat().st_mode & 0o077:
+            return {}
         value = json.loads(path.read_text())
     except (OSError, json.JSONDecodeError):
         return {}
     return value if isinstance(value, dict) else {}
+
+
+def guard_record(
+    transcript: Path,
+    metadata: os.stat_result,
+    guard: dict[str, Any],
+    accumulator: dict[str, Any],
+) -> dict[str, Any] | None:
+    cursor = {
+        "byte_offset": metadata.st_size,
+        "prefix_sha256": prefix_hash(transcript),
+        "tail_sha256": segment_hash(transcript, metadata.st_size),
+    }
+    if not cursor["prefix_sha256"] or not cursor["tail_sha256"]:
+        return None
+    record = {
+        "schema_version": 2,
+        "timestamp_unix": time.time(),
+        "action": str(guard.get("action") or "continue"),
+        "observed": guard.get("observed", {}),
+        "reasons": guard.get("reasons", []),
+        "warnings": guard.get("warnings", []),
+        "transcript_id": hashlib.sha256(str(transcript).encode()).hexdigest(),
+        "transcript_bytes": metadata.st_size,
+        "transcript_fingerprint": file_identity(transcript, metadata),
+        "cursor": cursor,
+        "accumulator": accumulator,
+    }
+    try:
+        serialized = json.dumps(record, ensure_ascii=False, separators=(",", ":")).encode()
+    except (TypeError, ValueError):
+        return None
+    return record if len(serialized) <= STATE_MAX_BYTES else None
+
+
+def fallback_record(
+    transcript: Path, metadata: os.stat_result, guard: dict[str, Any]
+) -> dict[str, Any] | None:
+    """Persist the pre-v2 guard contract when the local module cannot load."""
+    record = {
+        "schema_version": 1,
+        "timestamp_unix": time.time(),
+        "action": str(guard.get("action") or "continue"),
+        "observed": guard.get("observed", {}),
+        "reasons": guard.get("reasons", []),
+        "warnings": guard.get("warnings", []),
+        "transcript_id": hashlib.sha256(str(transcript).encode()).hexdigest(),
+        "transcript_bytes": metadata.st_size,
+    }
+    try:
+        serialized = json.dumps(record, ensure_ascii=False, separators=(",", ":")).encode()
+    except (TypeError, ValueError):
+        return None
+    return record if len(serialized) <= STATE_MAX_BYTES else None
 
 
 def atomic_state(path: Path, payload: dict[str, Any]) -> None:
@@ -126,7 +332,7 @@ def atomic_state(path: Path, payload: dict[str, Any]) -> None:
         try:
             os.unlink(temporary)
         except FileNotFoundError:
-            pass
+            return
 
 
 def warning_message(guard: dict[str, Any]) -> str:
@@ -151,33 +357,51 @@ def warning_message(guard: dict[str, Any]) -> str:
 def main() -> int:
     event = read_event()
     home = Path.home().resolve()
-    transcript = safe_file(
-        event.get("transcript_path"), roots=allowed_transcript_roots(home)
-    )
+    transcript = safe_file(event.get("transcript_path"), roots=allowed_transcript_roots(home))
     if transcript is None or transcript.suffix.lower() not in {".json", ".jsonl"}:
         emit()
         return 0
-    ledger = run_ledger(transcript, home)
+    provider = "claude" if ".claude" in transcript.parts else "codex"
+    directory = state_dir(home)
+    current_path = directory / f"session-guard-{state_key(event, transcript)}.json"
+    previous = load_previous(current_path)
+    module = None
+    path = ledger_path(home)
+    if path is not None:
+        module = load_ledger_module(path)
+    incremental = (
+        build_incremental_ledger(module, transcript, provider, previous)
+        if module is not None
+        else None
+    )
+    if incremental is not None:
+        ledger, accumulator, _ = incremental
+    else:
+        full = build_full_ledger(module, transcript, provider) if module is not None else None
+        if full is not None:
+            ledger, accumulator = full
+        else:
+            ledger = run_ledger(transcript, home)
+            accumulator = None
     guard = ledger.get("session_guard") if isinstance(ledger, dict) else None
     if not isinstance(guard, dict):
         emit()
         return 0
-    action = str(guard.get("action") or "continue")
-    directory = state_dir(home)
-    current_path = directory / f"session-guard-{state_key(event, transcript)}.json"
-    previous = load_previous(current_path)
-    record = {
-        "schema_version": 1,
-        "timestamp_unix": time.time(),
-        "action": action,
-        "observed": guard.get("observed", {}),
-        "reasons": guard.get("reasons", []),
-        "warnings": guard.get("warnings", []),
-        "transcript_id": hashlib.sha256(str(transcript).encode()).hexdigest(),
-        "transcript_bytes": transcript.stat().st_size,
-    }
+    metadata = stable_stat(transcript)
+    if metadata is None:
+        emit()
+        return 0
+    record = (
+        guard_record(transcript, metadata, guard, accumulator)
+        if isinstance(accumulator, dict)
+        else fallback_record(transcript, metadata, guard)
+    )
+    if record is None:
+        emit()
+        return 0
     atomic_state(current_path, record)
     atomic_state(directory / "session-guard-latest.json", record)
+    action = record["action"]
     if ACTION_RANK.get(action, 0) > ACTION_RANK.get(str(previous.get("action")), 0):
         emit({"systemMessage": warning_message(guard)})
     else:

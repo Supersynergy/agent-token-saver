@@ -152,35 +152,142 @@ def _update_source_metadata(record: Any, metadata: dict[str, int]) -> None:
     metadata["rtk_mentions"] += len(RTK_CALL_RE.findall(call_input))
 
 
-def inspect_usage_file(path: Path) -> tuple[dict[str, int], dict[str, int]]:
-    candidates: list[dict[str, Any]] = []
-    latest_codex_total: dict[str, Any] | None = None
-    metadata = {
-        "records": 0,
-        "token_count_events": 0,
-        "compactions": 0,
-        "tool_output_bytes": 0,
-        "spawned_workers": 0,
-        "shell_exec_calls": 0,
-        "rtk_mentions": 0,
+def new_usage_accumulator() -> dict[str, Any]:
+    """Return JSON-serializable, content-free state for one usage source."""
+    return {
+        "latest_codex_total": None,
+        "last_usage_candidate": None,
+        "metadata": {
+            "records": 0,
+            "token_count_events": 0,
+            "compactions": 0,
+            "tool_output_bytes": 0,
+            "spawned_workers": 0,
+            "shell_exec_calls": 0,
+            "rtk_mentions": 0,
+        },
     }
+
+
+def _accumulator_metadata(value: Any) -> dict[str, int] | None:
+    if not isinstance(value, dict):
+        return None
+    metadata = value.get("metadata")
+    if not isinstance(metadata, dict):
+        return None
+    required = {
+        "records",
+        "token_count_events",
+        "compactions",
+        "tool_output_bytes",
+        "spawned_workers",
+        "shell_exec_calls",
+        "rtk_mentions",
+    }
+    if set(metadata) != required or any(
+        not isinstance(metadata[key], int) or metadata[key] < 0 for key in required
+    ):
+        return None
+    for key in ("latest_codex_total", "last_usage_candidate"):
+        candidate = value.get(key)
+        if candidate is not None and (
+            not isinstance(candidate, dict)
+            or set(candidate)
+            != {
+                "input_tokens",
+                "cache_creation_input_tokens",
+                "cache_read_input_tokens",
+                "cached_input_tokens_subset",
+                "total_input_tokens",
+                "output_tokens",
+                "reasoning_output_tokens_subset",
+                "reported_total_tokens",
+            }
+            or any(not isinstance(item, int) or item < 0 for item in candidate.values())
+        ):
+            return None
+    return metadata
+
+
+def update_usage_accumulator(record: Any, accumulator: dict[str, Any]) -> None:
+    """Apply one record with the same usage precedence as a full replay."""
+    metadata = _accumulator_metadata(accumulator)
+    if metadata is None:
+        raise ValueError("invalid usage accumulator")
+    _update_source_metadata(record, metadata)
+    if not isinstance(record, dict):
+        return
+    payload = record.get("payload")
+    if (
+        record.get("type") == "event_msg"
+        and isinstance(payload, dict)
+        and payload.get("type") == "token_count"
+    ):
+        info = payload.get("info")
+        if isinstance(info, dict) and isinstance(info.get("total_token_usage"), dict):
+            accumulator["latest_codex_total"] = _normalize_usage(info["total_token_usage"])
+    for candidate in _usage_candidates(record):
+        accumulator["last_usage_candidate"] = _normalize_usage(candidate)
+
+
+def usage_from_accumulator(accumulator: dict[str, Any]) -> tuple[dict[str, int], dict[str, int]]:
+    metadata = _accumulator_metadata(accumulator)
+    if metadata is None:
+        raise ValueError("invalid usage accumulator")
+    usage = accumulator.get("latest_codex_total") or accumulator.get("last_usage_candidate")
+    if not isinstance(usage, dict):
+        raise ValueError("no provider usage object found")
+    return dict(usage), dict(metadata)
+
+
+def inspect_usage_accumulator(path: Path) -> dict[str, Any]:
+    accumulator = new_usage_accumulator()
     for record in _records(path):
-        _update_source_metadata(record, metadata)
-        if isinstance(record, dict):
-            payload = record.get("payload")
-            if (
-                record.get("type") == "event_msg"
-                and isinstance(payload, dict)
-                and payload.get("type") == "token_count"
-            ):
-                info = payload.get("info")
-                if isinstance(info, dict) and isinstance(info.get("total_token_usage"), dict):
-                    latest_codex_total = info["total_token_usage"]
-        candidates.extend(_usage_candidates(record))
-    usage = latest_codex_total or (candidates[-1] if candidates else None)
-    if usage is None:
-        raise ValueError(f"no provider usage object found in {path}")
-    return _normalize_usage(usage), metadata
+        update_usage_accumulator(record, accumulator)
+    usage_from_accumulator(accumulator)
+    return accumulator
+
+
+def inspect_usage_suffix(
+    path: Path, offset: int, accumulator: dict[str, Any], *, max_bytes: int = 8_000_000
+) -> tuple[dict[str, Any], int] | None:
+    """Parse only complete JSONL records after a trusted byte cursor.
+
+    Returning ``None`` tells callers to perform a complete replay.  The caller
+    owns cursor/file identity validation; this function refuses partial lines
+    and never retains record text.
+    """
+    if path.suffix.lower() != ".jsonl" or offset < 0 or max_bytes < 0:
+        return None
+    try:
+        with path.open("rb") as handle:
+            handle.seek(0, 2)
+            size = handle.tell()
+            if offset > size or size - offset > max_bytes:
+                return None
+            handle.seek(offset)
+            suffix = handle.read(max_bytes + 1)
+    except OSError:
+        return None
+    if len(suffix) > max_bytes or (suffix and not suffix.endswith(b"\n")):
+        return None
+    try:
+        next_accumulator = json.loads(json.dumps(accumulator, separators=(",", ":")))
+        for raw_line in suffix.splitlines():
+            try:
+                record = json.loads(raw_line)
+            except json.JSONDecodeError:
+                continue
+            update_usage_accumulator(record, next_accumulator)
+        usage_from_accumulator(next_accumulator)
+    except (TypeError, ValueError):
+        return None
+    return next_accumulator, offset + len(suffix)
+
+
+def inspect_usage_file(path: Path) -> tuple[dict[str, int], dict[str, int]]:
+    accumulator = inspect_usage_accumulator(path)
+    return usage_from_accumulator(accumulator)
 
 
 def load_usage(path: Path) -> dict[str, int]:
@@ -191,10 +298,7 @@ def load_usage(path: Path) -> dict[str, int]:
 def aggregate_usages(usages: list[dict[str, int]]) -> dict[str, int]:
     if not usages:
         raise ValueError("at least one usage source is required")
-    return {
-        key: sum(usage.get(key, 0) for usage in usages)
-        for key in usages[0]
-    }
+    return {key: sum(usage.get(key, 0) for usage in usages) for key in usages[0]}
 
 
 def load_usage_sources(specs: list[str]) -> tuple[dict[str, int], list[dict[str, Any]]]:
@@ -218,9 +322,7 @@ def load_usage_sources(specs: list[str]) -> tuple[dict[str, int], list[dict[str,
         seen_paths.add(path)
         seen_labels.add(label)
         usage, metadata = inspect_usage_file(path)
-        sources.append(
-            {"name": label, "path": str(path), "usage": usage, "metadata": metadata}
-        )
+        sources.append({"name": label, "path": str(path), "usage": usage, "metadata": metadata})
     return aggregate_usages([source["usage"] for source in sources]), sources
 
 
@@ -252,18 +354,14 @@ def build_session_guard(
 ) -> dict[str, Any]:
     limits = {**DEFAULT_GUARD_THRESHOLDS, **(thresholds or {})}
     sources = usage_sources or []
-    compactions = sum(
-        _int(source.get("metadata", {}).get("compactions")) for source in sources
-    )
+    compactions = sum(_int(source.get("metadata", {}).get("compactions")) for source in sources)
     tool_output_bytes = sum(
         _int(source.get("metadata", {}).get("tool_output_bytes")) for source in sources
     )
     shell_exec_calls = sum(
         _int(source.get("metadata", {}).get("shell_exec_calls")) for source in sources
     )
-    rtk_mentions = sum(
-        _int(source.get("metadata", {}).get("rtk_mentions")) for source in sources
-    )
+    rtk_mentions = sum(_int(source.get("metadata", {}).get("rtk_mentions")) for source in sources)
     total_tokens = usage["reported_total_tokens"]
     reasons: list[str] = []
     warnings: list[str] = []
@@ -472,9 +570,7 @@ def main() -> int:
     parser.add_argument("--checkpoint-total-tokens", type=int, default=25_000_000)
     parser.add_argument("--warn-tool-output-bytes", type=int, default=5_000_000)
     parser.add_argument("--checkpoint-compactions", type=int, default=2)
-    parser.add_argument(
-        "--format", choices=("json", "json-compact", "markdown"), default="json"
-    )
+    parser.add_argument("--format", choices=("json", "json-compact", "markdown"), default="json")
     parser.add_argument("--out", type=Path)
     args = parser.parse_args()
     try:

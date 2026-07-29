@@ -5,6 +5,8 @@ from scripts.full_context_ledger import (
     build_ledger,
     build_session_guard,
     build_team_accounting,
+    inspect_usage_accumulator,
+    inspect_usage_suffix,
     load_components,
     load_usage,
     load_usage_sources,
@@ -88,6 +90,44 @@ def test_codex_jsonl_prefers_cumulative_total_over_last_request(tmp_path: Path) 
     assert parsed["output_tokens"] == 12_761
     assert parsed["reported_total_tokens"] == 1_963_339
     assert parsed["cached_input_tokens_subset"] == 1_806_848
+
+
+def test_incremental_suffix_matches_full_replay(tmp_path: Path) -> None:
+    usage = tmp_path / "codex.jsonl"
+    first = {
+        "type": "event_msg",
+        "payload": {
+            "type": "token_count",
+            "info": {"total_token_usage": {"input_tokens": 10, "output_tokens": 2}},
+        },
+    }
+    second = {
+        "type": "response_item",
+        "payload": {"type": "function_call_output", "output": "synthetic"},
+    }
+    usage.write_text(json.dumps(first) + "\n")
+    accumulator = inspect_usage_accumulator(usage)
+    offset = usage.stat().st_size
+    usage.write_text(json.dumps(first) + "\n" + json.dumps(second) + "\n")
+
+    result = inspect_usage_suffix(usage, offset, accumulator)
+
+    assert result is not None
+    incremental, cursor = result
+    full = inspect_usage_accumulator(usage)
+    assert cursor == usage.stat().st_size
+    assert incremental == full
+
+
+def test_incremental_suffix_rejects_partial_line(tmp_path: Path) -> None:
+    usage = tmp_path / "codex.jsonl"
+    usage.write_text(json.dumps({"usage": {"input_tokens": 10, "output_tokens": 2}}) + "\n")
+    accumulator = inspect_usage_accumulator(usage)
+    offset = usage.stat().st_size
+    with usage.open("a") as handle:
+        handle.write('{"usage":')
+
+    assert inspect_usage_suffix(usage, offset, accumulator) is None
 
 
 def test_claude_cache_fields_add_to_total_input(tmp_path: Path) -> None:
