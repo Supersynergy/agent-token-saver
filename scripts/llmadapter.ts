@@ -533,7 +533,18 @@ async function gatherEvidence(
 // answer reaches the oracle as a private 0600 file, never as an argv string.
 type OracleVerdict = { pass: boolean; code: number | null; timedOut: boolean };
 
-async function runOracle(oracle: string, answerPath: string, runDir: string): Promise<OracleVerdict> {
+async function runOracle(
+  oracle: string,
+  answerPath: string,
+  runDir: string,
+  envPrefix?: string,
+): Promise<OracleVerdict> {
+  // A controller usually already has an oracle written against its own variable
+  // names. Without an alias that oracle reads an empty path here and silently
+  // never passes, which turns --first-pass into an expensive no-op.
+  const aliases = envPrefix
+    ? { [`${envPrefix}_ANSWER_PATH`]: answerPath, [`${envPrefix}_RUN_DIR`]: runDir }
+    : {};
   const proc = Bun.spawn(["/bin/sh", "-c", oracle], {
     stdout: "ignore",
     stderr: "ignore",
@@ -541,6 +552,7 @@ async function runOracle(oracle: string, answerPath: string, runDir: string): Pr
     detached: true,
     env: {
       ...process.env,
+      ...aliases,
       LLMADAPTER_ANSWER_PATH: answerPath,
       LLMADAPTER_RUN_DIR: runDir,
     },
@@ -1510,6 +1522,7 @@ type AskV2Options = {
   // Opt-in extensions. AgentMaster passes none of them, so its contract holds.
   firstPass: boolean;
   oracle?: string;
+  oracleEnvPrefix?: string;
   budgetTokens?: number;
   evidence: boolean;
   evidenceMode: "research" | "mega" | "fetch";
@@ -1545,6 +1558,7 @@ function parseAskV2(argv: string[]): AskV2Options {
     "--deadline-secs",
     "--usage-out",
     "--oracle",
+    "--oracle-env-prefix",
     "--budget-tokens",
     "--evidence-mode",
     "--evidence-target",
@@ -1596,6 +1610,13 @@ function parseAskV2(argv: string[]): AskV2Options {
   }
   const oracle = parsed.get("--oracle");
   if (oracle !== undefined && !oracle.trim()) throw new V2UsageError("oracle_empty");
+  const oracleEnvPrefix = parsed.get("--oracle-env-prefix");
+  if (oracleEnvPrefix !== undefined) {
+    if (oracle === undefined) throw new V2UsageError("oracle_env_prefix_requires_oracle");
+    if (!/^[A-Z][A-Z0-9_]{0,31}$/.test(oracleEnvPrefix)) {
+      throw new V2UsageError("oracle_env_prefix_invalid");
+    }
+  }
   return {
     transport: stdin ? "stdin" : "prompt_file",
     promptFile,
@@ -1615,6 +1636,7 @@ function parseAskV2(argv: string[]): AskV2Options {
     usageOut: parsed.get("--usage-out"),
     firstPass: seen.has("--first-pass"),
     oracle: parsed.get("--oracle"),
+    oracleEnvPrefix,
     budgetTokens: parsed.has("--budget-tokens")
       ? parsePositiveInt(parsed.get("--budget-tokens"), "budget_tokens", 1_000_000)
       : undefined,
@@ -1760,6 +1782,7 @@ async function runFirstPass(
   lanes: Lane[],
   start: (lane: Lane, index: number, signal: AbortSignal) => Promise<InternalResultV2>,
   oracle: string | undefined,
+  oracleEnvPrefix?: string,
 ): Promise<FirstPassOutcome> {
   const controller = new AbortController();
   const results: InternalResultV2[] = new Array(lanes.length);
@@ -1787,7 +1810,7 @@ async function runFirstPass(
         return;
       }
       oracleRuns++;
-      const verdict = await runOracle(oracle, answerPath, runDir!);
+      const verdict = await runOracle(oracle, answerPath, runDir!, oracleEnvPrefix);
       if (verdict.pass) {
         winner = result.lane;
         winnerOracleExit = verdict.code;
@@ -1935,6 +1958,7 @@ async function askV2WithPrompt(options: AskV2Options, prompt: string): Promise<A
       lanes,
       (lane, index, signal) => startLane(lane, index, signal),
       options.oracle,
+      options.oracleEnvPrefix,
     );
     results = firstPass.results;
   } else {
@@ -1955,14 +1979,12 @@ async function askV2WithPrompt(options: AskV2Options, prompt: string): Promise<A
     options.maxTokens,
     results,
   );
-  // A first-pass run is "ok" when the oracle accepted one lane; the pruned
-  // peers are the point of the mode, not a partial result.
-  const status = firstPass
-    ? (firstPass.winner !== null ? "ok" : ok === 0 ? "failed" : "partial")
-    : ok === 0 ? "failed" : ok === results.length ? "ok" : "partial";
-  const exitCode = status === "failed" || (firstPass && firstPass.winner === null && options.oracle)
-    ? 1
-    : ok === 0 ? 1 : 0;
+  // status/exit describe LANE outcomes, and the v2 contract fixes the mapping:
+  // exit 0 exactly when the status is ok or partial. The oracle verdict is a
+  // different question and lives in `first_pass.winner` — folding it into the
+  // exit code would produce partial+1, which a strict controller rejects.
+  const status = ok === 0 ? "failed" : ok === results.length ? "ok" : "partial";
+  const exitCode = ok === 0 ? 1 : 0;
   const output: AskV2Output = {
     schema: "llmadapter.result",
     schema_version: 2,
@@ -2180,6 +2202,60 @@ if (cmd === "ask-v2") {
   }
   console.log(JSON.stringify(output));
   process.exit(output.exit_code);
+} else if (cmd === "evidence") {
+  // Gather only. No lane runs, no model token is spent: this is the
+  // "gather once, reference N times" primitive a controller needs before it
+  // fans out. The artifact goes to a private file; stdout carries the report.
+  const mode = flag("mode", "research")!;
+  if (!["research", "mega", "fetch"].includes(mode)) {
+    console.error("usage: llmadapter evidence [--mode research|mega|fetch] (--target X | --stdin) [--bytes N] [--out PATH] [--no-cache]");
+    process.exit(64);
+  }
+  const target = args.includes("--stdin")
+    ? new TextDecoder().decode(readPromptFdV2(0)).trim()
+    : flag("target");
+  if (!target || target === "true") {
+    console.error("evidence needs --target \"<query|url>\" or --stdin");
+    process.exit(64);
+  }
+  const bytes = Number(flag("bytes", String(EVIDENCE_DEFAULT_BYTES)));
+  if (!Number.isSafeInteger(bytes) || bytes < 1 || bytes > EVIDENCE_MAX_BYTES) {
+    console.error(`--bytes must be 1..${EVIDENCE_MAX_BYTES}`);
+    process.exit(64);
+  }
+  const block = await gatherEvidence(
+    target,
+    mode as "research" | "mega" | "fetch",
+    target,
+    bytes,
+    !args.includes("--no-cache"),
+  );
+  const out = flag("out");
+  let artifact: string | null = null;
+  if (out && out !== "true" && block.usable) {
+    try {
+      atomicPrivateText(out, `${block.text}\n`);
+      artifact = out;
+    } catch (error: any) {
+      console.error(`evidence artifact not written: ${boundedDetail(String(error?.message ?? "write_failed"))}`);
+    }
+  }
+  const report = {
+    schema: "llmadapter.evidence",
+    schema_version: 1,
+    mode,
+    target_sha256: sha256(target),
+    usable: block.usable,
+    cached: block.cached,
+    bytes: Buffer.byteLength(block.text, "utf8"),
+    source: block.source,
+    sha256: block.sha256,
+    ...(block.note ? { note: block.note } : {}),
+    artifact,
+    model_tokens_spent: 0,
+  };
+  console.log(JSON.stringify(report, null, 1));
+  process.exit(block.usable ? 0 : 1);
 } else if (cmd === "council") {
   let output: CouncilOutput;
   try {
@@ -2390,16 +2466,19 @@ if (cmd === "ask-v2") {
     "",
     "  ask-v2 (--stdin|--prompt-file PATH) --swarm [--lanes …] [--cap N] [--max-tokens N]",
     "         [--deadline-secs N] [--usage-out PATH] [--allow-remote] [--allow-paid] [--no-cache]",
-    "         [--first-pass] [--oracle 'CMD'] [--budget-tokens N]",
+    "         [--first-pass] [--oracle 'CMD'] [--oracle-env-prefix NAME] [--budget-tokens N]",
     "         [--evidence [--evidence-mode research|mega|fetch] [--evidence-target X] [--evidence-bytes N]]",
     "         [--skill-route]",
+    "  evidence [--mode research|mega|fetch] (--target X | --stdin) [--bytes N] [--out PATH]",
     "  council (--stdin|--prompt-file PATH) [--synth-lane NAME] + every ask-v2 flag",
     "  ask \"<prompt>\" [--swarm] [--fanout] [--lanes …] [--first N] [--aggregate] [--verify] [--tier] [--json]",
     "  contract \"<worker objective>\" [--extended]",
     "  cache-export --out PATH.jsonl [--with-answers] [--duckdb PATH]",
     "  lanes | doctor | stats",
     "",
-    "  --oracle: exit 0 = PASS. Gets LLMADAPTER_ANSWER_PATH + LLMADAPTER_RUN_DIR.",
+    "  --oracle: exit 0 = PASS. Gets LLMADAPTER_ANSWER_PATH + LLMADAPTER_RUN_DIR;",
+    "            --oracle-env-prefix NAME also exports NAME_ANSWER_PATH/NAME_RUN_DIR",
+    "            so a controller's existing oracle string keeps working.",
     "  --first-pass: all lanes start, first PASS wins, the rest are pruned.",
     "  --evidence: $LLMADAPTER_EVIDENCE_CMD supplies the fresh fact tool-less lanes cite.",
     "  host lanes marked opt_in stay out of `all`/class selectors; name them in --lanes.",

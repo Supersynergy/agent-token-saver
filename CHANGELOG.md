@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- **feat: `llmadapter evidence` gathers without spending a model token.** No
+  lane runs: it resolves the cache, calls the configured provider, projects the
+  result, writes a private `0600` artifact and prints a report with
+  `model_tokens_spent: 0`. This is the primitive a controller needs to gather
+  once and hand N workers a path instead of a payload.
+- **feat: `--oracle-env-prefix NAME`.** A controller usually already has an
+  oracle written against its own variable names. Without an alias that oracle
+  reads an empty path here, never passes, and `--first-pass` silently becomes a
+  full-price run with nothing pruned — measured, then fixed: with the alias the
+  same run took one oracle call instead of three and pruned a lane mid-flight.
+- **fix: `--first-pass` no longer breaks the status/exit invariant.** The v2
+  contract fixes exit 0 to mean status `ok` or `partial`; folding a rejected
+  oracle into the exit code produced `partial` with exit 1, which a strict
+  controller rejects. status/exit describe lane outcomes; the oracle verdict
+  lives in `first_pass.winner`, and pruned peers make the lane status `partial`.
+
 - **feat: `llmadapter --first-pass` with an executable oracle.** All selected
   lanes start together, the oracle decides one answer at a time, and the first
   PASS prunes the peers. Losers keep a record with terminal `pruned`. The oracle

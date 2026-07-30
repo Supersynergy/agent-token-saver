@@ -283,7 +283,19 @@ printf '%s' "$TASK" | llmadapter ask-v2 \
   oracle the first valid answer wins.
 - `--oracle` is a shell command; exit 0 is PASS. It receives
   `LLMADAPTER_ANSWER_PATH` (a private `0600` file) and `LLMADAPTER_RUN_DIR`, and
-  is killed after two seconds. The answer never reaches it through argv.
+  is killed after two seconds. The answer never reaches it through argv. The
+  oracle verdict is reported in `first_pass.winner`, not in the exit code: the
+  v2 contract fixes exit 0 to mean status `ok` or `partial`, and a lane that
+  answered did answer.
+- `--oracle-env-prefix NAME` additionally exports `NAME_ANSWER_PATH` and
+  `NAME_RUN_DIR`, so a controller can hand down an oracle it already wrote
+  against its own variable names. Without it that oracle reads an empty path,
+  never passes, and `--first-pass` degrades into a full-price run with nothing
+  pruned.
+- `llmadapter evidence [--mode …] (--target X | --stdin) [--bytes N] [--out PATH]`
+  runs the gather step alone: no lane, no model token, a private artifact and a
+  report with `model_tokens_spent: 0`. Use it to gather once and give N workers
+  a path instead of a payload.
 - `--budget-tokens N` is enforced locally rather than requested from a provider:
   an input estimate above the budget refuses before the call, a CLI lane's
   stdout is bounded at four bytes per budgeted token, and a reported total above

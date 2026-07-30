@@ -246,7 +246,10 @@ def test_first_pass_prunes_peers_once_one_lane_answers(
         prompt="first answer wins",
     )
     output = json.loads(result.stdout)
-    assert output["status"] == "ok"
+    # Pruned peers are lanes without an answer, so the lane-level status is
+    # honestly "partial"; the oracle/winner verdict is reported separately.
+    assert output["status"] == "partial"
+    assert result.returncode == 0
     assert output["first_pass"]["winner"] == "fast"
     assert output["first_pass"]["oracle"] is False
     assert output["first_pass"]["pruned"] >= 1
@@ -291,9 +294,88 @@ def test_first_pass_oracle_decides_the_winner(tmp_path: Path, probe: Path) -> No
         prompt="oracle decides",
     )
     refused = json.loads(rejecting.stdout)
-    assert rejecting.returncode == 1
+    # The oracle verdict lives in first_pass.winner, not in the exit code: the
+    # v2 contract fixes exit 0 to mean status ok|partial, and the lane did
+    # answer. Folding a rejected oracle into the exit code would emit
+    # partial+1, which a strict controller refuses.
+    assert rejecting.returncode == 0
+    assert refused["status"] in {"ok", "partial"}
     assert refused["first_pass"]["winner"] is None
     assert refused["first_pass"]["oracle_runs"] == 1
+
+
+def test_oracle_env_prefix_lets_a_controller_reuse_its_own_oracle(
+    tmp_path: Path,
+    probe: Path,
+) -> None:
+    """Without the alias a controller's oracle reads an empty path, never
+    passes, and --first-pass degrades into a full-price run with no pruning."""
+    install_lanes(tmp_path, probe, [("alpha", "local", "ok")])
+    oracle = 'test -s "$CTRL_ANSWER_PATH"'
+
+    without_alias = json.loads(
+        run_adapter(
+            tmp_path,
+            "ask-v2",
+            "--stdin",
+            "--swarm",
+            "--lanes",
+            "alpha",
+            "--first-pass",
+            "--oracle",
+            oracle,
+            prompt="controller oracle",
+        ).stdout
+    )
+    assert without_alias["first_pass"]["winner"] is None
+
+    with_alias = json.loads(
+        run_adapter(
+            tmp_path,
+            "ask-v2",
+            "--stdin",
+            "--swarm",
+            "--lanes",
+            "alpha",
+            "--no-cache",
+            "--first-pass",
+            "--oracle",
+            oracle,
+            "--oracle-env-prefix",
+            "CTRL",
+            prompt="controller oracle",
+        ).stdout
+    )
+    assert with_alias["first_pass"]["winner"] == "alpha"
+    assert with_alias["first_pass"]["winner_oracle_exit"] == 0
+
+
+def test_oracle_env_prefix_is_bounded_and_needs_an_oracle(tmp_path: Path) -> None:
+    lonely = run_adapter(
+        tmp_path,
+        "ask-v2",
+        "--stdin",
+        "--swarm",
+        "--oracle-env-prefix",
+        "CTRL",
+        prompt="objective",
+    )
+    assert lonely.returncode == 64
+    assert json.loads(lonely.stdout)["error"] == "oracle_env_prefix_requires_oracle"
+
+    malformed = run_adapter(
+        tmp_path,
+        "ask-v2",
+        "--stdin",
+        "--swarm",
+        "--oracle",
+        "true",
+        "--oracle-env-prefix",
+        "bad prefix",
+        prompt="objective",
+    )
+    assert malformed.returncode == 64
+    assert json.loads(malformed.stdout)["error"] == "oracle_env_prefix_invalid"
 
 
 def test_budget_tokens_bounds_a_cli_stream(tmp_path: Path, probe: Path) -> None:
