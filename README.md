@@ -312,7 +312,10 @@ printf '%s' "$TASK" | llmadapter ask-v2 \
   cite whoever owns the fact. If the artifact reports
   a bot wall (`page_status: challenge`), it is discarded and the capsule asks
   the worker for BLOCKED — the adapter never attempts a bypass. Without a
-  provider the run continues with evidence marked unavailable.
+  provider the run continues with evidence marked unavailable. The provider
+  receives `LLMADAPTER_EVIDENCE_DEADLINE_MS` so it can bound itself, and may
+  exit 4 to report that it is busy rather than out of answers — that surfaces as
+  `evidence_provider_busy`, which is worth retrying.
 - `--skill-route` asks `si` for one skill and puts its path in the capsule
   instead of relying on the four built-in regex routes. Fail-open.
 - `llmadapter council` runs the identical worker stage and adds one

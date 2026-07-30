@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- **fix: a busy provider is no longer reported as missing evidence.** Exit code
+  4 from the evidence provider now yields the note `evidence_provider_busy`.
+  The difference is operational: busy is worth retrying, unavailable is not, and
+  collapsing the two teaches an operator that a query has no sources when it has
+  plenty.
+- **fix: the provider is told how long it has.** The adapter passes
+  `LLMADAPTER_EVIDENCE_DEADLINE_MS` so the provider can bound itself instead of
+  guessing — a guess either wastes the budget or gets killed mid-write, which
+  reaches the controller as "no evidence".
 - **feat: `primary` evidence mode.** Ask the provider's primary-source registry
   before the general web, so a version, price or policy claim can cite whoever
   owns the fact instead of the best-ranked article about it. Available to

@@ -350,6 +350,7 @@ async function runBounded(
   timeoutMs: number,
   maxBytes: number,
   stdinText?: string,
+  env?: Record<string, string>,
 ): Promise<BoundedRun> {
   let proc: ReturnType<typeof Bun.spawn> | undefined;
   try {
@@ -358,6 +359,7 @@ async function runBounded(
       stderr: "ignore",
       stdin: stdinText === undefined ? "ignore" : "pipe",
       detached: true,
+      ...(env ? { env: { ...process.env, ...env } } : {}),
     });
   } catch {
     return { code: null, stdout: "", timedOut: false };
@@ -434,6 +436,8 @@ async function siSkillRoute(objective: string): Promise<SkillRoute | undefined> 
 // evidence, and the capsule then tells the worker to report BLOCKED.
 const EVIDENCE_CMD = process.env.LLMADAPTER_EVIDENCE_CMD;
 const EVIDENCE_CACHE_SCHEME = "llmadapter://evidence/";
+/// Providers use this exit code to say "I am busy", not "there is nothing".
+const EVIDENCE_BUSY_EXIT = 4;
 
 function evidenceCacheKey(mode: string, query: string): string {
   return `${EVIDENCE_CACHE_SCHEME}${mode}/${sha256(query)}`;
@@ -502,9 +506,18 @@ async function gatherEvidence(
     EVIDENCE_TIMEOUT_MS,
     4 * 1024 * 1024,
     target,
+    // Tell the provider how long it has. A provider guessing its own deadline
+    // either wastes the budget or gets killed mid-write, which reaches the
+    // controller as "no evidence" for a query that had plenty.
+    { LLMADAPTER_EVIDENCE_DEADLINE_MS: String(EVIDENCE_TIMEOUT_MS) },
   );
   if (run.timedOut) {
     return { usable: false, source: sourceLabel, sha256: sha256(""), fetched_at: now, text: "", note: "evidence_timeout", cached: false };
+  }
+  if (run.code === EVIDENCE_BUSY_EXIT) {
+    // A provider that is busy has not told us the query has no evidence. The
+    // difference matters: busy is worth retrying later, unavailable is not.
+    return { usable: false, source: sourceLabel, sha256: sha256(""), fetched_at: now, text: "", note: "evidence_provider_busy", cached: false };
   }
   if (run.code !== 0 || !run.stdout.trim()) {
     return { usable: false, source: sourceLabel, sha256: sha256(""), fetched_at: now, text: "", note: "evidence_unavailable", cached: false };

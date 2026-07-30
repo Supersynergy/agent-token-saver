@@ -133,6 +133,8 @@ case "${LLMADAPTER_FIXTURE_MODE:-ok}" in
   challenge) printf '{"ok": true, "page_status": "challenge"}\n' ;;
   empty)     printf '\n' ;;
   fail)      exit 3 ;;
+  busy)      exit 4 ;;
+  deadline)  printf 'DEADLINE=%s\n' "${LLMADAPTER_EVIDENCE_DEADLINE_MS:-unset}" ;;
 esac
 """
     )
@@ -633,6 +635,54 @@ def test_evidence_subcommand_reports_an_unusable_gather_without_an_artifact(
     assert report["note"] == "page_status_challenge"
     assert report["artifact"] is None
     assert not out.exists()
+
+
+def test_the_provider_is_told_how_long_it_has(
+    tmp_path: Path,
+    evidence_provider: Path,
+) -> None:
+    """A provider guessing its own deadline either wastes the budget or gets
+    killed mid-write, which reaches the controller as "no evidence"."""
+    out = tmp_path / "artifact.txt"
+    result = run_adapter(
+        tmp_path,
+        "evidence",
+        "--target",
+        "how long do I have",
+        "--out",
+        str(out),
+        extra={
+            "LLMADAPTER_EVIDENCE_CMD": str(evidence_provider),
+            "LLMADAPTER_FIXTURE_MODE": "deadline",
+        },
+    )
+    assert result.returncode == 0, result.stderr
+    body = out.read_text()
+    assert "DEADLINE=" in body
+    assert "unset" not in body
+    assert int(body.split("DEADLINE=")[1].strip()) > 0
+
+
+def test_a_busy_provider_is_not_reported_as_missing_evidence(
+    tmp_path: Path,
+    evidence_provider: Path,
+) -> None:
+    """Busy is worth retrying later; unavailable is not. Collapsing the two
+    teaches an operator that a query has no sources when it has plenty."""
+    result = run_adapter(
+        tmp_path,
+        "evidence",
+        "--target",
+        "contested query",
+        extra={
+            "LLMADAPTER_EVIDENCE_CMD": str(evidence_provider),
+            "LLMADAPTER_FIXTURE_MODE": "busy",
+        },
+    )
+    assert result.returncode == 1
+    report = json.loads(result.stdout)
+    assert report["usable"] is False
+    assert report["note"] == "evidence_provider_busy"
 
 
 def test_evidence_subcommand_rejects_an_unknown_mode(tmp_path: Path) -> None:
