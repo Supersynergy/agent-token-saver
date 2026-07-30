@@ -16,6 +16,7 @@ import {
   lstatSync,
   mkdirSync,
   openSync,
+  readdirSync,
   readFileSync,
   readSync,
   renameSync,
@@ -35,6 +36,10 @@ type Lane = {
   localSafe?: boolean;
   tools?: boolean;
   serial?: boolean; // lane rejects concurrent sessions
+  // Opt-in lanes are skipped by the class selectors and by `all`. A research
+  // lane carries a scraping workload, so it must never join a swarm because
+  // somebody asked for "cli". Select it by name.
+  optIn?: boolean;
   parse?: (raw: string) => string;
 };
 
@@ -132,6 +137,9 @@ try {
         stdinCmd: stdinTmpl ? () => stdinTmpl : undefined,
         localSafe: l.local_safe === true,
         tools: l.tools === true,
+        // `opt_in` keeps a heavy host lane (a scraper, a browser driver) out of
+        // `all` and the class selectors. It is then reachable only by name.
+        optIn: l.opt_in === true,
       });
     }
   }
@@ -153,6 +161,16 @@ const SWARM_MAX_WORKERS = 3;
 const SWARM_FANOUT_MAX_WORKERS = 64;
 const SWARM_CAPSULE_MAX_BYTES = 2_800; // <= 700 UTF-8-bytes/4 visible-input proxy
 const SWARM_MAX_RESULT_TOKENS = 500;
+// Evidence and skill routing are opt-in extras. They widen the capsule, so they
+// carry their own budget instead of eating the objective's. AgentMaster never
+// passes the flags that switch them on, so its 2.8 KiB/1.8 KiB contract holds.
+const EVIDENCE_MAX_BYTES = 4_000;
+const EVIDENCE_DEFAULT_BYTES = 600;
+const EVIDENCE_TIMEOUT_MS = 180_000;
+const SKILL_ROUTE_MAX_BYTES = 400;
+const SKILL_ROUTE_TIMEOUT_MS = 20_000;
+// Same 2s ceiling AgentMaster uses: an oracle is a check, not a build step.
+const ORACLE_TIMEOUT_MS = 2_000;
 // The worker packet itself is capped at 2.8 KiB. Keep the v2 objective below
 // that budget and reject instead of silently truncating controller input.
 const V2_MAX_PROMPT_BYTES = 1800;
@@ -210,13 +228,57 @@ function truncateUtf8(text: string, maxBytes: number): string {
   return out;
 }
 
+type SkillRoute = { name: string; path: string };
+type EvidenceBlock = {
+  usable: boolean;
+  source: string;
+  sha256: string;
+  fetched_at: number;
+  text: string;
+  note?: string;
+  cached: boolean;
+};
+type CapsuleExtras = { evidence?: EvidenceBlock; skill?: SkillRoute };
+
+// A wide fanout builds the same capsule for every lane. Rebuilding it is cheap
+// string work — this memo removes the repeat, it does not remove tokens.
+const capsuleMemo = new Map<string, string>();
+const CAPSULE_MEMO_MAX = 256;
+
+function evidenceText(evidence: EvidenceBlock): string {
+  if (!evidence.usable) {
+    return `Evidence: unavailable (${evidence.note ?? "not_fetched"}). Make no fresh-fact claim; report BLOCKED if the objective needs one.`;
+  }
+  // No wall-clock in the capsule: a timestamp would change the capsule hash on
+  // every run and defeat the per-lane cache for identical evidence.
+  return [
+    `Evidence (controller-supplied, source ${evidence.source}, sha256 ${evidence.sha256.slice(0, 16)}):`,
+    evidence.text,
+    "Cite only from this evidence for fresh facts. A fresh claim it does not support is FAIL.",
+  ].join("\n");
+}
+
 function workerCapsule(
   objective: string,
   maxResultTokens = SWARM_MAX_RESULT_TOKENS,
   toolsAvailable = true,
   rejectTruncation = false,
+  extras: CapsuleExtras = {},
 ): string {
   const normalizedObjective = objective.trim();
+  const memoKey = JSON.stringify([
+    normalizedObjective,
+    maxResultTokens,
+    toolsAvailable,
+    rejectTruncation,
+    extras.skill?.path ?? null,
+    extras.skill?.name ?? null,
+    extras.evidence?.sha256 ?? null,
+    extras.evidence?.usable ?? null,
+    extras.evidence?.note ?? null,
+  ]);
+  const memoized = capsuleMemo.get(memoKey);
+  if (memoized !== undefined) return memoized;
   const route = toolsAvailable ? routeWorkerTool(normalizedObjective) : undefined;
   const routeHint = toolsAvailable
     ? (route
@@ -227,6 +289,10 @@ function workerCapsule(
     "max 500 tokens",
     `max ${maxResultTokens} tokens`,
   );
+  const skillHint = extras.skill
+    ? `Skill route: read only \`${extras.skill.path}\` (${extras.skill.name}) before work; apply only its relevant instructions.`
+    : undefined;
+  const evidenceHint = extras.evidence ? evidenceText(extras.evidence) : undefined;
   const prefix = [
     `agent-token-saver worker capsule (${V2_CAPSULE_VERSION}).`,
     toolsAvailable
@@ -234,14 +300,20 @@ function workerCapsule(
       : "One closed objective. Do not request or repeat the controller transcript or peer output. Reason only from the supplied evidence.",
     "Oracle: report PASS only with direct evidence; otherwise FAIL or BLOCKED. Workers do not chat with peers; the controller may route one targeted handoff.",
     routeHint,
+    ...(skillHint ? [skillHint] : []),
+    ...(evidenceHint ? [evidenceHint] : []),
     "Objective:",
   ].join("\n");
   // `join("\n")` below contributes one separator on either side of the
   // objective, so budget both even when the objective is empty.
   const fixedPacket = `${prefix}\n\n${resultContract}`;
+  // Opt-in extras carry their own budget. Adding them must never shrink the
+  // objective budget, otherwise an objective that fit yesterday starts failing.
+  const extrasBytes = (skillHint ? Buffer.byteLength(`${skillHint}\n`, "utf8") : 0)
+    + (evidenceHint ? Buffer.byteLength(`${evidenceHint}\n`, "utf8") : 0);
   const objectiveBudget = Math.max(
     0,
-    SWARM_CAPSULE_MAX_BYTES - Buffer.byteLength(fixedPacket, "utf8"),
+    SWARM_CAPSULE_MAX_BYTES + extrasBytes - Buffer.byteLength(fixedPacket, "utf8"),
   );
   if (
     rejectTruncation
@@ -253,15 +325,241 @@ function workerCapsule(
     normalizedObjective,
     objectiveBudget,
   );
-  return [
+  const packet = [
     prefix,
     compactObjective,
     resultContract,
   ].join("\n");
+  if (capsuleMemo.size >= CAPSULE_MEMO_MAX) capsuleMemo.clear();
+  capsuleMemo.set(memoKey, packet);
+  return packet;
 }
 
 function boundedSwarmLanes(lanes: Lane[], fanout: boolean): Lane[] {
   return fanout ? lanes : lanes.slice(0, SWARM_MAX_WORKERS);
+}
+
+// ------------------------------------------------------- bounded helper procs
+// Skill routing, evidence gathering and oracles all shell out. Each call is
+// bounded the same way a lane is: wall timeout, byte ceiling, process group
+// kill, and fail-open. None of them may become a second unbounded input path.
+type BoundedRun = { code: number | null; stdout: string; timedOut: boolean };
+
+async function runBounded(
+  command: string[],
+  timeoutMs: number,
+  maxBytes: number,
+  stdinText?: string,
+): Promise<BoundedRun> {
+  let proc: ReturnType<typeof Bun.spawn> | undefined;
+  try {
+    proc = Bun.spawn(command, {
+      stdout: "pipe",
+      stderr: "ignore",
+      stdin: stdinText === undefined ? "ignore" : "pipe",
+      detached: true,
+    });
+  } catch {
+    return { code: null, stdout: "", timedOut: false };
+  }
+  const child = proc;
+  const kill = () => {
+    try {
+      if (child.pid > 1) process.kill(-child.pid, "SIGKILL");
+    } catch {
+      try { child.kill("SIGKILL"); } catch {}
+    }
+  };
+  let timedOut = false;
+  const timer = setTimeout(() => { timedOut = true; kill(); }, Math.max(1, timeoutMs));
+  try {
+    if (stdinText !== undefined) {
+      child.stdin.write(stdinText);
+      child.stdin.end();
+    }
+    let stdout = "";
+    try {
+      stdout = await readBoundedStream(child.stdout, maxBytes, kill);
+    } catch {
+      kill();
+      stdout = "";
+    }
+    const code = await child.exited;
+    return { code, stdout, timedOut };
+  } catch {
+    kill();
+    return { code: null, stdout: "", timedOut };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// ------------------------------------------------------------- skill routing
+// The four built-in regex routes stay the default. `si` knows ~960 skills, so
+// when the controller asks for it we let the router name ONE skill and pass the
+// path into the capsule. Fail-open: no router, no hit, bad JSON -> no skill line.
+async function siSkillRoute(objective: string): Promise<SkillRoute | undefined> {
+  if (!Bun.which("si")) return undefined;
+  const run = await runBounded(
+    ["si", "route", objective, "--max", "1", "--json"],
+    SKILL_ROUTE_TIMEOUT_MS,
+    256 * 1024,
+  );
+  if (run.code !== 0 || !run.stdout) return undefined;
+  try {
+    const parsed = JSON.parse(run.stdout);
+    const first = Array.isArray(parsed?.selected) ? parsed.selected[0] : undefined;
+    const name = typeof first?.name === "string" ? first.name : undefined;
+    const path = typeof first?.path === "string" ? first.path : undefined;
+    if (!name || !path || !existsSync(path)) return undefined;
+    const line = `Skill route: read only \`${path}\` (${name})`;
+    if (Buffer.byteLength(line, "utf8") > SKILL_ROUTE_MAX_BYTES) return undefined;
+    return { name, path };
+  } catch {
+    return undefined;
+  }
+}
+
+// ------------------------------------------------------------------ evidence
+// Most built-in lanes have no tools, and their capsule forbids fresh-fact
+// claims. So the controller has to supply the fact. Order: url-cache (no
+// network) -> provider -> project -> url-cache put.
+//
+// The provider is a host-supplied executable, never a bundled scraper:
+//
+//   $LLMADAPTER_EVIDENCE_CMD <research|mega|fetch>   # query on stdin
+//
+// It prints the artifact on stdout and exits 0. If it reports a bot wall
+// (`page_status: challenge`), that is a hard stop: a challenge page is not
+// evidence, and the capsule then tells the worker to report BLOCKED.
+const EVIDENCE_CMD = process.env.LLMADAPTER_EVIDENCE_CMD;
+const EVIDENCE_CACHE_SCHEME = "llmadapter://evidence/";
+
+function evidenceCacheKey(mode: string, query: string): string {
+  return `${EVIDENCE_CACHE_SCHEME}${mode}/${sha256(query)}`;
+}
+
+function projectEvidence(raw: string, maxBytes: number): string {
+  const cleaned = raw
+    .replace(/\r/g, "")
+    .split("\n")
+    .map((line) => line.replace(/[\u0000-\u0008\u000B-\u001F\u007F]/g, "").trimEnd())
+    .filter((line) => line.length > 0)
+    .join("\n");
+  return truncateUtf8(cleaned, maxBytes).trim();
+}
+
+function evidenceIsChallenged(raw: string): boolean {
+  return /"page_status"\s*:\s*"challenge"/.test(raw)
+    || /\bbrowser_challenge:/.test(raw)
+    || /\bpage_status:\s*challenge\b/.test(raw);
+}
+
+async function evidenceCacheGet(key: string): Promise<string | undefined> {
+  if (!Bun.which("ats-url-cache")) return undefined;
+  const run = await runBounded(["ats-url-cache", "get", key], 5_000, 4 * 1024 * 1024);
+  return run.code === 0 && run.stdout.trim() ? run.stdout : undefined;
+}
+
+async function evidenceCachePut(key: string, body: string): Promise<void> {
+  if (!Bun.which("ats-url-cache")) return;
+  await runBounded(["ats-url-cache", "put", key], 5_000, 4 * 1024, body);
+}
+
+async function gatherEvidence(
+  objective: string,
+  mode: "research" | "mega" | "fetch",
+  target: string,
+  maxBytes: number,
+  useCache: boolean,
+): Promise<EvidenceBlock> {
+  const key = evidenceCacheKey(mode, target);
+  const now = Date.now();
+  // The envelope never echoes controller input — the prompt is hash-only, and
+  // an evidence target is controller input too.
+  const sourceLabel = `${mode}:${sha256(target).slice(0, 16)}`;
+  if (useCache) {
+    const hit = await evidenceCacheGet(key);
+    if (hit) {
+      const text = projectEvidence(hit, maxBytes);
+      if (text) {
+        return {
+          usable: true,
+          source: sourceLabel,
+          sha256: sha256(hit),
+          fetched_at: now,
+          text,
+          cached: true,
+        };
+      }
+    }
+  }
+  if (!EVIDENCE_CMD || !existsSync(EVIDENCE_CMD)) {
+    return { usable: false, source: sourceLabel, sha256: sha256(""), fetched_at: now, text: "", note: "evidence_provider_unset", cached: false };
+  }
+  const run = await runBounded(
+    [EVIDENCE_CMD, mode],
+    EVIDENCE_TIMEOUT_MS,
+    4 * 1024 * 1024,
+    target,
+  );
+  if (run.timedOut) {
+    return { usable: false, source: sourceLabel, sha256: sha256(""), fetched_at: now, text: "", note: "evidence_timeout", cached: false };
+  }
+  if (run.code !== 0 || !run.stdout.trim()) {
+    return { usable: false, source: sourceLabel, sha256: sha256(""), fetched_at: now, text: "", note: "evidence_unavailable", cached: false };
+  }
+  if (evidenceIsChallenged(run.stdout)) {
+    // A challenge page is a stop, not a source. Never a bypass attempt.
+    return { usable: false, source: sourceLabel, sha256: sha256(run.stdout), fetched_at: now, text: "", note: "page_status_challenge", cached: false };
+  }
+  const text = projectEvidence(run.stdout, maxBytes);
+  if (!text) {
+    return { usable: false, source: sourceLabel, sha256: sha256(run.stdout), fetched_at: now, text: "", note: "evidence_empty", cached: false };
+  }
+  if (useCache) await evidenceCachePut(key, run.stdout);
+  return {
+    usable: true,
+    source: sourceLabel,
+    sha256: sha256(run.stdout),
+    fetched_at: now,
+    text,
+    cached: false,
+  };
+}
+
+// ------------------------------------------------------------------- oracle
+// Same shape AgentMaster uses: the exit code is the decision, zero is PASS. The
+// answer reaches the oracle as a private 0600 file, never as an argv string.
+type OracleVerdict = { pass: boolean; code: number | null; timedOut: boolean };
+
+async function runOracle(oracle: string, answerPath: string, runDir: string): Promise<OracleVerdict> {
+  const proc = Bun.spawn(["/bin/sh", "-c", oracle], {
+    stdout: "ignore",
+    stderr: "ignore",
+    stdin: "ignore",
+    detached: true,
+    env: {
+      ...process.env,
+      LLMADAPTER_ANSWER_PATH: answerPath,
+      LLMADAPTER_RUN_DIR: runDir,
+    },
+  });
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    try {
+      if (proc.pid > 1) process.kill(-proc.pid, "SIGKILL");
+    } catch {
+      try { proc.kill("SIGKILL"); } catch {}
+    }
+  }, ORACLE_TIMEOUT_MS);
+  try {
+    const code = await proc.exited;
+    return { pass: !timedOut && code === 0, code, timedOut };
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function orKey(): string {
@@ -288,7 +586,10 @@ type Result = {
 
 type V2Transport = "stdin" | "prompt_file" | "unknown";
 type V2CapMode = "provider_server" | "local_native" | "advisory_only";
-type V2Terminal = "succeeded" | "failed" | "timeout" | "output_limit" | "cached";
+// "pruned" is emitted ONLY under --first-pass. AgentMaster's result validator
+// accepts succeeded|failed|timeout|output_limit|cached and rejects anything
+// else, and it never passes --first-pass, so its contract stays intact.
+type V2Terminal = "succeeded" | "failed" | "timeout" | "output_limit" | "cached" | "pruned";
 type V2TokenSource = "provider_reported" | "estimated" | "unknown";
 
 type ResultV2 = {
@@ -357,6 +658,32 @@ type AskV2Output = {
   results: ResultV2[];
   accounting: AccountingV2;
   error?: string;
+  // Present only with --first-pass / --evidence / --skill-route. AgentMaster
+  // parses this envelope with deny_unknown_fields, so these keys must stay
+  // absent on the path it drives.
+  first_pass?: FirstPassReport;
+  evidence?: EvidenceReport;
+  skill_route?: SkillRoute;
+};
+
+type FirstPassReport = {
+  oracle: boolean;
+  oracle_runs: number;
+  winner: string | null;
+  winner_oracle_exit: number | null;
+  pruned: number;
+  run_dir: string | null;
+};
+
+type EvidenceReport = {
+  mode: "research" | "mega" | "fetch";
+  target_sha256: string;
+  usable: boolean;
+  cached: boolean;
+  bytes: number;
+  source: string;
+  sha256: string;
+  note?: string;
 };
 
 class V2UsageError extends Error {}
@@ -668,11 +995,17 @@ async function fetchJsonBounded(
   url: string,
   init: RequestInit,
   deadlineAt: number,
+  externalSignal?: AbortSignal,
 ): Promise<{ response: Response; json: any }> {
   const remaining = deadlineAt - Date.now();
   if (remaining <= 0) throw new DOMException("deadline", "TimeoutError");
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), remaining);
+  // A first-pass winner prunes its peers: the same abort has to reach the
+  // in-flight socket, not just the bookkeeping.
+  const onExternalAbort = () => controller.abort();
+  externalSignal?.addEventListener("abort", onExternalAbort, { once: true });
+  if (externalSignal?.aborted) controller.abort();
   try {
     const response = await fetch(url, {
       ...init,
@@ -695,6 +1028,7 @@ async function fetchJsonBounded(
     return { response, json: JSON.parse(body) };
   } finally {
     clearTimeout(timer);
+    externalSignal?.removeEventListener("abort", onExternalAbort);
   }
 }
 
@@ -724,6 +1058,16 @@ function v2Failure(
   };
 }
 
+type LaneRunOptions = {
+  // Set only by --first-pass. An aborted lane is reported as `pruned`.
+  signal?: AbortSignal;
+  // Hard per-lane token ceiling. Unlike --max-tokens (a requested provider
+  // ceiling) this one is enforced here: refuse before the call when the input
+  // alone exceeds it, bound the CLI stream, and fail the record when the
+  // reported total exceeds it.
+  budgetTokens?: number;
+};
+
 async function runLaneV2(
   lane: Lane,
   prompt: string,
@@ -732,7 +1076,11 @@ async function runLaneV2(
   useCache: boolean,
   maxTokens: number,
   trust: LaneTrustV2,
+  options: LaneRunOptions = {},
 ): Promise<InternalResultV2> {
+  if (options.signal?.aborted) {
+    return v2Failure(lane, maxTokens, "pruned", "pruned_before_start", 0, false);
+  }
   const command = lane.kind === "cli" && lane.stdinCmd ? lane.stdinCmd() : undefined;
   if (
     command
@@ -808,6 +1156,12 @@ async function runLaneV2(
   try {
     const shielded = await shieldPrompt(lane, prompt, trust.remote);
     const sent = shielded.prompt;
+    const budget = options.budgetTokens;
+    if (budget !== undefined && Math.ceil(Buffer.byteLength(sent, "utf8") / 4) > budget) {
+      // Refuse before spending: an input that already blows the budget cannot
+      // produce a within-budget call.
+      return v2Failure(lane, maxTokens, "failed", "budget_input_exceeds", Date.now() - t0, false);
+    }
     let answer = "";
     let inputTokens: number | null = null;
     let outputTokens: number | null = null;
@@ -823,7 +1177,7 @@ async function runLaneV2(
           max_tokens: maxTokens,
           messages: [{ role: "user", content: sent }],
         }),
-      }, deadlineAt);
+      }, deadlineAt, options.signal);
       if (!res.ok || json.error) {
         return v2Failure(
           lane,
@@ -848,7 +1202,7 @@ async function runLaneV2(
           stream: false,
           options: { num_predict: maxTokens },
         }),
-      }, deadlineAt);
+      }, deadlineAt, options.signal);
       if (!res.ok) {
         return v2Failure(
           lane,
@@ -891,27 +1245,42 @@ async function runLaneV2(
           try { proc.kill("SIGKILL"); } catch {}
         }
       };
+      let killedForPrune = false;
+      const onPrune = () => {
+        killedForPrune = true;
+        kill();
+      };
+      options.signal?.addEventListener("abort", onPrune, { once: true });
       const timer = setTimeout(() => {
         killedForDeadline = true;
         kill();
       }, Math.max(1, deadlineAt - Date.now()));
+      // With a budget the stream itself is the enforcement point: 4 bytes per
+      // token is the same estimator the lane already uses for CLI accounting.
+      const stdoutCap = budget !== undefined
+        ? Math.min(V2_STDOUT_MAX_BYTES, Math.max(1, budget * 4))
+        : V2_STDOUT_MAX_BYTES;
       let stdout = "";
       let stderr = "";
       try {
         [stdout, stderr] = await Promise.all([
-          readBoundedStream(proc.stdout, V2_STDOUT_MAX_BYTES, kill),
+          readBoundedStream(proc.stdout, stdoutCap, kill),
           readBoundedStream(proc.stderr, V2_STDERR_MAX_BYTES, kill),
         ]);
       } catch (error) {
         kill();
         await proc.exited;
         clearTimeout(timer);
+        options.signal?.removeEventListener("abort", onPrune);
+        if (killedForPrune) {
+          return v2Failure(lane, maxTokens, "pruned", "pruned_in_flight", Date.now() - t0, true);
+        }
         if (error instanceof V2OutputLimitError) {
           return v2Failure(
             lane,
             maxTokens,
             "output_limit",
-            "output_limit",
+            stdoutCap < V2_STDOUT_MAX_BYTES ? "budget_output_exceeds" : "output_limit",
             Date.now() - t0,
             true,
           );
@@ -920,6 +1289,10 @@ async function runLaneV2(
       }
       const code = await proc.exited;
       clearTimeout(timer);
+      options.signal?.removeEventListener("abort", onPrune);
+      if (killedForPrune) {
+        return v2Failure(lane, maxTokens, "pruned", "pruned_in_flight", Date.now() - t0, true);
+      }
       if (killedForDeadline || Date.now() >= deadlineAt) {
         return v2Failure(
           lane,
@@ -949,6 +1322,11 @@ async function runLaneV2(
     answer = shielded.restore(answer).trim();
     if (!answer) {
       return v2Failure(lane, maxTokens, "failed", "empty", Date.now() - t0, true);
+    }
+    if (budget !== undefined && (inputTokens ?? 0) + (outputTokens ?? 0) > budget) {
+      // The call already happened, so this is honest evidence of overspend, not
+      // prevention. Prevention is the pre-flight check plus the CLI stream cap.
+      return v2Failure(lane, maxTokens, "output_limit", "budget_exceeded", Date.now() - t0, true);
     }
     const result: InternalResultV2 = {
       lane: lane.name,
@@ -990,6 +1368,9 @@ async function runLaneV2(
     }
     return result;
   } catch (error: any) {
+    if (options.signal?.aborted) {
+      return v2Failure(lane, maxTokens, "pruned", "pruned_in_flight", Date.now() - t0, callStarted);
+    }
     if (error instanceof V2OutputLimitError) {
       return v2Failure(
         lane,
@@ -1048,10 +1429,13 @@ async function race(items: (() => Promise<Result>)[], cap: number, first: number
 }
 
 function pickLanes(spec: string): Lane[] {
-  if (spec === "all") return LANES;
+  // `all` and the class selectors stay free of opt-in lanes: asking for "cli"
+  // must not silently start a scraping workload. Naming the lane still works.
+  if (spec === "all") return LANES.filter((l) => !l.optIn);
   const classes = ["free", "paid", "local", "cli"];
   const parts = spec.split(",").map((s) => s.trim());
-  return LANES.filter((l) => parts.some((p) => (classes.includes(p) ? l.class === p : l.name === p || l.model === p)));
+  return LANES.filter((l) =>
+    parts.some((p) => (classes.includes(p) ? l.class === p && !l.optIn : l.name === p || l.model === p)));
 }
 
 async function aggregate(prompt: string, results: Result[], maxTokens: number): Promise<string> {
@@ -1123,6 +1507,15 @@ type AskV2Options = {
   allowRemote: boolean;
   allowPaid: boolean;
   usageOut?: string;
+  // Opt-in extensions. AgentMaster passes none of them, so its contract holds.
+  firstPass: boolean;
+  oracle?: string;
+  budgetTokens?: number;
+  evidence: boolean;
+  evidenceMode: "research" | "mega" | "fetch";
+  evidenceTarget?: string;
+  evidenceBytes: number;
+  skillRoute: boolean;
 };
 
 function parsePositiveInt(value: string | undefined, name: string, max: number): number {
@@ -1140,6 +1533,9 @@ function parseAskV2(argv: string[]): AskV2Options {
     "--no-cache",
     "--allow-remote",
     "--allow-paid",
+    "--first-pass",
+    "--evidence",
+    "--skill-route",
   ]);
   const values = new Set([
     "--prompt-file",
@@ -1148,6 +1544,11 @@ function parseAskV2(argv: string[]): AskV2Options {
     "--max-tokens",
     "--deadline-secs",
     "--usage-out",
+    "--oracle",
+    "--budget-tokens",
+    "--evidence-mode",
+    "--evidence-target",
+    "--evidence-bytes",
   ]);
   const rejected = new Set(["--first", "--aggregate", "--verify", "--tier"]);
   const seen = new Set<string>();
@@ -1182,6 +1583,19 @@ function parseAskV2(argv: string[]): AskV2Options {
   const cap = parsed.has("--cap")
     ? parsePositiveInt(parsed.get("--cap"), "cap", SWARM_FANOUT_MAX_WORKERS)
     : SWARM_MAX_WORKERS;
+  const evidenceMode = parsed.get("--evidence-mode") ?? "research";
+  if (!["research", "mega", "fetch"].includes(evidenceMode)) {
+    throw new V2UsageError("evidence_mode_invalid");
+  }
+  if ((parsed.has("--evidence-mode") || parsed.has("--evidence-target") || parsed.has("--evidence-bytes"))
+    && !seen.has("--evidence")) {
+    throw new V2UsageError("evidence_flags_require_evidence");
+  }
+  if (evidenceMode === "fetch" && !parsed.has("--evidence-target")) {
+    throw new V2UsageError("evidence_fetch_requires_target");
+  }
+  const oracle = parsed.get("--oracle");
+  if (oracle !== undefined && !oracle.trim()) throw new V2UsageError("oracle_empty");
   return {
     transport: stdin ? "stdin" : "prompt_file",
     promptFile,
@@ -1199,6 +1613,18 @@ function parseAskV2(argv: string[]): AskV2Options {
     allowRemote: seen.has("--allow-remote"),
     allowPaid: seen.has("--allow-paid"),
     usageOut: parsed.get("--usage-out"),
+    firstPass: seen.has("--first-pass"),
+    oracle: parsed.get("--oracle"),
+    budgetTokens: parsed.has("--budget-tokens")
+      ? parsePositiveInt(parsed.get("--budget-tokens"), "budget_tokens", 1_000_000)
+      : undefined,
+    evidence: seen.has("--evidence"),
+    evidenceMode: evidenceMode as "research" | "mega" | "fetch",
+    evidenceTarget: parsed.get("--evidence-target"),
+    evidenceBytes: parsed.has("--evidence-bytes")
+      ? parsePositiveInt(parsed.get("--evidence-bytes"), "evidence_bytes", EVIDENCE_MAX_BYTES)
+      : EVIDENCE_DEFAULT_BYTES,
+    skillRoute: seen.has("--skill-route"),
   };
 }
 
@@ -1297,6 +1723,83 @@ function atomicPrivateJson(path: string, value: unknown): void {
   }
 }
 
+// An oracle reads the answer from a private file, never from argv. Same rule
+// the prompt already follows in both directions.
+function atomicPrivateText(path: string, text: string): void {
+  validateUsagePath(path);
+  mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
+  const fd = openSync(path, "wx", 0o600);
+  try {
+    writeFileSync(fd, text, "utf8");
+  } finally {
+    closeSync(fd);
+  }
+  chmodSync(path, 0o600);
+}
+
+function privateRunDir(): string {
+  const dir = join(ATS_DIR, "runs", `llmadapter-${process.pid}-${Date.now()}`);
+  mkdirSync(dir, { recursive: true, mode: 0o700 });
+  chmodSync(dir, 0o700);
+  return dir;
+}
+
+// --first-pass: every lane starts at once, the oracle decides one at a time,
+// and the first PASS prunes the rest. Without an oracle the first ok answer
+// wins. Losers keep their record with terminal "pruned" — a pruned lane is
+// evidence of a cheaper run, not a failure to hide.
+type FirstPassOutcome = {
+  results: InternalResultV2[];
+  winner: string | null;
+  winnerOracleExit: number | null;
+  oracleRuns: number;
+  runDir: string | null;
+};
+
+async function runFirstPass(
+  lanes: Lane[],
+  start: (lane: Lane, index: number, signal: AbortSignal) => Promise<InternalResultV2>,
+  oracle: string | undefined,
+): Promise<FirstPassOutcome> {
+  const controller = new AbortController();
+  const results: InternalResultV2[] = new Array(lanes.length);
+  const runDir = oracle ? privateRunDir() : null;
+  let winner: string | null = null;
+  let winnerOracleExit: number | null = null;
+  let oracleRuns = 0;
+  // Serialize the decision so exactly one lane can win.
+  let gate: Promise<void> = Promise.resolve();
+  await Promise.all(lanes.map(async (lane, index) => {
+    const result = await start(lane, index, controller.signal);
+    results[index] = result;
+    if (!result.ok || !result.answer || winner !== null) return;
+    const decide = gate.then(async () => {
+      if (winner !== null) return;
+      if (!oracle) {
+        winner = result.lane;
+        controller.abort();
+        return;
+      }
+      const answerPath = join(runDir!, `answer-${index}-${result.lane.replace(/[^a-z0-9_.-]/gi, "_")}.txt`);
+      try {
+        atomicPrivateText(answerPath, result.answer!);
+      } catch {
+        return;
+      }
+      oracleRuns++;
+      const verdict = await runOracle(oracle, answerPath, runDir!);
+      if (verdict.pass) {
+        winner = result.lane;
+        winnerOracleExit = verdict.code;
+        controller.abort();
+      }
+    });
+    gate = decide;
+    await decide;
+  }));
+  return { results, winner, winnerOracleExit, oracleRuns, runDir };
+}
+
 function tokenCoverage(results: InternalResultV2[], side: "input_tokens" | "output_tokens"): TokenCoverageV2 {
   const coverage: TokenCoverageV2 = { reported: 0, estimated: 0, unknown_calls: 0 };
   for (const result of results) {
@@ -1372,7 +1875,12 @@ function emptyAskV2Output(error: string, exitCode = 64): AskV2Output {
 async function askV2(argv: string[]): Promise<AskV2Output> {
   const options = parseAskV2(argv);
   if (options.usageOut) validateUsagePath(options.usageOut);
-  const prompt = readPromptV2(options);
+  return askV2WithPrompt(options, readPromptV2(options));
+}
+
+// Split out so `council` can run the identical worker stage and then add one
+// synthesis pass, instead of growing a second worker code path.
+async function askV2WithPrompt(options: AskV2Options, prompt: string): Promise<AskV2Output> {
   const promptHash = sha256(prompt);
   const promptBytes = Buffer.byteLength(prompt, "utf8");
   const requested = pickLanes(options.lanes);
@@ -1392,25 +1900,49 @@ async function askV2(argv: string[]): Promise<AskV2Output> {
   if (options.allowPaid && !options.allowRemote) {
     throw new V2UsageError("allow_paid_requires_allow_remote");
   }
-  const deadlineAt = Date.now() + options.deadlineSecs * 1000;
-  const thunks = lanes.map((lane, index) => {
-    const workerPrompt = workerCapsule(
+  // Extras run before the lane deadline starts: gathering evidence must not
+  // eat the workers' wall clock. Both are fail-open by construction.
+  const skill = options.skillRoute ? await siSkillRoute(prompt) : undefined;
+  const evidence = options.evidence
+    ? await gatherEvidence(
       prompt,
-      options.maxTokens,
-      lane.tools === true,
-      true,
-    );
-    return () => runLaneV2(
-      lane,
-      workerPrompt,
-      promptHash,
-      deadlineAt,
+      options.evidenceMode,
+      options.evidenceTarget ?? prompt,
+      options.evidenceBytes,
       options.useCache,
-      options.maxTokens,
-      laneTrust[index],
-    );
+    )
+    : undefined;
+  const extras: CapsuleExtras = { skill, evidence };
+  const deadlineAt = Date.now() + options.deadlineSecs * 1000;
+  const laneRunOptions = (signal?: AbortSignal): LaneRunOptions => ({
+    signal,
+    budgetTokens: options.budgetTokens,
   });
-  const results = await pool(thunks, lanes.length);
+  const startLane = (lane: Lane, index: number, signal?: AbortSignal) => runLaneV2(
+    lane,
+    workerCapsule(prompt, options.maxTokens, lane.tools === true, true, extras),
+    promptHash,
+    deadlineAt,
+    options.useCache,
+    options.maxTokens,
+    laneTrust[index],
+    laneRunOptions(signal),
+  );
+  let results: InternalResultV2[];
+  let firstPass: FirstPassOutcome | undefined;
+  if (options.firstPass) {
+    firstPass = await runFirstPass(
+      lanes,
+      (lane, index, signal) => startLane(lane, index, signal),
+      options.oracle,
+    );
+    results = firstPass.results;
+  } else {
+    results = await pool(
+      lanes.map((lane, index) => () => startLane(lane, index)),
+      lanes.length,
+    );
+  }
   const ok = results.filter((result) => result.ok).length;
   const accounting = accountingV2(
     promptHash,
@@ -1423,8 +1955,14 @@ async function askV2(argv: string[]): Promise<AskV2Output> {
     options.maxTokens,
     results,
   );
-  const status = ok === 0 ? "failed" : ok === results.length ? "ok" : "partial";
-  const exitCode = ok === 0 ? 1 : 0;
+  // A first-pass run is "ok" when the oracle accepted one lane; the pruned
+  // peers are the point of the mode, not a partial result.
+  const status = firstPass
+    ? (firstPass.winner !== null ? "ok" : ok === 0 ? "failed" : "partial")
+    : ok === 0 ? "failed" : ok === results.length ? "ok" : "partial";
+  const exitCode = status === "failed" || (firstPass && firstPass.winner === null && options.oracle)
+    ? 1
+    : ok === 0 ? 1 : 0;
   const output: AskV2Output = {
     schema: "llmadapter.result",
     schema_version: 2,
@@ -1443,8 +1981,183 @@ async function askV2(argv: string[]): Promise<AskV2Output> {
     results: results.map(cleanResultV2),
     accounting,
   };
+  if (firstPass) {
+    output.first_pass = {
+      oracle: Boolean(options.oracle),
+      oracle_runs: firstPass.oracleRuns,
+      winner: firstPass.winner,
+      winner_oracle_exit: firstPass.winnerOracleExit,
+      pruned: results.filter((result) => result.terminal === "pruned").length,
+      run_dir: firstPass.runDir,
+    };
+  }
+  if (evidence) {
+    output.evidence = {
+      mode: options.evidenceMode,
+      target_sha256: sha256(options.evidenceTarget ?? prompt),
+      usable: evidence.usable,
+      cached: evidence.cached,
+      bytes: Buffer.byteLength(evidence.text, "utf8"),
+      source: evidence.source,
+      sha256: evidence.sha256,
+      ...(evidence.note ? { note: evidence.note } : {}),
+    };
+  }
+  if (skill) output.skill_route = skill;
   if (options.usageOut) atomicPrivateJson(options.usageOut, accounting);
   return output;
+}
+
+// ------------------------------------------------------------------ council
+// `--tier` aggregates, `--verify` checks one answer. A council does the third
+// thing: N independent workers, then ONE fresh-context lane that names the
+// consensus AND the dissent. Dissent is the product — a swarm that only ever
+// reports agreement is a swarm you cannot audit.
+const COUNCIL_ANSWER_MAX_BYTES = 1_500;
+const COUNCIL_SYNTH_MAX_TOKENS = 1_000;
+
+type CouncilSynthesis = {
+  lane: string;
+  ok: boolean;
+  terminal: V2Terminal;
+  ms: number;
+  text?: string;
+  error?: string;
+};
+
+type CouncilOutput = {
+  schema: "llmadapter.council";
+  schema_version: 1;
+  status: "ok" | "partial" | "failed" | "invalid";
+  exit_code: number;
+  question_sha256: string;
+  synth_lane: string;
+  workers: AskV2Output;
+  synthesis: CouncilSynthesis | null;
+  error?: string;
+};
+
+async function councilRun(argv: string[]): Promise<CouncilOutput> {
+  let synthLaneName = process.env.LLMADAPTER_COUNCIL_LANE ?? VERIFY_DEFAULT;
+  const passthrough: string[] = [];
+  for (let index = 0; index < argv.length; index++) {
+    if (argv[index] === "--synth-lane") {
+      const value = argv[++index];
+      if (!value || value.startsWith("--")) throw new V2UsageError("synth_lane_missing");
+      synthLaneName = value;
+      continue;
+    }
+    passthrough.push(argv[index]);
+  }
+  if (!passthrough.includes("--swarm")) passthrough.push("--swarm");
+  const options = parseAskV2(passthrough);
+  if (options.usageOut) validateUsagePath(options.usageOut);
+  const prompt = readPromptV2(options);
+  const synthLane = LANES.find((lane) => lane.name === synthLaneName);
+  if (!synthLane) throw new V2UsageError("synth_lane_unknown");
+  const synthTrust = laneTrustV2(synthLane);
+  // Gate the synthesis lane before spending a single worker call.
+  if (synthTrust.remote && !options.allowRemote) {
+    throw new V2UsageError("remote_requires_allow_remote");
+  }
+  if (synthTrust.paid && (!options.allowRemote || !options.allowPaid)) {
+    throw new V2UsageError("paid_requires_allow_remote_and_allow_paid");
+  }
+  const workers = await askV2WithPrompt(options, prompt);
+  const answers = workers.results.filter((result) => result.ok && result.answer);
+  if (!answers.length) {
+    return {
+      schema: "llmadapter.council",
+      schema_version: 1,
+      status: "failed",
+      exit_code: 1,
+      question_sha256: sha256(prompt),
+      synth_lane: synthLane.name,
+      workers,
+      synthesis: null,
+      error: "no_worker_answers",
+    };
+  }
+  const body = answers
+    .map((result) => `[${result.lane}]\n${truncateUtf8(result.answer!.trim(), COUNCIL_ANSWER_MAX_BYTES)}`)
+    .join("\n\n");
+  const synthPrompt = [
+    `${answers.length} independent workers answered the same objective. You did not see their work; judge only the text below.`,
+    "Return exactly these three lines and nothing else:",
+    "CONSENSUS: the answer the worker evidence actually supports.",
+    "DISSENT: one line per real disagreement, or `none`.",
+    "CONFIDENCE: high|medium|low + the single fact that decides it.",
+    "",
+    `Objective:\n${truncateUtf8(prompt.trim(), V2_MAX_PROMPT_BYTES)}`,
+    "",
+    `Worker answers:\n${body}`,
+  ].join("\n");
+  const synthDeadline = Date.now() + options.deadlineSecs * 1000;
+  const synthResult = await runLaneV2(
+    synthLane,
+    synthPrompt,
+    sha256(synthPrompt),
+    synthDeadline,
+    false, // synthesis is over this run's fresh answers; a cache hit would lie
+    Math.min(COUNCIL_SYNTH_MAX_TOKENS, options.maxTokens * 2),
+    synthTrust,
+    { budgetTokens: options.budgetTokens },
+  );
+  const synthesis: CouncilSynthesis = {
+    lane: synthResult.lane,
+    ok: synthResult.ok,
+    terminal: synthResult.terminal,
+    ms: synthResult.ms,
+    ...(synthResult.answer ? { text: synthResult.answer } : {}),
+    ...(synthResult.error ? { error: synthResult.error } : {}),
+  };
+  return {
+    schema: "llmadapter.council",
+    schema_version: 1,
+    status: synthResult.ok ? "ok" : "partial",
+    exit_code: synthResult.ok ? 0 : 1,
+    question_sha256: sha256(prompt),
+    synth_lane: synthLane.name,
+    workers,
+    synthesis,
+  };
+}
+
+// ------------------------------------------------------------- cache export
+// The llmadapter cache stays where it is: private 0600 files under
+// ~/.agent-token-saver. This exports a snapshot for replay/analysis, optionally
+// into DuckDB. Answers are hashed unless --with-answers is passed explicitly.
+function cacheExport(outPath: string, withAnswers: boolean): { rows: number; bytes: number } {
+  const rows: string[] = [];
+  if (existsSync(CACHE_DIR)) {
+    for (const name of readdirSync(CACHE_DIR)) {
+      const file = join(CACHE_DIR, name);
+      try {
+        if (lstatSync(file).isSymbolicLink() || !lstatSync(file).isFile()) continue;
+        const saved = JSON.parse(readFileSync(file, "utf8"));
+        if (saved?.schema !== "llmadapter.cache") continue;
+        rows.push(JSON.stringify({
+          lane: saved.lane,
+          model: saved.model ?? null,
+          max_tokens: saved.max_tokens,
+          prompt_sha256: saved.prompt_sha256,
+          capsule_sha256: saved.capsule_sha256,
+          capsule_version: saved.capsule_version,
+          ts: saved.ts,
+          answer_sha256: sha256(String(saved.answer ?? "")),
+          answer_bytes: Buffer.byteLength(String(saved.answer ?? ""), "utf8"),
+          ...(withAnswers ? { answer: saved.answer } : {}),
+        }));
+      } catch {
+        // A corrupt cache entry is skipped, never fatal.
+      }
+    }
+  }
+  const payload = rows.length ? `${rows.join("\n")}\n` : "";
+  mkdirSync(dirname(outPath), { recursive: true, mode: 0o700 });
+  writeFileSync(outPath, payload, { mode: 0o600 });
+  chmodSync(outPath, 0o600);
+  return { rows: rows.length, bytes: Buffer.byteLength(payload, "utf8") };
 }
 
 // ---- CLI ----
@@ -1467,6 +2180,58 @@ if (cmd === "ask-v2") {
   }
   console.log(JSON.stringify(output));
   process.exit(output.exit_code);
+} else if (cmd === "council") {
+  let output: CouncilOutput;
+  try {
+    output = await councilRun(args.slice(1));
+  } catch (error: any) {
+    const detail = error instanceof V2UsageError ? error.message : "internal_error";
+    output = {
+      schema: "llmadapter.council",
+      schema_version: 1,
+      status: "invalid",
+      exit_code: error instanceof V2UsageError ? 64 : 70,
+      question_sha256: sha256(""),
+      synth_lane: "none",
+      workers: emptyAskV2Output(detail, error instanceof V2UsageError ? 64 : 70),
+      synthesis: null,
+      error: boundedDetail(detail),
+    };
+  }
+  console.log(JSON.stringify(output));
+  process.exit(output.exit_code);
+} else if (cmd === "cache-export") {
+  const out = flag("out");
+  if (!out) {
+    console.error("usage: llmadapter cache-export --out PATH.jsonl [--with-answers] [--duckdb PATH]");
+    process.exit(64);
+  }
+  const summary = cacheExport(out, args.includes("--with-answers"));
+  const duckdb = flag("duckdb");
+  let loaded = false;
+  if (duckdb && duckdb !== "true") {
+    if (!Bun.which("duckdb")) {
+      console.error("duckdb not on PATH; JSONL snapshot was still written");
+    } else if (summary.rows > 0) {
+      const load = Bun.spawnSync([
+        "duckdb",
+        duckdb,
+        "-c",
+        `CREATE OR REPLACE TABLE llmadapter_cache AS SELECT * FROM read_json_auto('${out.replace(/'/g, "''")}');`,
+      ], { stdout: "ignore", stderr: "ignore" });
+      loaded = load.exitCode === 0;
+    }
+  }
+  console.log(JSON.stringify({
+    schema: "llmadapter.cache_export",
+    schema_version: 1,
+    out,
+    rows: summary.rows,
+    bytes: summary.bytes,
+    answers_included: args.includes("--with-answers"),
+    duckdb: duckdb && duckdb !== "true" ? duckdb : null,
+    duckdb_loaded: loaded,
+  }, null, 1));
 } else if (cmd === "lanes") {
   for (const l of LANES) console.log(`${l.class.padEnd(5)} ${l.name.padEnd(42)} ${l.model ?? l.cmd!("…").join(" ").slice(0, 50)}${l.serial ? "  [serial]" : ""}`);
   console.log(`total: ${LANES.length} lanes`);
@@ -1481,6 +2246,15 @@ if (cmd === "ask-v2") {
     console.log("ok  ollama :11434");
   } catch {
     console.log("MISS ollama :11434");
+  }
+  // Optional integrations: absent means the matching flag stays off, never an error.
+  for (const [label, present] of [
+    ["evidence provider (LLMADAPTER_EVIDENCE_CMD)", Boolean(EVIDENCE_CMD && existsSync(EVIDENCE_CMD))],
+    ["si (--skill-route)", Boolean(Bun.which("si"))],
+    ["ats-url-cache", Boolean(Bun.which("ats-url-cache"))],
+    ["duckdb (cache-export)", Boolean(Bun.which("duckdb"))],
+  ] as [string, boolean][]) {
+    console.log(`${present ? "ok " : "MISS"} ${label}`);
   }
 } else if (cmd === "stats") {
   const month = new Date().toISOString().slice(0, 7).replace("-", "");
@@ -1510,7 +2284,10 @@ if (cmd === "ask-v2") {
     SWARM_MAX_RESULT_TOKENS,
     false,
   );
-  console.log(JSON.stringify({
+  // AgentMaster parses this with deny_unknown_fields. The default shape is the
+  // capability contract and must not grow; --extended is for humans and for
+  // controllers that opt into the newer flags.
+  const contract: Record<string, unknown> = {
     schema_version: 2,
     ask_v2: true,
     mode: "swarm",
@@ -1524,7 +2301,23 @@ if (cmd === "ask-v2") {
     capsule_visible_input_tokens_proxy: Math.ceil(Buffer.byteLength(packet, "utf8") / 4),
     route: routeWorkerTool(objective)?.name ?? "none",
     packet,
-  }, null, 1));
+  };
+  if (args.includes("--extended")) {
+    contract.extensions = {
+      first_pass: true,
+      oracle: true,
+      budget_tokens: true,
+      evidence: ["research", "mega", "fetch"],
+      evidence_max_bytes: EVIDENCE_MAX_BYTES,
+      evidence_provider: Boolean(EVIDENCE_CMD && existsSync(EVIDENCE_CMD)),
+      skill_route: Boolean(Bun.which("si")),
+      council: true,
+      opt_in_lanes: LANES.filter((l) => l.optIn).map((l) => l.name),
+      terminal_values_extended: ["pruned"],
+      note: "Extensions are off unless their flag is passed; the default envelope is unchanged.",
+    };
+  }
+  console.log(JSON.stringify(contract, null, 1));
 } else if (cmd === "ask") {
   const prompt = args.slice(1).find((a) => !a.startsWith("--") && a !== flag(a.replace(/^--/, "")))!;
   if (!prompt) { console.error("usage: llmadapter ask \"<prompt>\" [--swarm] [--fanout] [--lanes free|paid|local|cli|all|name,…] [--first N] [--tier] [--aggregate] [--verify] [--json] [--no-cache] [--usage-out PATH]"); process.exit(1); }
@@ -1592,5 +2385,23 @@ if (cmd === "ask-v2") {
   }
   process.exit(0); // race mode may have stragglers; exiting kills them deliberately
 } else {
-  console.log("llmadapter — one interface over 21 built-in lanes plus host-local additions\n  ask-v2 (--stdin|--prompt-file PATH) --swarm [--lanes …] [--cap N] [--max-tokens N] [--deadline-secs N] [--usage-out PATH]\n  ask \"<prompt>\" [--swarm] [--fanout] [--lanes …] [--first N] [--aggregate] [--json] [--usage-out PATH]\n  contract \"<worker objective>\"\n  lanes\n  doctor\n  stats");
+  console.log([
+    "llmadapter — one interface over the built-in lanes plus host-local additions",
+    "",
+    "  ask-v2 (--stdin|--prompt-file PATH) --swarm [--lanes …] [--cap N] [--max-tokens N]",
+    "         [--deadline-secs N] [--usage-out PATH] [--allow-remote] [--allow-paid] [--no-cache]",
+    "         [--first-pass] [--oracle 'CMD'] [--budget-tokens N]",
+    "         [--evidence [--evidence-mode research|mega|fetch] [--evidence-target X] [--evidence-bytes N]]",
+    "         [--skill-route]",
+    "  council (--stdin|--prompt-file PATH) [--synth-lane NAME] + every ask-v2 flag",
+    "  ask \"<prompt>\" [--swarm] [--fanout] [--lanes …] [--first N] [--aggregate] [--verify] [--tier] [--json]",
+    "  contract \"<worker objective>\" [--extended]",
+    "  cache-export --out PATH.jsonl [--with-answers] [--duckdb PATH]",
+    "  lanes | doctor | stats",
+    "",
+    "  --oracle: exit 0 = PASS. Gets LLMADAPTER_ANSWER_PATH + LLMADAPTER_RUN_DIR.",
+    "  --first-pass: all lanes start, first PASS wins, the rest are pruned.",
+    "  --evidence: $LLMADAPTER_EVIDENCE_CMD supplies the fresh fact tool-less lanes cite.",
+    "  host lanes marked opt_in stay out of `all`/class selectors; name them in --lanes.",
+  ].join("\n"));
 }

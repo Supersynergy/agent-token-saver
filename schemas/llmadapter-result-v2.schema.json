@@ -51,7 +51,47 @@
       "type": "array",
       "items": { "$ref": "#/$defs/result" }
     },
-    "accounting": { "$ref": "#/$defs/accounting" }
+    "accounting": { "$ref": "#/$defs/accounting" },
+    "first_pass": {
+      "description": "Present only with --first-pass.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["oracle", "oracle_runs", "winner", "winner_oracle_exit", "pruned", "run_dir"],
+      "properties": {
+        "oracle": { "type": "boolean" },
+        "oracle_runs": { "type": "integer", "minimum": 0 },
+        "winner": { "type": ["string", "null"] },
+        "winner_oracle_exit": { "type": ["integer", "null"] },
+        "pruned": { "type": "integer", "minimum": 0 },
+        "run_dir": { "type": ["string", "null"] }
+      }
+    },
+    "evidence": {
+      "description": "Present only with --evidence. The target is reported as a hash, never as text.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "target_sha256", "usable", "cached", "bytes", "source", "sha256"],
+      "properties": {
+        "mode": { "enum": ["research", "mega", "fetch"] },
+        "target_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "usable": { "type": "boolean" },
+        "cached": { "type": "boolean" },
+        "bytes": { "type": "integer", "minimum": 0 },
+        "source": { "type": "string", "maxLength": 120 },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "note": { "type": "string", "maxLength": 80 }
+      }
+    },
+    "skill_route": {
+      "description": "Present only with --skill-route and only when the router named a skill.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "path"],
+      "properties": {
+        "name": { "type": "string" },
+        "path": { "type": "string" }
+      }
+    }
   },
   "$defs": {
     "tokenCoverage": {
@@ -140,7 +180,8 @@
         "class": { "enum": ["free", "paid", "local", "cli"] },
         "ok": { "type": "boolean" },
         "terminal": {
-          "enum": ["succeeded", "failed", "timeout", "output_limit", "cached"]
+          "description": "`pruned` appears only under --first-pass, where another lane won and this one was aborted.",
+          "enum": ["succeeded", "failed", "timeout", "output_limit", "cached", "pruned"]
         },
         "ms": { "type": "integer", "minimum": 0 },
         "answer": { "type": "string" },

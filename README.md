@@ -259,7 +259,54 @@ answer is stored in the private cache and may therefore contain repeated input;
 use `--no-cache` for sensitive tasks.
 
 The repository defines 21 built-in lanes. A host may add local lanes through
-its private configuration; `llmadapter lanes` is the runtime inventory.
+its private configuration; `llmadapter lanes` is the runtime inventory. A host
+lane marked `"opt_in": true` is skipped by `all` and by the class selectors and
+is reachable only by name, so a heavy lane never joins a swarm by accident.
+
+### Opt-in extensions
+
+Every flag below is off by default. The capability contract and the default
+result envelope are unchanged, so a controller written against the strict v2
+protocol keeps working without knowing these exist. `contract --extended`
+advertises them for controllers that opt in.
+
+```bash
+printf '%s' "$TASK" | llmadapter ask-v2 \
+  --stdin --swarm --lanes local --first-pass \
+  --oracle 'grep -qi sqlite "$LLMADAPTER_ANSWER_PATH"' \
+  --budget-tokens 2000
+```
+
+- `--first-pass` starts every selected lane at once, runs the oracle on each
+  answer as it lands and prunes the peers at the first PASS. Pruned lanes keep a
+  record with terminal `pruned`, which appears only in this mode. Without an
+  oracle the first valid answer wins.
+- `--oracle` is a shell command; exit 0 is PASS. It receives
+  `LLMADAPTER_ANSWER_PATH` (a private `0600` file) and `LLMADAPTER_RUN_DIR`, and
+  is killed after two seconds. The answer never reaches it through argv.
+- `--budget-tokens N` is enforced locally rather than requested from a provider:
+  an input estimate above the budget refuses before the call, a CLI lane's
+  stdout is bounded at four bytes per budgeted token, and a reported total above
+  the budget fails the record with `budget_exceeded`.
+- `--evidence` gathers one primary-source artifact before the workers start,
+  projects it to `--evidence-bytes` (default 600) and injects it into every
+  capsule, so tool-less lanes can cite a fresh fact instead of being told not to
+  claim one. Lookup order is `ats-url-cache`, then the provider, then the cache
+  write. No scraper is bundled: the provider is a host executable named by
+  `LLMADAPTER_EVIDENCE_CMD`, called as `"$LLMADAPTER_EVIDENCE_CMD" <mode>` with
+  the query on stdin and the artifact on stdout. Modes are `research` (default),
+  `mega` and `fetch` (needs `--evidence-target <url>`). If the artifact reports
+  a bot wall (`page_status: challenge`), it is discarded and the capsule asks
+  the worker for BLOCKED — the adapter never attempts a bypass. Without a
+  provider the run continues with evidence marked unavailable.
+- `--skill-route` asks `si` for one skill and puts its path in the capsule
+  instead of relying on the four built-in regex routes. Fail-open.
+- `llmadapter council` runs the identical worker stage and adds one
+  fresh-context lane that reports CONSENSUS, DISSENT and CONFIDENCE. Choose it
+  with `--synth-lane NAME`.
+- `llmadapter cache-export --out PATH.jsonl [--with-answers] [--duckdb PATH]`
+  snapshots the private cache for replay or analysis. Answers are hashed unless
+  `--with-answers` is passed; the live cache keeps its `0600` files.
 
 ## Measure your own result
 

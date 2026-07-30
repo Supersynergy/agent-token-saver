@@ -2,6 +2,53 @@
 
 ## Unreleased
 
+- **feat: `llmadapter --first-pass` with an executable oracle.** All selected
+  lanes start together, the oracle decides one answer at a time, and the first
+  PASS prunes the peers. Losers keep a record with terminal `pruned`. The oracle
+  is a shell command whose exit code is the verdict; it reads the answer from a
+  private `0600` file through `LLMADAPTER_ANSWER_PATH` and never from argv.
+- **feat: `--budget-tokens` is enforced, not requested.** An input estimate over
+  the budget refuses before the call, a CLI lane's stdout is bounded at four
+  bytes per budgeted token, and a reported total over budget fails the record.
+  Unlike `--max-tokens` this does not depend on provider cooperation.
+- **feat: `--evidence` supplies the fresh fact tool-less lanes may not claim.**
+  One primary-source artifact is gathered before the swarm starts, projected to
+  `--evidence-bytes` and injected into every capsule. Order is url-cache →
+  provider → projection → url-cache. No scraper is bundled: the provider is a
+  host executable named by `LLMADAPTER_EVIDENCE_CMD`, called with the mode as
+  its argument and the query on stdin. An artifact reporting a bot wall
+  (`page_status: challenge`) is discarded, and the capsule then says evidence is
+  unavailable and asks for BLOCKED; no bypass is attempted.
+- **feat: `"opt_in": true` host lanes.** A heavy host lane (scraper, browser
+  driver) is skipped by `all` and the class selectors and is reachable only by
+  name, so asking for `cli` never starts a scrape.
+- **feat: `--skill-route` uses `si` instead of the four built-in regexes.** One
+  skill, by path, into the capsule. Fail-open: no `si`, no hit or bad JSON means
+  no skill line.
+- **feat: `llmadapter council`.** The same worker stage plus one fresh-context
+  lane that reports CONSENSUS, DISSENT and CONFIDENCE. `--tier` aggregates and
+  `--verify` checks a single answer; a council names the disagreement.
+- **feat: `llmadapter cache-export`.** Snapshot the private v2 cache as JSONL,
+  optionally loaded into DuckDB. Answers are hashed unless `--with-answers` is
+  passed; the live cache stays where it is, at `0600` under
+  `~/.agent-token-saver`.
+- **perf: worker capsules are memoised per objective.** A wide fanout stops
+  rebuilding the same packet once per lane. This removes repeated string work,
+  not tokens.
+- **compat: every addition above is off unless its flag is passed.** AgentMaster
+  parses the capability contract and the result envelope with
+  `deny_unknown_fields` and a closed terminal enum, so the default `contract`
+  output and the default `ask-v2` envelope are unchanged, and `pruned` can only
+  appear under `--first-pass`. `contract --extended` advertises the extensions
+  for controllers that opt in.
+
+- **feat: compact defaults are now real host defaults.** Lean, teams and heavy
+  installs merge one marker-owned, hash-verified policy into Codex
+  `AGENTS.md`, Claude `CLAUDE.md`, an existing Hermes `SOUL.md`, and GG
+  Coder's home `AGENTS.md`. User text is backed up and preserved; `minimal`
+  removes only the managed block. Doctor now fails on missing, altered,
+  misplaced or unsafe defaults instead of treating an installed skill as
+  automatic behavior.
 - **feat: strict `llmadapter ask-v2` controller protocol.** Prompts use stdin or
   a regular file rather than argv; local lanes and a three-worker bound are the
   defaults. Remote and paid egress require explicit gates. One schema-versioned
