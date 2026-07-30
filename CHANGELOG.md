@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **feat: `primary` evidence mode.** Ask the provider's primary-source registry
+  before the general web, so a version, price or policy claim can cite whoever
+  owns the fact instead of the best-ranked article about it. Available to
+  `evidence --mode primary` and `ask-v2 --evidence-mode primary`.
 - **feat: `llmadapter evidence` gathers without spending a model token.** No
   lane runs: it resolves the cache, calls the configured provider, projects the
   result, writes a private `0600` artifact and prints a report with

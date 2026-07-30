@@ -307,7 +307,9 @@ printf '%s' "$TASK" | llmadapter ask-v2 \
   write. No scraper is bundled: the provider is a host executable named by
   `LLMADAPTER_EVIDENCE_CMD`, called as `"$LLMADAPTER_EVIDENCE_CMD" <mode>` with
   the query on stdin and the artifact on stdout. Modes are `research` (default),
-  `mega` and `fetch` (needs `--evidence-target <url>`). If the artifact reports
+  `mega`, `fetch` (needs `--evidence-target <url>`) and `primary`, which asks the
+  provider's primary-source registry so a version, price or policy claim can
+  cite whoever owns the fact. If the artifact reports
   a bot wall (`page_status: challenge`), it is discarded and the capsule asks
   the worker for BLOCKED — the adapter never attempts a bypass. Without a
   provider the run continues with evidence marked unavailable.

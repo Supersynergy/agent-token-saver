@@ -468,7 +468,7 @@ async function evidenceCachePut(key: string, body: string): Promise<void> {
 
 async function gatherEvidence(
   objective: string,
-  mode: "research" | "mega" | "fetch",
+  mode: "research" | "mega" | "fetch" | "primary",
   target: string,
   maxBytes: number,
   useCache: boolean,
@@ -688,7 +688,7 @@ type FirstPassReport = {
 };
 
 type EvidenceReport = {
-  mode: "research" | "mega" | "fetch";
+  mode: "research" | "mega" | "fetch" | "primary";
   target_sha256: string;
   usable: boolean;
   cached: boolean;
@@ -1525,7 +1525,7 @@ type AskV2Options = {
   oracleEnvPrefix?: string;
   budgetTokens?: number;
   evidence: boolean;
-  evidenceMode: "research" | "mega" | "fetch";
+  evidenceMode: "research" | "mega" | "fetch" | "primary";
   evidenceTarget?: string;
   evidenceBytes: number;
   skillRoute: boolean;
@@ -1598,7 +1598,7 @@ function parseAskV2(argv: string[]): AskV2Options {
     ? parsePositiveInt(parsed.get("--cap"), "cap", SWARM_FANOUT_MAX_WORKERS)
     : SWARM_MAX_WORKERS;
   const evidenceMode = parsed.get("--evidence-mode") ?? "research";
-  if (!["research", "mega", "fetch"].includes(evidenceMode)) {
+  if (!["research", "mega", "fetch", "primary"].includes(evidenceMode)) {
     throw new V2UsageError("evidence_mode_invalid");
   }
   if ((parsed.has("--evidence-mode") || parsed.has("--evidence-target") || parsed.has("--evidence-bytes"))
@@ -1641,7 +1641,7 @@ function parseAskV2(argv: string[]): AskV2Options {
       ? parsePositiveInt(parsed.get("--budget-tokens"), "budget_tokens", 1_000_000)
       : undefined,
     evidence: seen.has("--evidence"),
-    evidenceMode: evidenceMode as "research" | "mega" | "fetch",
+    evidenceMode: evidenceMode as "research" | "mega" | "fetch" | "primary",
     evidenceTarget: parsed.get("--evidence-target"),
     evidenceBytes: parsed.has("--evidence-bytes")
       ? parsePositiveInt(parsed.get("--evidence-bytes"), "evidence_bytes", EVIDENCE_MAX_BYTES)
@@ -2207,8 +2207,8 @@ if (cmd === "ask-v2") {
   // "gather once, reference N times" primitive a controller needs before it
   // fans out. The artifact goes to a private file; stdout carries the report.
   const mode = flag("mode", "research")!;
-  if (!["research", "mega", "fetch"].includes(mode)) {
-    console.error("usage: llmadapter evidence [--mode research|mega|fetch] (--target X | --stdin) [--bytes N] [--out PATH] [--no-cache]");
+  if (!["research", "mega", "fetch", "primary"].includes(mode)) {
+    console.error("usage: llmadapter evidence [--mode research|mega|fetch|primary] (--target X | --stdin) [--bytes N] [--out PATH] [--no-cache]");
     process.exit(64);
   }
   const target = args.includes("--stdin")
@@ -2225,7 +2225,7 @@ if (cmd === "ask-v2") {
   }
   const block = await gatherEvidence(
     target,
-    mode as "research" | "mega" | "fetch",
+    mode as "research" | "mega" | "fetch" | "primary",
     target,
     bytes,
     !args.includes("--no-cache"),
@@ -2383,7 +2383,7 @@ if (cmd === "ask-v2") {
       first_pass: true,
       oracle: true,
       budget_tokens: true,
-      evidence: ["research", "mega", "fetch"],
+      evidence: ["research", "mega", "fetch", "primary"],
       evidence_max_bytes: EVIDENCE_MAX_BYTES,
       evidence_provider: Boolean(EVIDENCE_CMD && existsSync(EVIDENCE_CMD)),
       skill_route: Boolean(Bun.which("si")),
@@ -2467,9 +2467,9 @@ if (cmd === "ask-v2") {
     "  ask-v2 (--stdin|--prompt-file PATH) --swarm [--lanes …] [--cap N] [--max-tokens N]",
     "         [--deadline-secs N] [--usage-out PATH] [--allow-remote] [--allow-paid] [--no-cache]",
     "         [--first-pass] [--oracle 'CMD'] [--oracle-env-prefix NAME] [--budget-tokens N]",
-    "         [--evidence [--evidence-mode research|mega|fetch] [--evidence-target X] [--evidence-bytes N]]",
+    "         [--evidence [--evidence-mode research|mega|fetch|primary] [--evidence-target X] [--evidence-bytes N]]",
     "         [--skill-route]",
-    "  evidence [--mode research|mega|fetch] (--target X | --stdin) [--bytes N] [--out PATH]",
+    "  evidence [--mode research|mega|fetch|primary] (--target X | --stdin) [--bytes N] [--out PATH]",
     "  council (--stdin|--prompt-file PATH) [--synth-lane NAME] + every ask-v2 flag",
     "  ask \"<prompt>\" [--swarm] [--fanout] [--lanes …] [--first N] [--aggregate] [--verify] [--tier] [--json]",
     "  contract \"<worker objective>\" [--extended]",

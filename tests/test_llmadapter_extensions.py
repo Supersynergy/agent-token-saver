@@ -579,6 +579,67 @@ def test_skill_route_is_opt_in_and_fails_open(tmp_path: Path, probe: Path) -> No
     assert broken["ok"] == 1
 
 
+def test_evidence_subcommand_gathers_without_spending_a_model_token(
+    tmp_path: Path,
+    evidence_provider: Path,
+) -> None:
+    out = tmp_path / "artifact.txt"
+    result = run_adapter(
+        tmp_path,
+        "evidence",
+        "--mode",
+        "primary",
+        "--target",
+        "which release is current",
+        "--bytes",
+        "300",
+        "--out",
+        str(out),
+        extra={"LLMADAPTER_EVIDENCE_CMD": str(evidence_provider)},
+    )
+    assert result.returncode == 0, result.stderr
+    report = json.loads(result.stdout)
+    assert report["schema"] == "llmadapter.evidence"
+    assert report["mode"] == "primary"
+    assert report["usable"] is True
+    assert report["model_tokens_spent"] == 0
+    assert report["artifact"] == str(out)
+    assert "FRESH FACT" in out.read_text()
+    assert oct(out.stat().st_mode & 0o777) == "0o600"
+    # The report identifies the target by hash, never by echoing it back.
+    assert "which release is current" not in result.stdout
+
+
+def test_evidence_subcommand_reports_an_unusable_gather_without_an_artifact(
+    tmp_path: Path,
+    evidence_provider: Path,
+) -> None:
+    out = tmp_path / "artifact.txt"
+    result = run_adapter(
+        tmp_path,
+        "evidence",
+        "--target",
+        "blocked query",
+        "--out",
+        str(out),
+        extra={
+            "LLMADAPTER_EVIDENCE_CMD": str(evidence_provider),
+            "LLMADAPTER_FIXTURE_MODE": "challenge",
+        },
+    )
+    assert result.returncode == 1
+    report = json.loads(result.stdout)
+    assert report["usable"] is False
+    assert report["note"] == "page_status_challenge"
+    assert report["artifact"] is None
+    assert not out.exists()
+
+
+def test_evidence_subcommand_rejects_an_unknown_mode(tmp_path: Path) -> None:
+    result = run_adapter(tmp_path, "evidence", "--mode", "browse", "--target", "x")
+    assert result.returncode == 64
+
+
 def test_council_adds_one_synthesis_over_the_same_worker_stage(
     tmp_path: Path,
     probe: Path,
