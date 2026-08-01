@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# goal — PATH front door for the universal goal system.
+#
+# goal.sh ships 13 shell functions (goal-init … goal-doctor). Functions only exist
+# in a shell that sourced the wrapper, so hooks, cron jobs, cmux agents and Claude
+# sessions could not reach them. This shim turns them into a real binary:
+#
+#   goal doctor          -> goal-doctor
+#   goal init "…" --oracle "…"  -> goal-init "…" --oracle "…"
+#   goal verbs           -> list every dispatchable verb
+#
+# Install as a symlink so the repo stays the single source of truth:
+#   ln -sf <repo>/integration/cli/goal ~/.local/bin/goal
+#
+# No `set -e`: goal-check and friends signal state through exit codes, and the
+# shim must pass those through unchanged.
+
+set -uo pipefail
+
+# Resolve this file through any chain of symlinks (portable; BSD readlink has no -f
+# on older macOS, and coreutils may be absent).
+_goal_self="${BASH_SOURCE[0]:-$0}"
+while [ -L "$_goal_self" ]; do
+  _goal_link="$(readlink "$_goal_self")"
+  case "$_goal_link" in
+    /*) _goal_self="$_goal_link" ;;
+    *)  _goal_self="$(dirname "$_goal_self")/$_goal_link" ;;
+  esac
+done
+_goal_dir="$(cd "$(dirname "$_goal_self")" && pwd)"
+
+GOAL_SH="${GOAL_SH:-$_goal_dir/goal.sh}"
+if [ ! -f "$GOAL_SH" ]; then
+  echo "ERR: goal.sh not found at $GOAL_SH (set GOAL_SH to override)" >&2
+  exit 1
+fi
+
+# shellcheck source=/dev/null
+source "$GOAL_SH"
+
+_goal_verbs() {
+  declare -F | awk '{print $3}' | sed -n 's/^goal-//p' | sort | tr '\n' ' '
+}
+
+verb="${1:-doctor}"
+[ $# -gt 0 ] && shift
+
+case "$verb" in
+  verbs|--verbs)      _goal_verbs; echo; exit 0 ;;
+  -h|--help|help)     echo "usage: goal <verb> [args]"; echo "verbs: $(_goal_verbs)"; exit 0 ;;
+esac
+
+if ! declare -F "goal-$verb" >/dev/null 2>&1; then
+  echo "ERR: unknown verb '$verb'" >&2
+  echo "verbs: $(_goal_verbs)" >&2
+  exit 2
+fi
+
+"goal-$verb" "$@"

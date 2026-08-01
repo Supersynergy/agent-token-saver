@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- **feat: `goal` is a real command, not a shell function.** The 13 `goal-*`
+  functions only existed inside a shell that had sourced the wrapper, so hooks,
+  cron jobs and agent sessions could not reach them: `which goal-init` returned
+  nothing. `integration/cli/goal` is a dispatching shim (`goal <verb> [args]` →
+  `goal-<verb>`) that resolves its own symlink chain, sources `goal.sh` from the
+  repo, and passes exit codes through unchanged. Install with
+  `ln -sf <repo>/integration/cli/goal ~/.local/bin/goal`. Unknown verbs exit 2
+  and print the dispatchable set; `goal verbs` lists them. Test check 37 covers
+  syntax, `goal doctor`, verb dispatch and the unknown-verb guard.
+
 - **feat: `--contract verdict|prose|json` — the swarm answers in the shape you
   asked for.** The capsule was built for verification, so every worker had to
   reply `STATUS: PASS|FAIL|BLOCKED`, which made the v2 swarm unusable for prose

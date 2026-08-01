@@ -3,7 +3,7 @@
 # + v3.7.0 adaptive features (detect-agent, safe, parallel, metareview,
 # omnigoal-check, ats-auto, claude/codex/cmux wrappers).
 # + v3.8.0 recon CLIs (gmax, ghx, supacrawl, ats-llm-pipe, zsh portability).
-# Covers 36 checks. Exits 0 on success, 1 on any failure.
+# Covers 37 checks. Exits 0 on success, 1 on any failure.
 
 set -euo pipefail
 
@@ -365,5 +365,18 @@ echo "$SWARM_OUT" | grep -q "SWARM_OK" || { echo "FAIL: codex-swarm lifecycle di
 echo "  [PASS] codex-swarm lifecycle (init→check→close under zsh + codex wrapper)"
 rm -rf "$SWARM_DIR"
 
+# 37. goal PATH shim — the front door hooks/cron/agents call (v4 M1/T1.1)
+SHIM="$REPO_ROOT/integration/cli/goal"
+[[ -x "$SHIM" ]] || { echo "FAIL: $SHIM missing or not executable"; exit 1; }
+bash -n "$SHIM" || { echo "FAIL: goal shim has a syntax error"; exit 1; }
+SHIM_OUT=$(env -u GOAL_SH_LOADED "$SHIM" doctor 2>&1) || { echo "FAIL: goal doctor exited non-zero: $SHIM_OUT"; exit 1; }
+echo "$SHIM_OUT" | grep -q "Goal-System Doctor" || { echo "FAIL: goal doctor output unexpected: $SHIM_OUT"; exit 1; }
+SHIM_VERBS=$(env -u GOAL_SH_LOADED "$SHIM" verbs 2>&1)
+for v in init check close doctor list verify refute; do
+  echo "$SHIM_VERBS" | grep -qw "$v" || { echo "FAIL: verb '$v' not dispatchable via shim: $SHIM_VERBS"; exit 1; }
+done
+env -u GOAL_SH_LOADED "$SHIM" definitely-not-a-verb >/dev/null 2>&1 && { echo "FAIL: unknown verb should exit non-zero"; exit 1; }
+echo "  [PASS] goal PATH shim dispatches (doctor + verbs + unknown-verb guard)"
+
 echo ""
-echo "=== ALL 36 CHECKS PASSED ==="
+echo "=== ALL 37 CHECKS PASSED ==="
