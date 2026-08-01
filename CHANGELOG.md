@@ -2,6 +2,36 @@
 
 ## Unreleased
 
+- **feat: a `cheap` lane band, because frontier output stopped being expensive.**
+  `openai/gpt-5.6-luna` is $0.10/$0.60 per million tokens with a 1.05M window;
+  `moonshotai/kimi-k3`, the lane table's only other non-free option, is
+  $3.00/$15.00. Measured over three closed-form reasoning tasks with a known
+  answer, three samples each: `gpt-oss-120b` 9/9 correct at $0.00046 per nine
+  calls, `gpt-5.6-luna` 9/9 at $0.00093, `kimi-k2.5` 8/9 at $0.00303,
+  `ling-2.6-flash` 7/9 at $0.00002, the best free lanes 6-7/9 at $0. Free lanes
+  buy a 20-30 point correctness drop to save five thousandths of a cent.
+  `--lanes cheap` selects the measured band. It is a selector keyword, not a
+  fifth class: the wire `class` stays `paid` because AgentMaster validates that
+  set, and the band still needs `--allow-paid`. `lanes` now prints the per-lane
+  output price. `poolside/laguna-s-2.1` paid looked like a member on one sample
+  and scored 5/9 over nine — worse than its own free variant, for money.
+- **feat: lane selection follows measured health, not table order.** A class
+  selector returns more lanes than the worker cap takes, so the cap decided who
+  ran, and that was always the first three in the table. `pickLanes` now orders
+  class selectors by a Laplace-smoothed success rate over the last 7 days of the
+  ledger — which already ranked both broken lanes last without being asked.
+  Explicit `--lanes a,b,c` keeps the caller's order. `LLMADAPTER_LANE_HEALTH=0`
+  opts out.
+- **fix: aggregation, verification and council synthesis no longer pin a lane.**
+  All three named a fixed lane, so one outage lost the whole step —
+  `gpt-oss-20b` was the pinned verifier while the ledger recorded it at 5/10.
+  They pick by health now, with the verifier held to a different vendor family
+  than the aggregator so the cross-check stays independent.
+  `LLMADAPTER_AGGREGATE_LANE` / `_VERIFY_LANE` / `_COUNCIL_LANE` still pin by name.
+- **fix: duplicate built-in lane names now fail at startup.** A free model and
+  its paid twin resolve to the same short name, which would give them one shared
+  health record and make `--lanes <name>` ambiguous.
+
 - **fix: free reasoning lanes return an answer instead of a truncated
   deliberation.** OpenRouter's free reasoning models emit their chain of thought
   as visible content, so at a 400-token ceiling they spent the whole budget

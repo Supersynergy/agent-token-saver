@@ -43,6 +43,14 @@ type Lane = {
   // OpenRouter's unified reasoning control, sent verbatim as the `reasoning`
   // request field. `null` sends no field at all.
   reasoning?: Record<string, unknown> | null;
+  // USD per million output tokens, for the `cheap` selector and for `lanes`.
+  // Deliberately not in the result envelope: AgentMaster parses that with
+  // deny_unknown_fields, and a price belongs to the lane table, not to a call.
+  usdOut?: number;
+  // Selector sugar only. The wire `class` stays free|paid|local|cli because
+  // AgentMaster validates that set; `cheap` lanes are paid lanes that happen to
+  // cost a rounding error.
+  cheap?: boolean;
   parse?: (raw: string) => string;
 };
 
@@ -65,7 +73,34 @@ const OR_FREE = [
   "poolside/laguna-s-2.1:free",
   "poolside/laguna-xs-2.1:free",
 ];
-const OR_PAID = ["moonshotai/kimi-k3", "moonshotai/kimi-k2.7-code"];
+// The `cheap` band. Frontier-class output fell to free-lane money in 2026:
+// `openai/gpt-5.6-luna` is $0.10/$0.60 per million with a 1.05M window, against
+// `moonshotai/kimi-k3` at $3.00/$15.00. Measured 2026-08-01 over three
+// closed-form reasoning tasks with a known answer (Kelly fraction, swarm cost,
+// Laplace ranking), three samples each:
+//
+//   openai/gpt-oss-120b      9/9 correct   $0.00046 per 9 calls
+//   openai/gpt-5.6-luna      9/9 correct   $0.00093
+//   moonshotai/kimi-k2.5     8/9 correct   $0.00303
+//   inclusionai/ling-2.6     7/9 correct   $0.00002
+//   best free lanes        6-7/9 correct   $0
+//
+// Listed in measured quality order: array order is the tiebreak for lanes the
+// ledger has not judged yet. `poolside/laguna-s-2.1` paid was in this band on a
+// single sample and came out 5/9 over nine — worse than its own free variant,
+// for money. One sample is not a measurement.
+//
+// [model, usd per million output tokens, optional lane name override].
+const OR_CHEAP: [string, number, string?][] = [
+  ["openai/gpt-oss-120b", 0.17],
+  ["openai/gpt-5.6-luna", 0.60],
+  ["inclusionai/ling-2.6-flash", 0.03],
+];
+const OR_PAID: [string, number, string?][] = [
+  ["moonshotai/kimi-k2.5", 2.85],
+  ["moonshotai/kimi-k2.7-code", 3.50],
+  ["moonshotai/kimi-k3", 15.00],
+];
 
 // Free reasoning lanes emit their chain of thought as visible content, so at a
 // 400-token ceiling they hand back a truncated deliberation instead of the
@@ -84,6 +119,10 @@ const OR_REASONING_DEFAULT: Record<string, unknown> = { enabled: false };
 const OR_REASONING_OVERRIDE: Record<string, Record<string, unknown> | null> = {
   "openai/gpt-oss-20b:free": null,
   "nvidia/nemotron-nano-9b-v2:free": { exclude: true },
+  // The gpt-oss and luna families were benchmarked without a reasoning field
+  // and scored 3/3; gpt-oss is already known to answer empty when it gets one.
+  "openai/gpt-oss-120b": null,
+  "openai/gpt-5.6-luna": null,
 };
 const orReasoning = (model: string): Record<string, unknown> | null => {
   if (!OR_REASONING_OFF) return null;
@@ -105,7 +144,8 @@ const ggcoderText = (raw: string) =>
 
 const LANES: Lane[] = [
   ...OR_FREE.map((m): Lane => ({ name: m.split("/")[1].replace(":free", ""), kind: "openrouter", class: "free", model: m, reasoning: orReasoning(m) })),
-  ...OR_PAID.map((m): Lane => ({ name: m.split("/")[1], kind: "openrouter", class: "paid", model: m })),
+  ...OR_CHEAP.map(([m, usdOut, name]): Lane => ({ name: name ?? m.split("/")[1], kind: "openrouter", class: "paid", model: m, reasoning: orReasoning(m), usdOut, cheap: true })),
+  ...OR_PAID.map(([m, usdOut, name]): Lane => ({ name: name ?? m.split("/")[1], kind: "openrouter", class: "paid", model: m, reasoning: orReasoning(m), usdOut })),
   { name: "ollama-gemma4", kind: "ollama", class: "local", model: "gemma4-31b-fast" },
   {
     name: "codex",
@@ -126,6 +166,8 @@ const LANES: Lane[] = [
     tools: true,
   },
 ];
+
+const BUILTIN_LANE_COUNT = LANES.length;
 
 // Local-only extra lanes live OUTSIDE this repo in
 // ~/.agent-token-saver/local-lanes.json so they are usable locally but never
@@ -173,6 +215,16 @@ try {
     }
   }
 } catch { /* fail-open: no local lanes */ }
+
+// Two lanes under one name share a health record and make `--lanes <name>`
+// ambiguous, which is how `poolside/laguna-s-2.1` and its `:free` twin nearly
+// became one entry. A host lane may shadow a built-in on purpose, so only the
+// built-in table is checked.
+{
+  const names = LANES.slice(0, BUILTIN_LANE_COUNT).map((l) => l.name);
+  const duplicate = names.find((name, index) => names.indexOf(name) !== index);
+  if (duplicate) throw new Error(`duplicate built-in lane name: ${duplicate}`);
+}
 
 const ATS_DIR = join(homedir(), ".agent-token-saver");
 const CACHE_DIR = join(ATS_DIR, "cache", "llmadapter");
@@ -1577,20 +1629,29 @@ function laneHealth(): Map<string, number> {
   return scores;
 }
 
+// `cheap` is selector sugar over the paid class, not a fifth class: the wire
+// `class` set is what AgentMaster validates. It still needs --allow-paid,
+// because a rounding error is still money.
+const laneMatchesSelector = (lane: Lane, part: string): boolean => {
+  if (part === "cheap") return lane.cheap === true && !lane.optIn;
+  if (["free", "paid", "local", "cli"].includes(part)) return lane.class === part && !lane.optIn;
+  return lane.name === part || lane.model === part;
+};
+
 function pickLanes(spec: string): Lane[] {
   // `all` and the class selectors stay free of opt-in lanes: asking for "cli"
   // must not silently start a scraping workload. Naming the lane still works.
-  const classes = ["free", "paid", "local", "cli"];
+  const selectors = ["free", "cheap", "paid", "local", "cli"];
   const parts = spec.split(",").map((s) => s.trim());
   const selected = spec === "all"
     ? LANES.filter((l) => !l.optIn)
-    : LANES.filter((l) =>
-      parts.some((p) => (classes.includes(p) ? l.class === p && !l.optIn : l.name === p || l.model === p)));
-  if (spec !== "all" && !parts.every((p) => classes.includes(p))) return selected;
+    : LANES.filter((l) => parts.some((p) => laneMatchesSelector(l, p)));
+  if (spec !== "all" && !parts.every((p) => selectors.includes(p))) return selected;
   const health = laneHealth();
   if (health.size === 0) return selected;
   // Stable: equal scores keep their array order, so the same ledger always
-  // yields the same lane list.
+  // yields the same lane list. Within the paid class array order is price
+  // order, so an unproven expensive lane never outranks an unproven cheap one.
   return selected
     .map((lane, index) => ({ lane, index, score: health.get(lane.name) ?? 0.5 }))
     .sort((a, b) => (b.score - a.score) || (a.index - b.index))
@@ -2480,8 +2541,13 @@ if (cmd === "ask-v2") {
     duckdb_loaded: loaded,
   }, null, 1));
 } else if (cmd === "lanes") {
-  for (const l of LANES) console.log(`${l.class.padEnd(5)} ${l.name.padEnd(42)} ${l.model ?? l.cmd!("…").join(" ").slice(0, 50)}${l.serial ? "  [serial]" : ""}`);
-  console.log(`total: ${LANES.length} lanes`);
+  for (const l of LANES) {
+    const tier = l.cheap ? "cheap" : l.class;
+    const price = l.usdOut === undefined ? "" : `  $${l.usdOut.toFixed(2)}/Mout`;
+    console.log(`${tier.padEnd(5)} ${l.name.padEnd(42)} ${l.model ?? l.cmd!("…").join(" ").slice(0, 50)}${price}${l.serial ? "  [serial]" : ""}`);
+  }
+  const cheap = LANES.filter((l) => l.cheap).length;
+  console.log(`total: ${LANES.length} lanes · \`cheap\` selects ${cheap} paid lanes under $0.60/Mout (needs --allow-paid)`);
 } else if (cmd === "doctor") {
   for (const l of LANES.filter((x) => x.kind === "cli")) {
     const bin = l.cmd!("x")[0];
@@ -2613,7 +2679,7 @@ if (cmd === "ask-v2") {
   console.log(JSON.stringify(contract, null, 1));
 } else if (cmd === "ask") {
   const prompt = args.slice(1).find((a) => !a.startsWith("--") && a !== flag(a.replace(/^--/, "")))!;
-  if (!prompt) { console.error("usage: llmadapter ask \"<prompt>\" [--swarm] [--fanout] [--lanes free|paid|local|cli|all|name,…] [--first N] [--tier] [--aggregate] [--verify] [--json] [--no-cache] [--usage-out PATH]"); process.exit(1); }
+  if (!prompt) { console.error("usage: llmadapter ask \"<prompt>\" [--swarm] [--fanout] [--lanes free|cheap|paid|local|cli|all|name,…] [--first N] [--tier] [--aggregate] [--verify] [--json] [--no-cache] [--usage-out PATH]"); process.exit(1); }
   // --tier: cheap proposers → strong aggregate → fresh verify (one flag).
   const tier = args.includes("--tier");
   const swarm = args.includes("--swarm");

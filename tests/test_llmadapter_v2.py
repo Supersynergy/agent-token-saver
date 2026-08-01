@@ -969,6 +969,29 @@ def write_ledger(home: Path, rows: list[tuple[str, int, int]]) -> None:
     (ledger / f"llmadapter-{month}.jsonl").write_text("\n".join(lines) + "\n")
 
 
+def test_cheap_selector_stays_inside_the_wire_class_contract() -> None:
+    """AgentMaster validates class against free|paid|local|cli, so `cheap` is
+    a selector keyword, never a fifth class value."""
+    listing = subprocess.run(
+        ["bun", str(ADAPTER), "lanes"],
+        text=True,
+        capture_output=True,
+        check=False,
+        env={**os.environ},
+    )
+    assert listing.returncode == 0, listing.stderr
+    cheap = [line for line in listing.stdout.splitlines() if line.startswith("cheap ")]
+    assert cheap, listing.stdout
+    for line in cheap:
+        assert "/Mout" in line, line
+
+
+def test_cheap_lanes_are_gated_like_any_other_paid_lane(tmp_path: Path) -> None:
+    result = run_v2(tmp_path, "--stdin", "--swarm", "--lanes", "cheap", "--allow-remote")
+    assert result.returncode == 64
+    assert json.loads(result.stdout)["error"] == "paid_requires_allow_remote_and_allow_paid"
+
+
 # `local` also selects the built-in ollama lane. Point it at a closed localhost
 # port so it fails immediately instead of waiting: still local, so the remote
 # gate stays out of the way, and the ledger decides where it lands.
