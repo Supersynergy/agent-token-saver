@@ -692,8 +692,7 @@ def test_loopback_ollama_redirect_cannot_reach_a_second_sink(tmp_path: Path) -> 
 
     redirect = ThreadingHTTPServer(("127.0.0.1", 0), RedirectHandler)
     threads = [
-        threading.Thread(target=server.serve_forever, daemon=True)
-        for server in (sink, redirect)
+        threading.Thread(target=server.serve_forever, daemon=True) for server in (sink, redirect)
     ]
     for thread in threads:
         thread.start()
@@ -781,9 +780,7 @@ def test_invalid_cache_entries_are_never_accepted(
         "fixture-one",
     )
     assert first.returncode == 0, first.stdout
-    cache_files = list(
-        (tmp_path / ".agent-token-saver" / "cache" / "llmadapter").glob("v2-*.json")
-    )
+    cache_files = list((tmp_path / ".agent-token-saver" / "cache" / "llmadapter").glob("v2-*.json"))
     assert len(cache_files) == 1
     cache = cache_files[0]
     value = json.loads(cache.read_text())
@@ -956,3 +953,166 @@ def test_http_response_body_is_bounded_before_json_parse(tmp_path: Path) -> None
     report = json.loads(result.stdout)
     assert report["results"][0]["terminal"] == "output_limit"
     assert report["results"][0]["error"] == "http_body_limit"
+
+
+def _answering_handler(
+    requests: list[dict[str, object]],
+    *,
+    finish_reason: str = "stop",
+    drop_first: bool = False,
+) -> type[BaseHTTPRequestHandler]:
+    class Handler(BaseHTTPRequestHandler):
+        protocol_version = "HTTP/1.1"
+
+        def do_POST(self) -> None:  # noqa: N802
+            length = int(self.headers["Content-Length"])
+            requests.append(json.loads(self.rfile.read(length)))
+            if drop_first and len(requests) == 1:
+                self.close_connection = True
+                return
+            body = json.dumps(
+                {
+                    "choices": [
+                        {
+                            "message": {"content": "fixture remote answer"},
+                            "finish_reason": finish_reason,
+                        }
+                    ],
+                    "usage": {"prompt_tokens": 6, "completion_tokens": 7},
+                }
+            ).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, format: str, *args: object) -> None:
+            return
+
+    return Handler
+
+
+def _serve(handler: type[BaseHTTPRequestHandler], tmp_path: Path, *args: str):
+    server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        return run_v2(
+            tmp_path,
+            "--stdin",
+            "--swarm",
+            *args,
+            "--allow-remote",
+            "--no-cache",
+            extra={
+                "LLMADAPTER_OPENROUTER_URL": (
+                    f"http://127.0.0.1:{server.server_address[1]}/chat/completions"
+                ),
+                "OPENROUTER_API_KEY": "fixture-key",
+            },
+        )
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+
+def test_free_reasoning_lane_asks_the_provider_to_skip_visible_reasoning(
+    tmp_path: Path,
+) -> None:
+    """Visible chain-of-thought spends the whole result budget on free lanes."""
+    requests: list[dict[str, object]] = []
+    result = _serve(
+        _answering_handler(requests),
+        tmp_path,
+        "--lanes",
+        "nemotron-3-super-120b-a12b",
+    )
+    assert result.returncode == 0, result.stdout
+    assert requests[0]["reasoning"] == {"enabled": False}
+
+
+@pytest.mark.parametrize(
+    ("lane", "expected"),
+    [
+        # Measured 2026-08-01: gpt-oss-20b answers with an empty completion when
+        # it receives `enabled:false`, so it gets no reasoning field at all.
+        ("gpt-oss-20b", None),
+        # nemotron-nano-9b-v2 reasons either way; `exclude` keeps the reasoning
+        # out of the returned budget instead of truncating the answer.
+        ("nemotron-nano-9b-v2", {"exclude": True}),
+    ],
+)
+def test_measured_reasoning_exceptions_are_honoured(
+    tmp_path: Path, lane: str, expected: dict[str, bool] | None
+) -> None:
+    requests: list[dict[str, object]] = []
+    result = _serve(_answering_handler(requests), tmp_path, "--lanes", lane)
+    assert result.returncode == 0, result.stdout
+    assert requests[0].get("reasoning") == expected
+
+
+def test_reasoning_override_env_restores_the_plain_request(tmp_path: Path) -> None:
+    requests: list[dict[str, object]] = []
+    server = ThreadingHTTPServer(("127.0.0.1", 0), _answering_handler(requests))
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        result = run_v2(
+            tmp_path,
+            "--stdin",
+            "--swarm",
+            "--lanes",
+            "nemotron-3-super-120b-a12b",
+            "--allow-remote",
+            "--no-cache",
+            extra={
+                "LLMADAPTER_OPENROUTER_URL": (
+                    f"http://127.0.0.1:{server.server_address[1]}/chat/completions"
+                ),
+                "OPENROUTER_API_KEY": "fixture-key",
+                "LLMADAPTER_REASONING": "on",
+            },
+        )
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert result.returncode == 0, result.stdout
+    assert "reasoning" not in requests[0]
+
+
+def test_dropped_socket_is_retried_instead_of_failing_the_lane(tmp_path: Path) -> None:
+    """A closed connection used to escape the retry and kill the lane outright."""
+    requests: list[dict[str, object]] = []
+    result = _serve(
+        _answering_handler(requests, drop_first=True),
+        tmp_path,
+        "--lanes",
+        "gpt-oss-20b",
+        "--deadline-secs",
+        "9",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert len(requests) == 2
+    report = json.loads(result.stdout)
+    assert report["results"][0]["terminal"] == "succeeded"
+
+
+def test_provider_stop_at_token_ceiling_is_reported_as_output_limit(
+    tmp_path: Path,
+) -> None:
+    """`succeeded` would make a truncated deliberation look like a result."""
+    requests: list[dict[str, object]] = []
+    result = _serve(
+        _answering_handler(requests, finish_reason="length"),
+        tmp_path,
+        "--lanes",
+        "gpt-oss-20b",
+    )
+    assert result.returncode == 1
+    report = json.loads(result.stdout)
+    assert report["results"][0]["terminal"] == "output_limit"
+    assert report["results"][0]["error"] == "provider_finish_length"

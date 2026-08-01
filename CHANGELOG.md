@@ -2,6 +2,42 @@
 
 ## Unreleased
 
+- **fix: free reasoning lanes return an answer instead of a truncated
+  deliberation.** OpenRouter's free reasoning models emit their chain of thought
+  as visible content, so at a 400-token ceiling they spent the whole budget
+  arguing about the worker contract and returned nothing usable — while the
+  envelope still said `succeeded`. Remote lanes now send OpenRouter's
+  `reasoning` field, off by default. Measured over 12 free lanes x 2 objectives:
+  median completion tokens 400 to 39, truncation 4/24 to 0/24, worker-contract
+  compliance 25% to 88%. Two lanes are measured exceptions and are configured as
+  such: `gpt-oss-20b` returns an empty completion when it receives
+  `enabled:false`, `nemotron-nano-9b-v2` needs `exclude`. `LLMADAPTER_REASONING=on`
+  restores the old request.
+- **fix: a dropped socket costs a retry, not the lane.** A connection closed
+  mid-burst throws out of `fetch` instead of returning a response, so it bypassed
+  the per-lane retry entirely — one transient close killed the lane in both `ask`
+  and `ask-v2`. Transport failures are now retried (`ask`: three attempts,
+  `ask-v2`: one extra attempt, and only while the controller deadline still
+  leaves room for a whole call). An abort or a real deadline stays terminal.
+- **fix: a provider that stops at the token ceiling reports `output_limit`.**
+  `ask-v2` reported `finish_reason: "length"` as `succeeded`, which made a
+  truncated deliberation look like a result. CLI lanes already reported the same
+  case as `output_limit`; the HTTP path now matches. `output_limit` is an
+  existing terminal value, so the AgentMaster envelope is unchanged.
+- **fix: removed the dead lane `poolside/laguna-m.1:free`.** OpenRouter answers
+  "No endpoints found" — it left the catalog, so the lane could only fail.
+- **feat: `doctor` verifies model ids, `doctor --probe` verifies availability.**
+  Plain `doctor` now checks every configured OpenRouter model against the live
+  catalog, which is what would have caught `laguna-m.1`. Catalog presence is not
+  availability, so `--probe` spends one 32-token call per free lane and reports
+  which lanes actually answer today.
+- **docs: worker-capsule wording kept, on measurement.** Two rewrites derived
+  from the local prompt-library corpus were A/B-tested against the incumbent
+  capsule on free lanes: an explicit "first token is STATUS:, no preamble, no
+  meta-commentary" contract (29% vs 45% compliance) and an anti-fabrication
+  oracle line (8/20 vs 11/20 compliance at 2.2x the tokens). Both lost. The
+  chain-of-thought problem was a request-parameter problem, not a wording
+  problem.
 - **fix: a busy provider is no longer reported as missing evidence.** Exit code
   4 from the evidence provider now yields the note `evidence_provider_busy`.
   The difference is operational: busy is worth retrying, unavailable is not, and

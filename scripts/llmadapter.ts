@@ -40,9 +40,15 @@ type Lane = {
   // lane carries a scraping workload, so it must never join a swarm because
   // somebody asked for "cli". Select it by name.
   optIn?: boolean;
+  // OpenRouter's unified reasoning control, sent verbatim as the `reasoning`
+  // request field. `null` sends no field at all.
+  reasoning?: Record<string, unknown> | null;
   parse?: (raw: string) => string;
 };
 
+// `poolside/laguna-m.1:free` was removed 2026-08-01: OpenRouter answers
+// "No endpoints found for poolside/laguna-m.1:free." It is gone from the
+// catalog, so the lane could only ever fail.
 const OR_FREE = [
   "nvidia/nemotron-3-super-120b-a12b:free",
   "nvidia/nemotron-3-ultra-550b-a55b:free",
@@ -55,11 +61,33 @@ const OR_FREE = [
   "google/gemma-4-26b-a4b-it:free",
   "inclusionai/ling-3.0-flash:free",
   "cohere/north-mini-code:free",
-  "poolside/laguna-m.1:free",
   "poolside/laguna-s-2.1:free",
   "poolside/laguna-xs-2.1:free",
 ];
 const OR_PAID = ["moonshotai/kimi-k3", "moonshotai/kimi-k2.7-code"];
+
+// Free reasoning lanes emit their chain of thought as visible content, so at a
+// 400-token ceiling they hand back a truncated deliberation instead of the
+// worker contract. Measured 2026-08-01, 12 free lanes x 2 objectives: turning
+// reasoning off cut median completion tokens from 400 to 39, truncation from
+// 4/24 to 0/24, and lifted contract compliance from 25% to 88%.
+//
+// The two exceptions are measured too: gpt-oss-20b answers with an empty
+// completion when it receives `enabled:false`, and nemotron-nano-9b-v2 needs
+// `exclude` — it keeps reasoning either way, so the only useful setting is the
+// one that stops the reasoning from eating the returned budget.
+//
+// LLMADAPTER_REASONING=on restores the old behaviour (no reasoning field).
+const OR_REASONING_OFF = process.env.LLMADAPTER_REASONING !== "on";
+const OR_REASONING_DEFAULT: Record<string, unknown> = { enabled: false };
+const OR_REASONING_OVERRIDE: Record<string, Record<string, unknown> | null> = {
+  "openai/gpt-oss-20b:free": null,
+  "nvidia/nemotron-nano-9b-v2:free": { exclude: true },
+};
+const orReasoning = (model: string): Record<string, unknown> | null => {
+  if (!OR_REASONING_OFF) return null;
+  return model in OR_REASONING_OVERRIDE ? OR_REASONING_OVERRIDE[model] : OR_REASONING_DEFAULT;
+};
 
 const ggcoderText = (raw: string) =>
   raw
@@ -75,7 +103,7 @@ const ggcoderText = (raw: string) =>
     .join("");
 
 const LANES: Lane[] = [
-  ...OR_FREE.map((m): Lane => ({ name: m.split("/")[1].replace(":free", ""), kind: "openrouter", class: "free", model: m })),
+  ...OR_FREE.map((m): Lane => ({ name: m.split("/")[1].replace(":free", ""), kind: "openrouter", class: "free", model: m, reasoning: orReasoning(m) })),
   ...OR_PAID.map((m): Lane => ({ name: m.split("/")[1], kind: "openrouter", class: "paid", model: m })),
   { name: "ollama-gemma4", kind: "ollama", class: "local", model: "gemma4-31b-fast" },
   {
@@ -722,6 +750,16 @@ function classify(msg: string): Result["error"] {
 // daily/credit quotas don't recover within a run; plain 429 rate-limits do
 const isHardQuota = (msg: string) => /quota reached|upgrade|credits|resets in/i.test(msg);
 
+// A dropped connection is the common failure when several lanes hit the same
+// host at once — Bun reports it as "The socket connection was closed
+// unexpectedly", other layers as ECONNRESET/EPIPE. It throws out of `fetch`
+// rather than returning a response, so before 2026-08-01 it bypassed the
+// per-lane retry entirely and one transient close killed the lane. Our own
+// AbortSignal deadline and a first-pass prune are real decisions, never retried.
+const isRetryableTransport = (msg: string) =>
+  !/abort|timeout/i.test(msg)
+  && /socket|econnreset|epipe|econnrefused|network|fetch failed|closed unexpectedly|stream/i.test(msg);
+
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const normPrompt = (p: string) => p.trim().replace(/\s+/g, " ").toLowerCase();
 
@@ -825,15 +863,30 @@ async function runLane(lane: Lane, prompt: string, timeoutMs: number | undefined
     let inTok: number | undefined, outTok: number | undefined, est = false;
     if (lane.kind === "openrouter") {
       let lastMsg = "";
-      for (let attempt = 0; attempt < 2; attempt++) {
+      // Three attempts, not two: a dropped socket now costs a retry instead of
+      // the whole lane, and it must not eat the retry a 429 needs.
+      for (let attempt = 0; attempt < 3; attempt++) {
         if (attempt > 0) await sleep(/429|rate.?limit/i.test(lastMsg) ? 5000 : 2000 + Math.random() * 1000);
-        const res = await fetch(OPENROUTER_URL, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${orKey()}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ model: lane.model, max_tokens: maxTokens, messages: [{ role: "user", content: sent }] }),
-          signal: AbortSignal.timeout(tmo),
-        });
-        const j: any = await res.json();
+        let res: Response;
+        let j: any;
+        try {
+          res = await fetch(OPENROUTER_URL, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${orKey()}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model: lane.model,
+              max_tokens: maxTokens,
+              messages: [{ role: "user", content: sent }],
+              ...(lane.reasoning ? { reasoning: lane.reasoning } : {}),
+            }),
+            signal: AbortSignal.timeout(tmo),
+          });
+          j = await res.json();
+        } catch (e: any) {
+          lastMsg = String(e);
+          if (!isRetryableTransport(lastMsg)) throw e;
+          continue;
+        }
         if (res.ok && !j.error) {
           answer = j.choices?.[0]?.message?.content ?? "";
           inTok = j.usage?.prompt_tokens;
@@ -1194,15 +1247,34 @@ async function runLaneV2(
     if (lane.kind === "openrouter") {
       const apiKey = orKey();
       callStarted = true;
-      const { response: res, json } = await fetchJsonBounded(OPENROUTER_URL, {
+      const request: RequestInit = {
         method: "POST",
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           model: lane.model,
           max_tokens: maxTokens,
           messages: [{ role: "user", content: sent }],
+          ...(lane.reasoning ? { reasoning: lane.reasoning } : {}),
         }),
-      }, deadlineAt, options.signal);
+      };
+      let res: Response;
+      let json: any;
+      for (let attempt = 0; ; attempt++) {
+        try {
+          ({ response: res, json } = await fetchJsonBounded(OPENROUTER_URL, request, deadlineAt, options.signal));
+          break;
+        } catch (error: any) {
+          // One bounded retry for a dropped socket, and only while the
+          // controller deadline still leaves room for a whole call. Everything
+          // else — prune, deadline, body cap — stays a terminal decision.
+          const retryable = attempt < 1
+            && !options.signal?.aborted
+            && isRetryableTransport(String(error))
+            && deadlineAt - Date.now() > 5_000;
+          if (!retryable) throw error;
+          await sleep(1_000 + Math.random() * 1_000);
+        }
+      }
       if (!res.ok || json.error) {
         return v2Failure(
           lane,
@@ -1213,10 +1285,17 @@ async function runLaneV2(
           true,
         );
       }
-      answer = json.choices?.[0]?.message?.content ?? "";
+      const choice = json.choices?.[0];
+      answer = choice?.message?.content ?? "";
       inputTokens = Number.isFinite(json.usage?.prompt_tokens) ? json.usage.prompt_tokens : null;
       outputTokens = Number.isFinite(json.usage?.completion_tokens) ? json.usage.completion_tokens : null;
       tokenSource = inputTokens !== null || outputTokens !== null ? "provider_reported" : "unknown";
+      // A provider that stopped at the token ceiling did not finish the worker
+      // contract, so `succeeded` would make a truncated deliberation look like
+      // a result. CLI lanes already report the same case as `output_limit`.
+      if (choice?.finish_reason === "length") {
+        return v2Failure(lane, maxTokens, "output_limit", "provider_finish_length", Date.now() - t0, true);
+      }
     } else if (lane.kind === "ollama") {
       callStarted = true;
       const { response: res, json } = await fetchJsonBounded(OLLAMA_URL, {
@@ -2330,6 +2409,40 @@ if (cmd === "ask-v2") {
     console.log(`${Bun.which(bin) ? "ok " : "MISS"} ${l.name.padEnd(14)} ${bin}`);
   }
   console.log(`${(() => { try { orKey(); return "ok "; } catch { return "MISS"; } })()} openrouter-key`);
+  // A model id that quietly leaves the catalog only fails at call time, inside
+  // a swarm, as a generic provider error. `laguna-m.1` sat dead in the lane
+  // table until 2026-08-01 for exactly that reason. Name it here instead.
+  try {
+    const catalog: any = await (await fetch("https://openrouter.ai/api/v1/models", {
+      signal: AbortSignal.timeout(15_000),
+    })).json();
+    const ids = new Set<string>((catalog.data ?? []).map((m: any) => m.id));
+    const remote = LANES.filter((l) => l.kind === "openrouter" && l.model);
+    const dead = remote.filter((l) => !ids.has(l.model!));
+    console.log(
+      `${dead.length === 0 ? "ok " : "MISS"} openrouter models ${remote.length - dead.length}/${remote.length} in catalog`
+      + (dead.length ? ` — gone: ${dead.map((l) => l.model).join(", ")}` : ""),
+    );
+  } catch {
+    console.log("MISS openrouter catalog (unreachable; model ids unverified)");
+  }
+  // Catalog presence is not availability: `google/gemma-4-31b-it:free` sat in
+  // the catalog on 2026-08-01 while every free call to it returned "Provider
+  // returned error". `--probe` spends one 32-token call per free lane to say
+  // which lanes actually answer today. Opt-in, because plain doctor is a
+  // filesystem check that must stay instant and free. 32 and not 4: a lane that
+  // opens with a short preamble is alive, and a 4-token ceiling would report it
+  // as empty.
+  if (flag("probe") === "true") {
+    console.log("--- live probe (one 32-token call per free lane, single sample) ---");
+    const probes = await Promise.all(
+      LANES.filter((l) => l.kind === "openrouter" && l.class === "free").map(async (l) => {
+        const r = await runLane(l, "Reply with the single character: 1", 45_000, false, 32);
+        return `${r.ok ? "ok " : "FAIL"} ${l.name.padEnd(40)} ${r.ok ? `${r.ms}ms` : (r.detail ?? r.error ?? "").slice(0, 60)}`;
+      }),
+    );
+    for (const line of probes) console.log(line);
+  }
   try {
     await fetch("http://localhost:11434/api/tags", { signal: AbortSignal.timeout(1500) });
     console.log("ok  ollama :11434");
@@ -2487,7 +2600,7 @@ if (cmd === "ask-v2") {
     "  ask \"<prompt>\" [--swarm] [--fanout] [--lanes …] [--first N] [--aggregate] [--verify] [--tier] [--json]",
     "  contract \"<worker objective>\" [--extended]",
     "  cache-export --out PATH.jsonl [--with-answers] [--duckdb PATH]",
-    "  lanes | doctor | stats",
+    "  lanes | doctor [--probe] | stats",
     "",
     "  --oracle: exit 0 = PASS. Gets LLMADAPTER_ANSWER_PATH + LLMADAPTER_RUN_DIR;",
     "            --oracle-env-prefix NAME also exports NAME_ANSWER_PATH/NAME_RUN_DIR",
