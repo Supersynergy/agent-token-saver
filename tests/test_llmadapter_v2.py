@@ -955,6 +955,92 @@ def test_http_response_body_is_bounded_before_json_parse(tmp_path: Path) -> None
     assert report["results"][0]["error"] == "http_body_limit"
 
 
+def write_ledger(home: Path, rows: list[tuple[str, int, int]]) -> None:
+    """Seed (lane, ok_calls, failed_calls) into this month's llmadapter ledger."""
+    ledger = home / ".agent-token-saver" / "ledger"
+    ledger.mkdir(parents=True, exist_ok=True)
+    now = time.gmtime()
+    stamp = time.strftime("%Y-%m-%dT%H:%M:%S.000Z", now)
+    month = time.strftime("%Y%m", now)
+    lines = []
+    for lane, ok_calls, failed_calls in rows:
+        for ok in [True] * ok_calls + [False] * failed_calls:
+            lines.append(json.dumps({"ts": stamp, "lane": lane, "ok": ok, "ms": 10}))
+    (ledger / f"llmadapter-{month}.jsonl").write_text("\n".join(lines) + "\n")
+
+
+# `local` also selects the built-in ollama lane. Point it at a closed localhost
+# port so it fails immediately instead of waiting: still local, so the remote
+# gate stays out of the way, and the ledger decides where it lands.
+DEAD_OLLAMA = {"LLMADAPTER_OLLAMA_URL": "http://127.0.0.1:1/api/generate"}
+
+
+def test_class_selector_prefers_lanes_that_answered_recently(
+    tmp_path: Path,
+    probe: Path,
+) -> None:
+    """The 3-lane cap decides who runs; array order would always pick 1-3."""
+    names = [f"fixture-{number}" for number in range(1, 5)]
+    install_lanes(tmp_path, probe, [(name, "local", "ok") for name in names])
+    write_ledger(
+        tmp_path,
+        [
+            ("ollama-gemma4", 0, 9),
+            ("fixture-1", 0, 9),
+            ("fixture-2", 0, 9),
+            ("fixture-3", 6, 1),
+            ("fixture-4", 8, 0),
+        ],
+    )
+    result = run_v2(
+        tmp_path, "--stdin", "--swarm", "--lanes", "local", "--no-cache", extra=DEAD_OLLAMA
+    )
+
+    assert result.returncode == 0, result.stdout
+    report = json.loads(result.stdout)
+    assert [item["lane"] for item in report["results"]] == [
+        "fixture-4",
+        "fixture-3",
+        # Equal scores keep array order, so the first dead lane wins the slot.
+        "ollama-gemma4",
+    ]
+
+
+def test_named_lanes_keep_the_callers_order(tmp_path: Path, probe: Path) -> None:
+    """`--lanes a,b,c` is the caller stating an order, not asking for the best."""
+    names = [f"fixture-{number}" for number in range(1, 4)]
+    install_lanes(tmp_path, probe, [(name, "local", "ok") for name in names])
+    write_ledger(tmp_path, [("fixture-1", 0, 9), ("fixture-3", 9, 0)])
+    result = run_v2(tmp_path, "--stdin", "--swarm", "--lanes", ",".join(names), "--no-cache")
+
+    assert result.returncode == 0, result.stdout
+    report = json.loads(result.stdout)
+    assert [item["lane"] for item in report["results"]] == names
+
+
+def test_lane_health_ordering_can_be_switched_off(tmp_path: Path, probe: Path) -> None:
+    names = [f"fixture-{number}" for number in range(1, 5)]
+    install_lanes(tmp_path, probe, [(name, "local", "ok") for name in names])
+    write_ledger(tmp_path, [("fixture-1", 0, 9), ("fixture-4", 9, 0)])
+    result = run_v2(
+        tmp_path,
+        "--stdin",
+        "--swarm",
+        "--lanes",
+        "local",
+        "--no-cache",
+        extra={**DEAD_OLLAMA, "LLMADAPTER_LANE_HEALTH": "0"},
+    )
+
+    assert result.returncode == 0, result.stdout
+    report = json.loads(result.stdout)
+    assert [item["lane"] for item in report["results"]] == [
+        "ollama-gemma4",
+        "fixture-1",
+        "fixture-2",
+    ]
+
+
 def _answering_handler(
     requests: list[dict[str, object]],
     *,

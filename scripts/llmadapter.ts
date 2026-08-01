@@ -46,9 +46,11 @@ type Lane = {
   parse?: (raw: string) => string;
 };
 
-// `poolside/laguna-m.1:free` was removed 2026-08-01: OpenRouter answers
-// "No endpoints found for poolside/laguna-m.1:free." It is gone from the
-// catalog, so the lane could only ever fail.
+// Two lanes were removed 2026-08-01. `poolside/laguna-m.1:free` is gone from
+// the catalog ("No endpoints found"). `google/gemma-4-31b-it:free` is still IN
+// the catalog with 18 endpoints but every free call returns "Provider returned
+// error" — 8/8 across a session. Catalog presence is not availability; run
+// `doctor --probe` before adding either back.
 const OR_FREE = [
   "nvidia/nemotron-3-super-120b-a12b:free",
   "nvidia/nemotron-3-ultra-550b-a55b:free",
@@ -57,7 +59,6 @@ const OR_FREE = [
   "nvidia/nemotron-nano-9b-v2:free",
   "nvidia/nemotron-nano-12b-v2-vl:free",
   "openai/gpt-oss-20b:free",
-  "google/gemma-4-31b-it:free",
   "google/gemma-4-26b-a4b-it:free",
   "inclusionai/ling-3.0-flash:free",
   "cohere/north-mini-code:free",
@@ -1532,35 +1533,111 @@ async function race(items: (() => Promise<Result>)[], cap: number, first: number
   });
 }
 
+// A class selector hands back more lanes than the worker cap takes, so the cap
+// decides which lanes actually run — and in array order that was always the
+// first three. Meanwhile the ledger already records ok/failed per lane on every
+// call, so the health of every lane is on disk and was never read. Ordering the
+// class selectors by it means a provider outage sinks that lane and a healthy
+// one takes the slot, instead of the swarm losing a third of its capacity while
+// ten working lanes sit unused.
+//
+// Only class selectors are reordered. `--lanes a,b,c` is the caller stating an
+// order, and a controller comparing two named lanes must get those two lanes.
+const LANE_HEALTH_WINDOW_MS = 7 * 24 * 3600 * 1000;
+const LANE_HEALTH_MAX_RECORDS = 4_000;
+
+function laneHealth(): Map<string, number> {
+  const scores = new Map<string, number>();
+  if (process.env.LLMADAPTER_LANE_HEALTH === "0") return scores;
+  try {
+    const month = new Date().toISOString().slice(0, 7).replace("-", "");
+    const path = join(LEDGER_DIR, `llmadapter-${month}.jsonl`);
+    if (!existsSync(path)) return scores;
+    const lines = readFileSync(path, "utf8").trim().split("\n").slice(-LANE_HEALTH_MAX_RECORDS);
+    const cutoff = Date.now() - LANE_HEALTH_WINDOW_MS;
+    const tally = new Map<string, { calls: number; ok: number }>();
+    for (const line of lines) {
+      let row: any;
+      try { row = JSON.parse(line); } catch { continue; }
+      // A cache hit says nothing about whether the provider is up today.
+      if (row.cached) continue;
+      if (Date.parse(row.ts) < cutoff) continue;
+      const t = tally.get(row.lane) ?? { calls: 0, ok: 0 };
+      t.calls++;
+      if (row.ok) t.ok++;
+      tally.set(row.lane, t);
+    }
+    // Laplace smoothing, so one lucky call does not outrank a long good record
+    // and a lane with no history lands at 0.5 — between proven-good and
+    // proven-broken, which is exactly what "unknown" deserves.
+    for (const [lane, t] of tally) scores.set(lane, (t.ok + 1) / (t.calls + 2));
+  } catch {
+    // Health is an optimisation. A missing or corrupt ledger means array order.
+  }
+  return scores;
+}
+
 function pickLanes(spec: string): Lane[] {
   // `all` and the class selectors stay free of opt-in lanes: asking for "cli"
   // must not silently start a scraping workload. Naming the lane still works.
-  if (spec === "all") return LANES.filter((l) => !l.optIn);
   const classes = ["free", "paid", "local", "cli"];
   const parts = spec.split(",").map((s) => s.trim());
-  return LANES.filter((l) =>
-    parts.some((p) => (classes.includes(p) ? l.class === p && !l.optIn : l.name === p || l.model === p)));
+  const selected = spec === "all"
+    ? LANES.filter((l) => !l.optIn)
+    : LANES.filter((l) =>
+      parts.some((p) => (classes.includes(p) ? l.class === p && !l.optIn : l.name === p || l.model === p)));
+  if (spec !== "all" && !parts.every((p) => classes.includes(p))) return selected;
+  const health = laneHealth();
+  if (health.size === 0) return selected;
+  // Stable: equal scores keep their array order, so the same ledger always
+  // yields the same lane list.
+  return selected
+    .map((lane, index) => ({ lane, index, score: health.get(lane.name) ?? 0.5 }))
+    .sort((a, b) => (b.score - a.score) || (a.index - b.index))
+    .map((entry) => entry.lane);
+}
+
+// The vendor prefix of an OpenRouter id ("nvidia/nemotron-…" -> "nvidia").
+// Two lanes from one vendor share a family, a tokenizer and usually an outage,
+// so they do not cross-check each other.
+const laneFamily = (lane: Lane) => lane.model?.split("/")[0] ?? lane.name;
+
+// Aggregation and verification are single-lane calls, so one dead lane loses the
+// whole step — and both used to name a fixed lane. `gpt-oss-20b` was the pinned
+// verifier while the ledger recorded it at 5/10. Pick by measured health
+// instead, and let the caller pin one by name when they want a fixed comparison.
+function healthiestLane(exclude?: Lane): Lane {
+  const health = laneHealth();
+  const candidates = LANES
+    .filter((l) => l.class === "free" && l.kind === "openrouter")
+    .filter((l) => !exclude || laneFamily(l) !== laneFamily(exclude))
+    .map((lane, index) => ({ lane, index, score: health.get(lane.name) ?? 0.5 }))
+    .sort((a, b) => (b.score - a.score) || (a.index - b.index));
+  return candidates[0]?.lane ?? LANES[0];
 }
 
 async function aggregate(prompt: string, results: Result[], maxTokens: number): Promise<string> {
   const okR = results.filter((r) => r.ok);
   const body = okR.map((r) => `[${r.lane}]: ${r.answer}`).join("\n");
-  const agg = await runLane(LANES[0], // nemotron-super, fastest free quality rung
+  const agg = await runLane(aggregatorLane(),
     `${okR.length} Modelle beantworteten parallel: "${prompt}". Dedupliziere zu den besten unterschiedlichen Punkten, je 1 Zeile deutsch, nach Praxiswert sortiert:\n${body}`,
     undefined, false, maxTokens * 2);
   return agg.ok ? agg.answer! : `(Aggregation fehlgeschlagen: ${agg.error})`;
 }
 
+function aggregatorLane(): Lane {
+  const want = process.env.LLMADAPTER_AGGREGATE_LANE;
+  return (want ? LANES.find((l) => l.name === want) : undefined) ?? healthiestLane();
+}
+
 // Fresh-context verifier (Anthropic Fable-5 multi-agent pattern: an
-// independent fresh-context verifier beats self-critique). Runs one strong
-// lane to check the answer; returns whether it passed + the verifier text.
-// The verifier must be INDEPENDENT of the aggregator (LANES[0] = nemotron-super):
-// a different model family gives a real cross-check and avoids rate-limiting the
-// same lane twice back-to-back. Default gpt-oss-20b; override via env.
-const VERIFY_DEFAULT = "gpt-oss-20b";
+// independent fresh-context verifier beats self-critique). Runs one strong lane
+// to check the answer; returns whether it passed + the verifier text. The
+// verifier must be INDEPENDENT of the aggregator: a different model family gives
+// a real cross-check and avoids rate-limiting the same lane twice back-to-back.
 function strongLane(): Lane {
-  const want = process.env.LLMADAPTER_VERIFY_LANE ?? VERIFY_DEFAULT;
-  return LANES.find((l) => l.name === want) ?? LANES.find((l) => l.name === "gemma-4-31b-it") ?? LANES[1] ?? LANES[0];
+  const want = process.env.LLMADAPTER_VERIFY_LANE;
+  return (want ? LANES.find((l) => l.name === want) : undefined) ?? healthiestLane(aggregatorLane());
 }
 async function verify(question: string, answer: string, maxTokens: number): Promise<{ ok: boolean; text: string }> {
   const p = `You are an independent verifier with fresh context. Check the proposed answer against the question. If it is correct and complete, reply exactly: VERIFIED. If it is wrong or incomplete, reply: CORRECTION: <the correct answer>.\n\nQuestion: ${question}\n\nProposed answer:\n${answer}`;
@@ -2152,7 +2229,9 @@ type CouncilOutput = {
 };
 
 async function councilRun(argv: string[]): Promise<CouncilOutput> {
-  let synthLaneName = process.env.LLMADAPTER_COUNCIL_LANE ?? VERIFY_DEFAULT;
+  // Synthesis is a single call, so a pinned dead lane loses the whole council.
+  // Same measured pick as the verifier, and still overridable by name.
+  let synthLaneName = process.env.LLMADAPTER_COUNCIL_LANE ?? strongLane().name;
   const passthrough: string[] = [];
   for (let index = 0; index < argv.length; index++) {
     if (argv[index] === "--synth-lane") {
@@ -2442,6 +2521,18 @@ if (cmd === "ask-v2") {
       }),
     );
     for (const line of probes) console.log(line);
+  }
+  // The order a class selector will actually use, so "why did my swarm pick
+  // those three lanes" has an answer that does not require reading the ledger.
+  const health = laneHealth();
+  if (health.size > 0) {
+    const ranked = pickLanes("free").slice(0, SWARM_MAX_WORKERS);
+    console.log(
+      `ok  lane health from ledger (${health.size} lanes, ${LANE_HEALTH_WINDOW_MS / 86_400_000}d) `
+      + `— \`--lanes free\` runs: ${ranked.map((l) => l.name).join(", ")}`,
+    );
+  } else {
+    console.log("ok  lane health: no ledger records yet, class selectors use table order");
   }
   try {
     await fetch("http://localhost:11434/api/tags", { signal: AbortSignal.timeout(1500) });
