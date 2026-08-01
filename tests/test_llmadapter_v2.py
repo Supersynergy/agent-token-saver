@@ -1013,6 +1013,22 @@ def test_contract_modes_replace_the_verdict_shape(
     assert "Oracle: answer the objective" in packet
 
 
+def test_swarm_calls_reach_the_health_ledger(tmp_path: Path, probe: Path) -> None:
+    """Lane health decides which lanes a class selector runs, so it has to learn
+    from ask-v2 — it was fed by plain `ask` and nothing else until 2026-08-01."""
+    install_lanes(tmp_path, probe, [("fixture-one", "local", "ok")])
+    result = run_v2(tmp_path, "--stdin", "--swarm", "--lanes", "fixture-one", "--no-cache")
+    assert result.returncode == 0, result.stdout
+
+    month = time.strftime("%Y%m", time.gmtime())
+    ledger = tmp_path / ".agent-token-saver" / "ledger" / f"llmadapter-{month}.jsonl"
+    rows = [json.loads(line) for line in ledger.read_text().splitlines() if line]
+    assert [r["lane"] for r in rows] == ["fixture-one"]
+    assert rows[0]["ok"] is True
+    # The prompt must not leak into an observability file.
+    assert "private prompt marker 97f91" not in ledger.read_text()
+
+
 def test_unknown_contract_is_rejected(tmp_path: Path) -> None:
     result = run_v2(tmp_path, "--stdin", "--swarm", "--contract", "poem", "--no-cache")
     assert result.returncode == 64

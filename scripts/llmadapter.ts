@@ -1198,6 +1198,27 @@ async function fetchJsonBounded(
   }
 }
 
+// The ledger is a local JSONL file, never part of the wire envelope, so writing
+// it from v2 is invisible to AgentMaster. It was v1-only until 2026-08-01, which
+// meant lane health — the thing that now decides which lanes a class selector
+// runs — learned from `ask` and nothing at all from the swarm that does the real
+// work. A `pruned` lane is not evidence about the provider and stays out.
+function v2Ledger(result: InternalResultV2): InternalResultV2 {
+  if (result.terminal !== "pruned") {
+    ledgerWrite({
+      lane: result.lane,
+      model: result.model,
+      ok: result.ok,
+      ms: result.ms,
+      cached: result.terminal === "cached" || undefined,
+      in_tokens: result.input_tokens ?? undefined,
+      out_tokens: result.output_tokens ?? undefined,
+      error: result.ok ? undefined : "exec",
+    });
+  }
+  return result;
+}
+
 function v2Failure(
   lane: Lane,
   maxTokens: number,
@@ -1206,7 +1227,7 @@ function v2Failure(
   ms: number,
   started: boolean,
 ): InternalResultV2 {
-  return {
+  return v2Ledger({
     lane: lane.name,
     model: lane.model,
     kind: lane.kind,
@@ -1221,7 +1242,7 @@ function v2Failure(
     max_tokens: maxTokens,
     cap_mode: capMode(lane),
     call_started: started,
-  };
+  });
 }
 
 type LaneRunOptions = {
@@ -1291,7 +1312,7 @@ async function runLaneV2(
         && saved.answer.length > 0
         && Buffer.byteLength(saved.answer, "utf8") <= V2_CACHE_ANSWER_MAX_BYTES
       ) {
-        return {
+        return v2Ledger({
           lane: lane.name,
           model: lane.model,
           kind: lane.kind,
@@ -1307,7 +1328,7 @@ async function runLaneV2(
           max_tokens: maxTokens,
           cap_mode: capMode(lane),
           call_started: false,
-        };
+        });
       }
     } catch {
       // Corrupt cache entries are misses. The live call remains authoritative.
@@ -1558,7 +1579,7 @@ async function runLaneV2(
         // Cache is optional and never changes the live result.
       }
     }
-    return result;
+    return v2Ledger(result);
   } catch (error: any) {
     if (options.signal?.aborted) {
       return v2Failure(lane, maxTokens, "pruned", "pruned_in_flight", Date.now() - t0, callStarted);

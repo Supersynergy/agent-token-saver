@@ -12,6 +12,20 @@
   and print the dispatchable set; `goal verbs` lists them. Test check 37 covers
   syntax, `goal doctor`, verb dispatch and the unknown-verb guard.
 
+- **fix: swarm calls now reach the health ledger.** `ledgerWrite` ran only on the
+  v1 `ask` path, so lane health — the thing that decides which lanes a class
+  selector runs — learned from `ask` and nothing at all from `ask-v2`, which is
+  where the real traffic is. `runLaneV2` writes on success, failure and cache
+  hit; a `pruned` lane is not evidence about a provider and stays out. The
+  ledger is a local JSONL file, never part of the wire envelope.
+- **docs: the surface an agent actually reads now names the measured band.**
+  `SKILL.md` still described 23 lanes and only plain `ask`; the prompt hook's
+  `agent_cost_route` told agents to use "free/local llmadapter proposals", which
+  is now the measurably worse default. Both name `--lanes cheap --allow-paid`
+  with its numbers, and the hook keeps it behind the user's consent to spend.
+  End-to-end over five closed-form tasks, three reps, majority vote of a 3-lane
+  swarm: `free` 8/15, `cheap` 15/15 — free scored 0/3 on two of the five tasks.
+  One measured cheap swarm costs $0.000127.
 - **feat: `--contract verdict|prose|json` — the swarm answers in the shape you
   asked for.** The capsule was built for verification, so every worker had to
   reply `STATUS: PASS|FAIL|BLOCKED`, which made the v2 swarm unusable for prose

@@ -33,13 +33,7 @@ def test_trivial_prompt_emits_nothing(tmp_path: Path) -> None:
 
 
 def test_hidden_fallback_is_gated_to_token_tasks(tmp_path: Path) -> None:
-    skill = (
-        tmp_path
-        / ".agent-token-saver"
-        / "skills"
-        / "agent-token-saver"
-        / "SKILL.md"
-    )
+    skill = tmp_path / ".agent-token-saver" / "skills" / "agent-token-saver" / "SKILL.md"
     skill.parent.mkdir(parents=True)
     skill.write_text("---\nname: agent-token-saver\n---\n")
 
@@ -53,13 +47,7 @@ def test_hidden_fallback_is_gated_to_token_tasks(tmp_path: Path) -> None:
 
 
 def test_explicit_token_saver_loads_canonical_skill(tmp_path: Path) -> None:
-    skill = (
-        tmp_path
-        / ".agent-token-saver"
-        / "skills"
-        / "agent-token-saver"
-        / "SKILL.md"
-    )
+    skill = tmp_path / ".agent-token-saver" / "skills" / "agent-token-saver" / "SKILL.md"
     skill.parent.mkdir(parents=True)
     skill.write_text("---\nname: agent-token-saver\n---\n")
 
@@ -71,13 +59,7 @@ def test_explicit_token_saver_loads_canonical_skill(tmp_path: Path) -> None:
 
 
 def test_empty_router_falls_back_for_token_tasks(tmp_path: Path) -> None:
-    skill = (
-        tmp_path
-        / ".agent-token-saver"
-        / "skills"
-        / "agent-token-saver"
-        / "SKILL.md"
-    )
+    skill = tmp_path / ".agent-token-saver" / "skills" / "agent-token-saver" / "SKILL.md"
     skill.parent.mkdir(parents=True)
     skill.write_text("---\nname: agent-token-saver\n---\n")
     router = tmp_path / "router.py"
@@ -90,13 +72,7 @@ def test_empty_router_falls_back_for_token_tasks(tmp_path: Path) -> None:
 
 
 def test_token_saver_router_result_is_pinned_to_canonical_copy(tmp_path: Path) -> None:
-    canonical = (
-        tmp_path
-        / ".agent-token-saver"
-        / "skills"
-        / "agent-token-saver"
-        / "SKILL.md"
-    )
+    canonical = tmp_path / ".agent-token-saver" / "skills" / "agent-token-saver" / "SKILL.md"
     stale = tmp_path / ".agents" / "skills" / "agent-token-saver" / "SKILL.md"
     canonical.parent.mkdir(parents=True)
     stale.parent.mkdir(parents=True)
@@ -115,13 +91,7 @@ def test_token_saver_router_result_is_pinned_to_canonical_copy(tmp_path: Path) -
 
 
 def test_explicit_skill_override_wins_even_for_context_prompt(tmp_path: Path) -> None:
-    canonical = (
-        tmp_path
-        / ".agent-token-saver"
-        / "skills"
-        / "agent-token-saver"
-        / "SKILL.md"
-    )
+    canonical = tmp_path / ".agent-token-saver" / "skills" / "agent-token-saver" / "SKILL.md"
     selected = tmp_path / ".agents" / "skills" / "youtube-trends" / "SKILL.md"
     canonical.parent.mkdir(parents=True)
     selected.parent.mkdir(parents=True)
@@ -302,4 +272,8 @@ def test_deep_research_gets_safe_low_cost_route(tmp_path: Path) -> None:
 
     assert "agent_cost_route" in context
     assert "free/local llmadapter" in context
+    # The cheap band is measurably better than free, so the route has to name it
+    # — but only ever behind the user's consent to spend.
+    assert "--lanes cheap --allow-paid" in context
+    assert "consent to spend" in context
     assert "Never send PII" in context

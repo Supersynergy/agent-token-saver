@@ -120,7 +120,9 @@ def routed_skill(name: str, raw_path: str) -> Path | None:
     frontmatter = ""
     if lines and lines[0].strip() == "---":
         try:
-            closing = next(index for index, line in enumerate(lines[1:], start=1) if line.strip() == "---")
+            closing = next(
+                index for index, line in enumerate(lines[1:], start=1) if line.strip() == "---"
+            )
             frontmatter = "\n".join(lines[1:closing])
         except StopIteration:
             pass
@@ -171,13 +173,7 @@ def emit(context: str) -> None:
 
 
 def emit_token_saver_fallback(*, load_skill: bool = False) -> bool:
-    fallback = (
-        Path.home()
-        / ".agent-token-saver"
-        / "skills"
-        / "agent-token-saver"
-        / "SKILL.md"
-    )
+    fallback = Path.home() / ".agent-token-saver" / "skills" / "agent-token-saver" / "SKILL.md"
     fallback = routed_skill("agent-token-saver", str(fallback))
     if fallback is None:
         return False
@@ -206,8 +202,10 @@ def emit_low_cost_recon_route() -> None:
         "<agent_cost_route>"
         "For a read-only, independently divisible research lane expected to take over five "
         "minutes: first make one 300-700-token capsule with an oracle, then use at most three "
-        "free/local llmadapter proposals. Keep source verification, synthesis, and the final "
-        "decision with the controller. Never send PII, credentials, or use this route for "
+        "free/local llmadapter proposals. With the user's consent to spend, `--lanes cheap "
+        "--allow-paid` is the measured band: 9/9 correct on closed-form tasks against 6-7/9 "
+        "free, for about $0.0005 per nine calls. Keep source verification, synthesis, and the "
+        "final decision with the controller. Never send PII, credentials, or use this route for "
         "mutations, security, legal, medical, financial, or authoritative-final claims."
         "</agent_cost_route>"
     )
@@ -222,9 +220,7 @@ def main() -> int:
     if len(prompt) < 10 or TRIVIAL.fullmatch(prompt):
         return 0
     explicit_skill = bool(EXPLICIT_SKILL.search(prompt))
-    explicit_token_saver = bool(
-        re.search(r"\$agent-token-saver\b", prompt, re.IGNORECASE)
-    )
+    explicit_token_saver = bool(re.search(r"\$agent-token-saver\b", prompt, re.IGNORECASE))
     if ATS_TRIGGER.search(prompt) and not explicit_skill and emit_token_saver_fallback():
         return 0
     router = router_path()

@@ -199,7 +199,7 @@ Start with `lean`. Change profiles only for a concrete need.
 | Profile | Best for | Visible surface |
 |---|---|---|
 | `minimal` | portable CLI and ledger | no visible skill or prompt hook |
-| `lean` | normal daily coding | prompt gate, Stop guard, optional projection CLIs |
+| `lean` | normal daily coding | compact host default, prompt gate, Stop guard, optional projection CLIs |
 | `teams` | independent parallel lanes | Lean plus bounded worker-capsule contract |
 | `heavy` | one explicit deep session | Lean plus graph and large-context tools |
 
@@ -207,14 +207,17 @@ Start with `lean`. Change profiles only for a concrete need.
 
 | Host | Integration |
 |---|---|
-| Codex CLI | prompt gate and Stop guard |
-| Claude Code | prompt gate, Stop guard, RTK when present, worker capsule |
-| Hermes | installed Agent Skill |
-| GG Coder | installed Markdown skill |
+| Codex CLI | compact global default, prompt gate and Stop guard |
+| Claude Code | compact global default, prompt gate, Stop guard, RTK when present, worker capsule |
+| Hermes | compact default in an existing `SOUL.md` plus installed Agent Skill |
+| GG Coder | compact home `AGENTS.md` default plus installed Markdown skill |
 | Other agents | repo-local `SKILL.md` plus CLI/JSON |
 
-See [Hooks and agents](docs/HOOKS_AND_AGENTS.md). Files on disk are not proof of
-active wiring; the doctor checks the installed paths and hooks.
+The installer never creates a new Hermes `SOUL.md`, because that would replace
+Hermes' built-in identity; it safely merges the default when the user's
+`SOUL.md` already exists. See [Hooks and agents](docs/HOOKS_AND_AGENTS.md).
+Files on disk are not proof of active wiring; the doctor checks installed
+paths, hooks, and the exact managed default blocks.
 
 ## AgentMaster protocol
 
@@ -234,6 +237,29 @@ printf '%s' "$TASK" | llmadapter ask-v2 \
   --stdin --swarm --lanes local --no-cache \
   --usage-out run-accounting.json
 ```
+
+`--contract verdict|prose|json` picks the answer shape. `verdict` is the default
+and is what a controller gates on:
+`STATUS: PASS|FAIL|BLOCKED; EVIDENCE: …; HANDOFF: …`. Use `prose` or `json` for
+work that is not a verification — a verdict shape around a prose objective makes
+workers argue about format instead of answering.
+
+`--lanes` takes a lane name or a selector: `free`, `cheap`, `paid`, `local`,
+`cli`, `all`. `cheap` is the measured band of paid models that cost a rounding
+error — over closed-form tasks with known answers, three samples each,
+`openai/gpt-oss-120b` scored 9/9 for $0.00046 per nine calls and
+`openai/gpt-5.6-luna` 9/9 for $0.00093, against 6-7/9 for the best free lanes.
+It is a selector keyword and not a class, so the wire `class` stays `paid` and
+`--allow-paid` still applies.
+
+A class selector is ordered by measured lane health — a 7-day Laplace-smoothed
+success rate over the call ledger — so a provider outage sinks that lane and a
+working one takes the worker slot. An explicit `--lanes a,b,c` keeps the
+caller's order. `LLMADAPTER_LANE_HEALTH=0` restores table order.
+`llmadapter doctor` reports which lanes a selector will actually run and checks
+every configured model id against the live OpenRouter catalog; `doctor --probe`
+adds one 32-token call per free lane, because a model can sit in the catalog and
+still return a provider error on every request.
 
 `--cap` is the total selected-worker limit: at most three normally, or at most
 64 with explicit `--fanout`. OpenRouter is always remote; CLI agents are remote

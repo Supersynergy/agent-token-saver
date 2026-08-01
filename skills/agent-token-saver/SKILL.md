@@ -40,20 +40,56 @@ Sessions bulk-import into the main brain under `cli-log://`, which `synx hybrid`
 searches in ~0s (the corpus sidecar is opt-in and slower). Job installed as
 `de.supersynergy.synapse-cli-log-ingest`. Do not re-derive what recall returns.
 
-## Fan-out engine — `llmadapter` (23 lanes, one interface)
+## Fan-out engine — `llmadapter` (28 lanes, one interface)
 
 ```bash
-llmadapter ask "<prompt>" --json                 # single cheapest lane
-llmadapter ask "<prompt>" --aggregate            # consensus merge
-llmadapter ask "<prompt>" --tier                 # cheap proposers → aggregate → fresh verify
-llmadapter ask "<prompt>" --verify               # independent fresh-context verifier gate
-llmadapter lanes | doctor | stats                # inventory / health / usage
+llmadapter ask-v2 --stdin --swarm --lanes cheap --allow-remote --allow-paid \
+  --contract prose --max-tokens 500 --deadline-secs 180   # the default swarm
+llmadapter ask "<prompt>" --json                 # single lane, no capsule
+llmadapter ask "<prompt>" --tier                 # proposers → aggregate → fresh verify
+llmadapter lanes | doctor [--probe] | stats      # inventory / health / usage
 ```
 
-Lane classes: `free` (14 OpenRouter), `paid` (kimi), `local` (ollama),
-`cli` (codex, agy, ggcoder, claude-haiku, devin, cursor). `--tier` is the
-pilotfish/Anthropic pattern in one flag: cheap proposers → strong aggregate →
-verifier from a **different model family** so the cross-check is real.
+`ask-v2 --swarm` is the one to reach for: deadline, accounting, per-lane cache,
+first-pass pruning, oracle gate, ledger. Plain `ask` has none of that.
+
+**Start with `--lanes cheap`, not `free`.** Measured 2026-08-01 over closed-form
+tasks with known answers, three samples each:
+
+| selector | models | correct | cost |
+|---|---|---|---|
+| `cheap` | gpt-oss-120b, gpt-5.6-luna, ling-2.6-flash | 9/9, 9/9, 7/9 | $0.00046 per 9 calls |
+| `free` | nemotron / gemma / laguna `:free` | 6-7/9 | $0 |
+
+Free lanes buy a 20-30 point correctness drop to save five thousandths of a
+cent. `cheap` is a selector keyword over the paid class, so it needs
+`--allow-paid`; the wire `class` stays `paid`.
+
+`--contract verdict|prose|json` picks the answer shape. `verdict` is the default
+(`STATUS: PASS|FAIL|BLOCKED; EVIDENCE: …; HANDOFF: …`) and is what a controller
+gates on. Use `prose` or `json` for anything that is not a verification — the
+verdict shape used to make workers argue about format instead of answering.
+
+Lane selectors: `free` · `cheap` · `paid` (kimi) · `local` (ollama) ·
+`cli` (codex, agy, ggcoder, claude-haiku, devin, cursor) · `all` · or lane names.
+A class selector is ordered by **measured health** from the ledger (7-day
+Laplace-smoothed success rate), so a provider outage sinks that lane and a
+working one takes the slot; `--lanes a,b,c` keeps your order.
+`LLMADAPTER_LANE_HEALTH=0` opts out. `doctor` prints the three lanes `--lanes
+free` will actually run; `doctor --probe` spends one 32-token call per free lane
+to show which answer today.
+
+A model id that leaves the catalog fails only at call time, as a generic
+provider error — check before trusting any lane list:
+
+```bash
+curl -s https://openrouter.ai/api/v1/models | jq -r '.data[].id' | grep :free
+```
+
+`--tier` is the pilotfish/Anthropic pattern in one flag: proposers → strong
+aggregate → verifier from a **different model family** so the cross-check is
+real. Aggregator, verifier and council synthesis all pick by health now; pin one
+with `LLMADAPTER_AGGREGATE_LANE` / `_VERIFY_LANE` / `_COUNCIL_LANE`.
 Private lanes live in `~/.agent-token-saver/local-lanes.json`, outside the
 repo — never committed, never deployed.
 
