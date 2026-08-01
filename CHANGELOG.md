@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- **feat: `--contract verdict|prose|json` — the swarm answers in the shape you
+  asked for.** The capsule was built for verification, so every worker had to
+  reply `STATUS: PASS|FAIL|BLOCKED`, which made the v2 swarm unusable for prose
+  and structured output; the workaround was to fall back to plain `ask` and lose
+  deadlines, accounting, first-pass and the ledger. What makes a worker cheap is
+  the capsule — one objective, no peer chatter, no transcript, evidence
+  discipline — not the shape of its answer. `verdict` stays the default and stays
+  byte-identical, so AgentMaster, which passes no `--contract`, sees nothing new.
+  Under `prose`/`json` with no evidence block the oracle line changes too:
+  demanding a verdict from evidence that was never supplied made `gpt-oss-120b`
+  answer "I do not have the evidence" instead of the objective.
 - **feat: a `cheap` lane band, because frontier output stopped being expensive.**
   `openai/gpt-5.6-luna` is $0.10/$0.60 per million tokens with a 1.05M window;
   `moonshotai/kimi-k3`, the lane table's only other non-free option, is

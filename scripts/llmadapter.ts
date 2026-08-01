@@ -257,8 +257,24 @@ const ORACLE_TIMEOUT_MS = 2_000;
 const V2_MAX_PROMPT_BYTES = 1800;
 const V2_PROTOCOL = 2;
 const V2_CAPSULE_VERSION = "worker-v2.1";
-const SWARM_RESULT_CONTRACT =
-  "Return only (max 500 tokens): STATUS: PASS|FAIL|BLOCKED; EVIDENCE: exact path or command+exit; HANDOFF: none or one precise question.";
+// The swarm capsule was built for verification, so every worker had to answer
+// in a PASS/FAIL verdict — which makes it unusable for the prose and structured
+// work a swarm is equally good at. The capsule (one objective, no peer chatter,
+// no transcript, evidence discipline) is what makes a worker cheap; the shape of
+// its answer is a separate decision. `--contract` picks the shape.
+//
+// `verdict` stays the default and stays byte-identical, because AgentMaster
+// passes no --contract and parses this envelope with deny_unknown_fields.
+type ResultContract = "verdict" | "prose" | "json";
+const SWARM_RESULT_CONTRACTS: Record<ResultContract, string> = {
+  verdict:
+    "Return only (max 500 tokens): STATUS: PASS|FAIL|BLOCKED; EVIDENCE: exact path or command+exit; HANDOFF: none or one precise question.",
+  prose:
+    "Return only the answer as plain prose (max 500 tokens). No status line, no headings, no preamble, no restating the objective. Say what you do not know rather than filling it in.",
+  json:
+    "Return only one JSON object (max 500 tokens), no code fence and no text around it. Use the keys the objective names; where it names none, use {\"answer\": string, \"confidence\": number 0-1, \"unknown\": string[]}.",
+};
+const SWARM_RESULT_CONTRACT = SWARM_RESULT_CONTRACTS.verdict;
 
 type ToolRoute = { name: string; instruction: string };
 const SWARM_TOOL_ROUTES: { pattern: RegExp; route: ToolRoute }[] = [
@@ -345,6 +361,7 @@ function workerCapsule(
   toolsAvailable = true,
   rejectTruncation = false,
   extras: CapsuleExtras = {},
+  contract: ResultContract = "verdict",
 ): string {
   const normalizedObjective = objective.trim();
   const memoKey = JSON.stringify([
@@ -352,6 +369,7 @@ function workerCapsule(
     maxResultTokens,
     toolsAvailable,
     rejectTruncation,
+    contract,
     extras.skill?.path ?? null,
     extras.skill?.name ?? null,
     extras.evidence?.sha256 ?? null,
@@ -361,12 +379,20 @@ function workerCapsule(
   const memoized = capsuleMemo.get(memoKey);
   if (memoized !== undefined) return memoized;
   const route = toolsAvailable ? routeWorkerTool(normalizedObjective) : undefined;
+  // "Use only controller-provided evidence" is right for verification and wrong
+  // for everything else: asked to explain something with no evidence block
+  // attached, gpt-oss-120b answered "I do not have the evidence" and stopped.
+  // A worker under a prose or json contract may reason from what it knows; what
+  // it still may not do is invent a path, a command or a source.
+  const groundingHint = contract === "verdict" || extras.evidence
+    ? "Reasoning-only lane: use only controller-provided projected evidence. No tools are available; do not claim commands, file reads, or fresh-source checks."
+    : "Reasoning-only lane: no tools are available. Reason from the objective and what you know; do not claim commands, file reads, or fresh-source checks, and say which parts you are unsure of.";
   const routeHint = toolsAvailable
     ? (route
       ? `Tool lane: ${route.name}. ${route.instruction}`
       : "Tool lane: available; use only the smallest check needed by the oracle.")
-    : "Reasoning-only lane: use only controller-provided projected evidence. No tools are available; do not claim commands, file reads, or fresh-source checks.";
-  const resultContract = SWARM_RESULT_CONTRACT.replace(
+    : groundingHint;
+  const resultContract = SWARM_RESULT_CONTRACTS[contract].replace(
     "max 500 tokens",
     `max ${maxResultTokens} tokens`,
   );
@@ -379,7 +405,16 @@ function workerCapsule(
     toolsAvailable
       ? "One closed objective. Do not request or repeat the controller transcript, peer output, or skill catalog. Zero or one routed primary skill. Do not mutate outside the stated objective."
       : "One closed objective. Do not request or repeat the controller transcript or peer output. Reason only from the supplied evidence.",
-    "Oracle: report PASS only with direct evidence; otherwise FAIL or BLOCKED. Workers do not chat with peers; the controller may route one targeted handoff.",
+    // The evidence rule is the same in every shape; only the verdict wording
+    // belongs to the verdict contract, and repeating PASS/FAIL under a prose
+    // contract is exactly what makes a worker argue about which one wins.
+    contract === "verdict"
+      ? "Oracle: report PASS only with direct evidence; otherwise FAIL or BLOCKED. Workers do not chat with peers; the controller may route one targeted handoff."
+      : extras.evidence
+        ? "Oracle: claim only what the supplied evidence supports; name what is missing instead of filling it in. Workers do not chat with peers; the controller may route one targeted handoff."
+        // No evidence block and no verdict to reach: answering the objective is
+        // the job. The rule that survives is separating knowledge from guess.
+        : "Oracle: answer the objective; separate what you know from what you are guessing and name the uncertain parts. Workers do not chat with peers; the controller may route one targeted handoff.",
     routeHint,
     ...(skillHint ? [skillHint] : []),
     ...(evidenceHint ? [evidenceHint] : []),
@@ -1759,6 +1794,7 @@ type AskV2Options = {
   evidenceTarget?: string;
   evidenceBytes: number;
   skillRoute: boolean;
+  contract: ResultContract;
 };
 
 function parsePositiveInt(value: string | undefined, name: string, max: number): number {
@@ -1793,6 +1829,7 @@ function parseAskV2(argv: string[]): AskV2Options {
     "--evidence-mode",
     "--evidence-target",
     "--evidence-bytes",
+    "--contract",
   ]);
   const rejected = new Set(["--first", "--aggregate", "--verify", "--tier"]);
   const seen = new Set<string>();
@@ -1827,6 +1864,10 @@ function parseAskV2(argv: string[]): AskV2Options {
   const cap = parsed.has("--cap")
     ? parsePositiveInt(parsed.get("--cap"), "cap", SWARM_FANOUT_MAX_WORKERS)
     : SWARM_MAX_WORKERS;
+  const contract = parsed.get("--contract") ?? "verdict";
+  if (!["verdict", "prose", "json"].includes(contract)) {
+    throw new V2UsageError("contract_invalid");
+  }
   const evidenceMode = parsed.get("--evidence-mode") ?? "research";
   if (!["research", "mega", "fetch", "primary"].includes(evidenceMode)) {
     throw new V2UsageError("evidence_mode_invalid");
@@ -1877,6 +1918,7 @@ function parseAskV2(argv: string[]): AskV2Options {
       ? parsePositiveInt(parsed.get("--evidence-bytes"), "evidence_bytes", EVIDENCE_MAX_BYTES)
       : EVIDENCE_DEFAULT_BYTES,
     skillRoute: seen.has("--skill-route"),
+    contract: contract as ResultContract,
   };
 }
 
@@ -2173,7 +2215,7 @@ async function askV2WithPrompt(options: AskV2Options, prompt: string): Promise<A
   });
   const startLane = (lane: Lane, index: number, signal?: AbortSignal) => runLaneV2(
     lane,
-    workerCapsule(prompt, options.maxTokens, lane.tools === true, true, extras),
+    workerCapsule(prompt, options.maxTokens, lane.tools === true, true, extras, options.contract),
     promptHash,
     deadlineAt,
     options.useCache,
@@ -2671,6 +2713,8 @@ if (cmd === "ask-v2") {
       evidence_provider: Boolean(EVIDENCE_CMD && existsSync(EVIDENCE_CMD)),
       skill_route: Boolean(Bun.which("si")),
       council: true,
+      contract: ["verdict", "prose", "json"],
+      lane_selectors: ["free", "cheap", "paid", "local", "cli", "all"],
       opt_in_lanes: LANES.filter((l) => l.optIn).map((l) => l.name),
       terminal_values_extended: ["pruned"],
       note: "Extensions are off unless their flag is passed; the default envelope is unchanged.",
@@ -2750,6 +2794,7 @@ if (cmd === "ask-v2") {
     "  ask-v2 (--stdin|--prompt-file PATH) --swarm [--lanes …] [--cap N] [--max-tokens N]",
     "         [--deadline-secs N] [--usage-out PATH] [--allow-remote] [--allow-paid] [--no-cache]",
     "         [--first-pass] [--oracle 'CMD'] [--oracle-env-prefix NAME] [--budget-tokens N]",
+    "         [--contract verdict|prose|json]",
     "         [--evidence [--evidence-mode research|mega|fetch|primary] [--evidence-target X] [--evidence-bytes N]]",
     "         [--skill-route]",
     "  evidence [--mode research|mega|fetch|primary] (--target X | --stdin) [--bytes N] [--out PATH]",

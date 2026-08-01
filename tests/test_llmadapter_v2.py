@@ -969,6 +969,56 @@ def write_ledger(home: Path, rows: list[tuple[str, int, int]]) -> None:
     (ledger / f"llmadapter-{month}.jsonl").write_text("\n".join(lines) + "\n")
 
 
+def _capsule(tmp_path: Path, *args: str, probe: Path) -> str:
+    """Run one fixture lane and return the capsule it actually received."""
+    prompt_dir = tmp_path / "prompts"
+    prompt_dir.mkdir(exist_ok=True)
+    install_lanes(tmp_path, probe, [("fixture-one", "local", "ok")])
+    result = run_v2(
+        tmp_path,
+        "--stdin",
+        "--swarm",
+        "--lanes",
+        "fixture-one",
+        "--no-cache",
+        *args,
+        extra={"ATS_PROMPT_DIR": str(prompt_dir)},
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    return (prompt_dir / "fixture-one.prompt").read_text()
+
+
+def test_default_contract_is_the_verdict_capsule(tmp_path: Path, probe: Path) -> None:
+    """AgentMaster passes no --contract, so this packet must not move."""
+    packet = _capsule(tmp_path, probe=probe)
+    assert "STATUS: PASS|FAIL|BLOCKED" in packet
+    assert "Oracle: report PASS only with direct evidence" in packet
+
+
+@pytest.mark.parametrize(
+    ("mode", "expected", "forbidden"),
+    [
+        ("prose", "Return only the answer as plain prose", "STATUS: PASS|FAIL|BLOCKED"),
+        ("json", "Return only one JSON object", "STATUS: PASS|FAIL|BLOCKED"),
+    ],
+)
+def test_contract_modes_replace_the_verdict_shape(
+    tmp_path: Path, probe: Path, mode: str, expected: str, forbidden: str
+) -> None:
+    packet = _capsule(tmp_path, "--contract", mode, probe=probe)
+    assert expected in packet
+    assert forbidden not in packet
+    # Without an evidence block there is no verdict to reach, and demanding one
+    # made workers answer "I do not have the evidence" instead of the objective.
+    assert "Oracle: answer the objective" in packet
+
+
+def test_unknown_contract_is_rejected(tmp_path: Path) -> None:
+    result = run_v2(tmp_path, "--stdin", "--swarm", "--contract", "poem", "--no-cache")
+    assert result.returncode == 64
+    assert json.loads(result.stdout)["error"] == "contract_invalid"
+
+
 def test_cheap_selector_stays_inside_the_wire_class_contract() -> None:
     """AgentMaster validates class against free|paid|local|cli, so `cheap` is
     a selector keyword, never a fifth class value."""
