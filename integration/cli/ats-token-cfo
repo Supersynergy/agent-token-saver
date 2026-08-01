@@ -76,3 +76,9 @@ EOF
 
 # Backward-compat alias: ats-cfo → ats-token-cfo
 ats-cfo() { ats-token-cfo "$@"; }
+
+# The file is symlinked into PATH, so it is executed as often as it is sourced.
+# Executing it only defined the functions above and exited 0 with no output.
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  ats-token-cfo "$@"
+fi
