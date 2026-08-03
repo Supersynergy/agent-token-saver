@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+### Added, vier neue cheap-Lanes, 2026-08-03
+
+- OR_CHEAP: deepseek-v4-flash-0731 (0.09/0.18), qwen3.7-flash (0.03/0.13),
+  gpt-5.6-luna-pro (0.10/0.60), kat-coder-air-v2.5 (0.15/0.60). Alle vier
+  live geprobt (1,3-5,3 s). Katalog-Sweep nach created-Datum, datierte
+  deepseek-ID statt ~latest-Alias.
+
+
 ## Unreleased
 
 - **feat: `goal` is a real command, not a shell function.** The 13 `goal-*`

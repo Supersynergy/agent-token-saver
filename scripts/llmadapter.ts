@@ -95,6 +95,12 @@ const OR_CHEAP: [string, number, string?][] = [
   ["openai/gpt-oss-120b", 0.17],
   ["openai/gpt-5.6-luna", 0.60],
   ["inclusionai/ling-2.6-flash", 0.03],
+  // Catalog sweep 2026-08-03 (created-date sort): four July arrivals in the
+  // measured-cheap price band. Dated deepseek id, not the ~latest alias.
+  ["deepseek/deepseek-v4-flash-0731", 0.18],
+  ["qwen/qwen3.7-flash", 0.13],
+  ["openai/gpt-5.6-luna-pro", 0.60],
+  ["kwaipilot/kat-coder-air-v2.5", 0.60],
 ];
 const OR_PAID: [string, number, string?][] = [
   ["moonshotai/kimi-k2.5", 2.85],
