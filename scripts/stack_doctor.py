@@ -19,6 +19,8 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CATALOG = ROOT / "stack" / "catalog.json"
 DEFAULT_CONFIG = ROOT / "config.json"
 LEGACY_PROFILE_ALIASES = {"news": "teams"}
+DEFAULT_POLICY_START = "<!-- AGENT-TOKEN-SAVER-DEFAULT:START -->"
+DEFAULT_POLICY_END = "<!-- AGENT-TOKEN-SAVER-DEFAULT:END -->"
 HOT_PATH_RULES: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("synx_doctor", re.compile(r"(?<![\w-])synx\s+doctor\b", re.IGNORECASE)),
 )
@@ -198,6 +200,28 @@ def owned_nonwritable_file(path: Path) -> bool:
     return path.is_file() and metadata.st_uid == os.getuid() and not metadata.st_mode & 0o022
 
 
+def instruction_targets(home: Path) -> dict[str, Path]:
+    return {
+        "codex": home / ".codex" / "AGENTS.md",
+        "claude": home / ".claude" / "CLAUDE.md",
+        "hermes": home / ".hermes" / "SOUL.md",
+        "ggcoder": home / "AGENTS.md",
+    }
+
+
+def extract_default_policy(path: Path) -> str | None:
+    text = path.read_text(encoding="utf-8")
+    start_count = text.count(DEFAULT_POLICY_START)
+    end_count = text.count(DEFAULT_POLICY_END)
+    if start_count == end_count == 0:
+        return None
+    if start_count != 1 or end_count != 1:
+        raise ValueError("malformed managed default block")
+    start = text.index(DEFAULT_POLICY_START) + len(DEFAULT_POLICY_START)
+    end = text.index(DEFAULT_POLICY_END, start)
+    return text[start:end].strip()
+
+
 def inspect_llmadapter(home: Path, *, allow_probe: bool) -> dict[str, Any]:
     canonical = home / ".agent-token-saver" / "bin" / "llmadapter"
     launcher = home / ".local" / "bin" / "llmadapter"
@@ -296,6 +320,37 @@ def skill_version(path: Path) -> str:
     return "unknown"
 
 
+def inspect_session_guard_state(home: Path) -> dict[str, Any]:
+    """Describe only bounded guard state metadata; never expose transcript data."""
+    path = home / ".local" / "state" / "agent-token-saver" / "session-guard-latest.json"
+    report: dict[str, Any] = {"present": path.is_file(), "safe": False, "mode": "absent"}
+    if not path.is_file():
+        return report
+    if not owned_nonwritable_file(path):
+        report["mode"] = "unsafe"
+        return report
+    try:
+        value = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError):
+        report["mode"] = "invalid"
+        return report
+    if not isinstance(value, dict):
+        report["mode"] = "invalid"
+        return report
+    schema_version = value.get("schema_version")
+    action = value.get("action")
+    if schema_version not in {1, 2} or action not in {"continue", "warn", "checkpoint_required"}:
+        report["mode"] = "invalid"
+        return report
+    report.update(
+        safe=True,
+        mode="incremental" if schema_version == 2 else "subprocess_fallback",
+        schema_version=schema_version,
+        action=action,
+    )
+    return report
+
+
 def inspect_integrity(profile: str, hooks: dict[str, Any], home: Path) -> dict[str, Any]:
     install_home = home / ".agent-token-saver"
     config_path = install_home / "config.json"
@@ -310,8 +365,8 @@ def inspect_integrity(profile: str, hooks: dict[str, Any], home: Path) -> dict[s
     config_safe = config_path.exists() and owned_nonwritable_file(config_path)
     if config_path.exists() and not config_safe:
         errors.append("install_config_unsafe_owner_or_mode")
-    if int(config.get("schema_version", 0) or 0) < 2:
-        errors.append("install_config_schema_version<2")
+    if int(config.get("schema_version", 0) or 0) < 3:
+        errors.append("install_config_schema_version<3")
     if not canonical.is_file():
         errors.append("canonical_skill_missing")
         canonical_hash = ""
@@ -359,6 +414,86 @@ def inspect_integrity(profile: str, hooks: dict[str, Any], home: Path) -> dict[s
             asset_integrity[name] = True
 
     configured_agents = set(config.get("agents", [])) if isinstance(config, dict) else set()
+    target_paths = instruction_targets(home)
+    expected_default_agents = configured_agents & set(target_paths)
+    if not target_paths["hermes"].exists():
+        expected_default_agents.discard("hermes")
+    if profile == "minimal":
+        expected_default_agents.clear()
+    default_policy_report: dict[str, Any] = {
+        "expected_agents": sorted(expected_default_agents),
+        "verified_agents": [],
+        "policy_sha256": "",
+    }
+    canonical_policy = asset_paths.get("default_policy")
+    if canonical_policy is not None and asset_integrity.get("default_policy", False):
+        canonical_policy_body = canonical_policy.read_text(encoding="utf-8").strip()
+        canonical_policy_hash = hashlib.sha256(canonical_policy_body.encode()).hexdigest()
+        default_policy_report["policy_sha256"] = canonical_policy_hash
+    else:
+        canonical_policy_hash = ""
+
+    managed_defaults = (
+        config.get("managed_default_policies", []) if isinstance(config, dict) else []
+    )
+    if not isinstance(managed_defaults, list):
+        errors.append("invalid_managed_default_policy_manifest")
+        managed_defaults = []
+    entries_by_agent: dict[str, dict[str, Any]] = {}
+    for entry in managed_defaults:
+        if not isinstance(entry, dict):
+            errors.append("invalid_managed_default_policy_manifest")
+            continue
+        agent = str(entry.get("agent") or "")
+        if agent not in target_paths or agent in entries_by_agent:
+            errors.append(f"invalid_managed_default_policy_agent:{agent or 'unknown'}")
+            continue
+        entries_by_agent[agent] = entry
+
+    if profile == "minimal":
+        if entries_by_agent:
+            errors.append("minimal_profile_has_default_policy_manifest")
+        for agent in sorted(configured_agents & set(target_paths)):
+            path = target_paths[agent]
+            if not path.is_file():
+                continue
+            try:
+                body = extract_default_policy(path)
+            except (OSError, UnicodeError, ValueError):
+                errors.append(f"managed_default_policy_malformed:{agent}")
+                continue
+            if body is not None:
+                errors.append(f"minimal_profile_has_default_policy:{agent}")
+    else:
+        for agent in sorted(expected_default_agents):
+            entry = entries_by_agent.get(agent)
+            path = target_paths[agent]
+            if entry is None:
+                errors.append(f"managed_default_policy_manifest_missing:{agent}")
+                continue
+            if not same_resolved_path(Path(str(entry.get("path") or "")), path):
+                errors.append(f"managed_default_policy_path_mismatch:{agent}")
+                continue
+            if str(entry.get("policy_sha256") or "") != canonical_policy_hash:
+                errors.append(f"managed_default_policy_manifest_hash_mismatch:{agent}")
+                continue
+            if not owned_nonwritable_file(path):
+                errors.append(f"managed_default_policy_unsafe_owner_or_mode:{agent}")
+                continue
+            try:
+                body = extract_default_policy(path)
+            except (OSError, UnicodeError, ValueError):
+                errors.append(f"managed_default_policy_malformed:{agent}")
+                continue
+            if body is None:
+                errors.append(f"managed_default_policy_missing:{agent}")
+            elif hashlib.sha256(body.encode()).hexdigest() != canonical_policy_hash:
+                errors.append(f"managed_default_policy_hash_mismatch:{agent}")
+            else:
+                default_policy_report["verified_agents"].append(agent)
+        for agent in sorted(set(entries_by_agent) - expected_default_agents):
+            errors.append(f"unexpected_managed_default_policy:{agent}")
+
     hot_path = {
         agent: int(hooks.get(agent, {}).get("hot_path", {}).get("synx_doctor", 0))
         for agent in sorted(configured_agents & {"codex", "claude"})
@@ -508,6 +643,8 @@ def inspect_integrity(profile: str, hooks: dict[str, Any], home: Path) -> dict[s
         },
         "prompt_hook_smoke": prompt_smoke,
         "session_guard_smoke": guard_smoke,
+        "session_guard_state": inspect_session_guard_state(home),
+        "default_policy": default_policy_report,
         "hot_path": {"synx_doctor": hot_path},
     }
 
@@ -538,9 +675,7 @@ def build_report(
     )
     llmadapter = inspect_llmadapter(home, allow_probe=integrity["ok"])
     healthy = (
-        not missing_required
-        and integrity["ok"]
-        and (llmadapter["ready"] or not require_llmadapter)
+        not missing_required and integrity["ok"] and (llmadapter["ready"] or not require_llmadapter)
     )
     profile_complete = healthy and not missing_optional
     return {
@@ -611,6 +746,15 @@ def main() -> int:
                 print(f"skill    {agent:18} {marker}")
             else:
                 print(f"hooks    {agent:18} {len(hook['commands'])} agent-token-saver entries")
+        default_policy = report["integrity"]["default_policy"]
+        print(
+            f"default  compact-policy     "
+            f"{len(default_policy['verified_agents'])}/"
+            f"{len(default_policy['expected_agents'])} verified"
+        )
+        guard_state = report["integrity"]["session_guard_state"]
+        action = f" action={guard_state['action']}" if guard_state.get("safe") else ""
+        print(f"guard    session-state       {guard_state['mode']}{action}")
         recon_ok = sum(1 for r in report["recon"] if r["installed"])
         layers_ok = sum(1 for t in report["tools"] if t["installed"])
         summary = (
@@ -625,10 +769,7 @@ def main() -> int:
         for warning in report["integrity"]["warnings"]:
             print(f"warning  integrity          {warning}")
         adapter = report["llmadapter"]
-        print(
-            f"adapter  llmadapter         "
-            f"{'ready' if adapter['ready'] else adapter['error']}"
-        )
+        print(f"adapter  llmadapter         {'ready' if adapter['ready'] else adapter['error']}")
     return 0 if report["healthy"] else 1
 
 

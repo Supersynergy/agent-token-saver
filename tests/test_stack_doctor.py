@@ -15,9 +15,11 @@ def install_fixture(home: Path, *, stale_route: bool = False) -> None:
     hook = install_home / "hooks" / "token-stack-prompt.py"
     guard = install_home / "hooks" / "token-session-guard.py"
     ledger = install_home / "bin" / "agent-token-ledger"
+    policy = install_home / "instructions" / "compact-default.md"
     canonical.parent.mkdir(parents=True)
     hook.parent.mkdir(parents=True)
     ledger.parent.mkdir(parents=True)
+    policy.parent.mkdir(parents=True)
     canonical.write_text("---\nname: agent-token-saver\nversion: 3.2.0\n---\n")
     if stale_route:
         stale = home / ".agents" / "skills" / "agent-token-saver" / "SKILL.md"
@@ -32,6 +34,7 @@ def install_fixture(home: Path, *, stale_route: bool = False) -> None:
         shutil.copy2(ROOT / "integration" / "hooks" / "token-stack-prompt.py", hook)
     shutil.copy2(ROOT / "integration" / "hooks" / "token-session-guard.py", guard)
     shutil.copy2(ROOT / "scripts" / "full_context_ledger.py", ledger)
+    shutil.copy2(ROOT / "integration" / "instructions" / "compact-default.md", policy)
     hook.chmod(0o755)
     guard.chmod(0o755)
     ledger.chmod(0o755)
@@ -44,18 +47,23 @@ def install_fixture(home: Path, *, stale_route: bool = False) -> None:
                     "UserPromptSubmit": [
                         {"hooks": [{"type": "command", "command": str(hook), "timeout": 6}]}
                     ],
-                    "Stop": [
-                        {"hooks": [{"type": "command", "command": str(guard), "timeout": 8}]}
-                    ],
+                    "Stop": [{"hooks": [{"type": "command", "command": str(guard), "timeout": 8}]}],
                 }
             }
         )
     )
+    codex_agents = home / ".codex" / "AGENTS.md"
+    codex_agents.write_text(
+        f"{stack_doctor.DEFAULT_POLICY_START}\n"
+        f"{policy.read_text().strip()}\n"
+        f"{stack_doctor.DEFAULT_POLICY_END}\n"
+    )
+    policy_hash = hashlib.sha256(policy.read_text().strip().encode()).hexdigest()
     config = install_home / "config.json"
     config.write_text(
         json.dumps(
             {
-                "schema_version": 2,
+                "schema_version": 3,
                 "profile": "lean",
                 "agents": ["codex"],
                 "canonical_skill": {
@@ -64,6 +72,13 @@ def install_fixture(home: Path, *, stale_route: bool = False) -> None:
                     "sha256": hashlib.sha256(canonical.read_bytes()).hexdigest(),
                 },
                 "managed_skill_paths": [],
+                "managed_default_policies": [
+                    {
+                        "agent": "codex",
+                        "path": str(codex_agents),
+                        "policy_sha256": policy_hash,
+                    }
+                ],
                 "managed_assets": [
                     {
                         "name": "prompt_hook",
@@ -79,6 +94,11 @@ def install_fixture(home: Path, *, stale_route: bool = False) -> None:
                         "name": "ledger",
                         "path": str(ledger),
                         "sha256": hashlib.sha256(ledger.read_bytes()).hexdigest(),
+                    },
+                    {
+                        "name": "default_policy",
+                        "path": str(policy),
+                        "sha256": hashlib.sha256(policy.read_bytes()).hexdigest(),
                     },
                 ],
             }
@@ -246,9 +266,48 @@ def test_end_to_end_integrity_rejects_managed_skill_hash_drift(tmp_path: Path) -
 
     assert report["healthy"] is False
     assert f"managed_skill_hash_mismatch:{managed}" in report["integrity"]["errors"]
-    assert hashlib.sha256(managed.read_bytes()).hexdigest() != hashlib.sha256(
-        canonical.read_bytes()
-    ).hexdigest()
+    assert (
+        hashlib.sha256(managed.read_bytes()).hexdigest()
+        != hashlib.sha256(canonical.read_bytes()).hexdigest()
+    )
+
+
+def test_end_to_end_integrity_rejects_managed_default_policy_drift(
+    tmp_path: Path,
+) -> None:
+    home = tmp_path / "home"
+    install_fixture(home)
+    agents = home / ".codex" / "AGENTS.md"
+    agents.write_text(
+        agents.read_text().replace(
+            "First command filters/aggregates",
+            "First command dumps every raw result",
+        )
+    )
+    catalog = {
+        "profiles": {"lean": ["native"]},
+        "tools": {"native": {"kind": "builtin", "required": True}},
+    }
+
+    report = build_report(catalog, "lean", check_integrations=True, home=home)
+
+    assert report["healthy"] is False
+    assert "managed_default_policy_hash_mismatch:codex" in report["integrity"]["errors"]
+
+
+def test_end_to_end_integrity_reports_verified_default_policy(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    install_fixture(home)
+    catalog = {
+        "profiles": {"lean": ["native"]},
+        "tools": {"native": {"kind": "builtin", "required": True}},
+    }
+
+    report = build_report(catalog, "lean", check_integrations=True, home=home)
+
+    assert report["integrity"]["default_policy"]["expected_agents"] == ["codex"]
+    assert report["integrity"]["default_policy"]["verified_agents"] == ["codex"]
+    assert report["integrity"]["default_policy"]["policy_sha256"]
 
 
 def test_end_to_end_integrity_rejects_missing_session_guard_wiring(tmp_path: Path) -> None:
@@ -293,6 +352,49 @@ def test_end_to_end_integrity_rejects_synx_doctor_in_active_hook(tmp_path: Path)
 
 def test_hot_path_counter_does_not_match_synxp() -> None:
     assert stack_doctor.hot_path_counts(["synxp 'doctor state'"])["synx_doctor"] == 0
+
+
+def test_doctor_reports_private_incremental_guard_state_without_transcript(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    state = home / ".local" / "state" / "agent-token-saver"
+    state.mkdir(parents=True)
+    latest = state / "session-guard-latest.json"
+    latest.write_text(
+        json.dumps(
+            {
+                "schema_version": 2,
+                "action": "checkpoint_required",
+                "transcript_id": "hash-only",
+                "cursor": {"byte_offset": 99},
+            }
+        )
+    )
+    latest.chmod(0o600)
+
+    report = stack_doctor.inspect_session_guard_state(home)
+
+    assert report == {
+        "present": True,
+        "safe": True,
+        "mode": "incremental",
+        "schema_version": 2,
+        "action": "checkpoint_required",
+    }
+
+
+def test_doctor_reports_unsafe_guard_state_without_reading_it(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    state = home / ".local" / "state" / "agent-token-saver"
+    state.mkdir(parents=True)
+    latest = state / "session-guard-latest.json"
+    latest.write_text('{"schema_version":2,"action":"warn"}')
+    latest.chmod(0o666)
+
+    assert stack_doctor.inspect_session_guard_state(home) == {
+        "present": True,
+        "safe": False,
+        "mode": "unsafe",
+    }
 
 
 def test_end_to_end_integrity_rejects_unsafe_managed_asset(tmp_path: Path) -> None:

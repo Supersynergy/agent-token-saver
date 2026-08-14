@@ -26,12 +26,15 @@ Portable context reduction. Hooks stay fail-open; optional tools stay optional.
 ## Product boundary
 
 - `minimal`: CLI/ledger only.
-- `lean`: prompt gate, session guard and optional routing/projection CLIs.
+- `lean`: compact host default, prompt gate, session guard and optional
+  routing/projection CLIs.
 - `teams`: Lean plus Claude's worker-capsule hook; no automatic fan-out.
 - `heavy`: opt-in graph/large-context tools for one session.
 
-Codex and Claude use merged JSON hooks. Hermes and GG Coder use installed
-skills. Verify active configuration with the doctor; files on disk are not proof.
+Codex and Claude use merged JSON hooks plus compact global defaults. Hermes
+uses a managed block in an existing `SOUL.md`; GG Coder uses the home
+`AGENTS.md`; both retain installed skills for explicit full loading. Verify
+active configuration with the doctor; files on disk are not proof.
 
 ## References
 

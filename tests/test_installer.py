@@ -14,8 +14,18 @@ def run_installer(tmp_path: Path, *args: str) -> subprocess.CompletedProcess[str
     home = tmp_path / "home"
     project = tmp_path / "project"
     bin_dir = tmp_path / "bin"
-    for path in (home / ".codex", home / ".claude", home / ".hermes", home / ".gg", project / ".git", bin_dir):
+    for path in (
+        home / ".codex",
+        home / ".claude",
+        home / ".hermes",
+        home / ".gg",
+        project / ".git",
+        bin_dir,
+    ):
         path.mkdir(parents=True, exist_ok=True)
+    soul = home / ".hermes" / "SOUL.md"
+    if not soul.exists():
+        soul.write_text("# Hermes fixture\n")
     rtk = bin_dir / "rtk"
     rtk.write_text("#!/bin/sh\nexit 0\n")
     rtk.chmod(0o755)
@@ -55,19 +65,37 @@ def test_all_agents_install_without_overwriting_existing_settings(tmp_path: Path
     assert (home / ".local" / "bin" / "agent-token-audit").is_symlink()
     assert (home / ".local" / "bin" / "llmadapter").is_symlink()
     config = json.loads((home / ".agent-token-saver" / "config.json").read_text())
-    assert config["schema_version"] == 2
+    assert config["schema_version"] == 3
     assert config["profile"] == "lean"
     assert config["agents"] == ["codex", "claude", "hermes", "ggcoder", "repo"]
     assert config["project_root"] == str(project.resolve())
     assert config["canonical_skill"]["version"] == "4.22.0"
-    assert config["canonical_skill"]["sha256"] == hashlib.sha256(
-        (ROOT / "skills" / "agent-token-saver" / "SKILL.md").read_bytes()
-    ).hexdigest()
+    assert (
+        config["canonical_skill"]["sha256"]
+        == hashlib.sha256(
+            (ROOT / "skills" / "agent-token-saver" / "SKILL.md").read_bytes()
+        ).hexdigest()
+    )
     assert set(config["managed_skill_paths"]) == {
         str((home / ".hermes" / "skills" / "agent-token-saver" / "SKILL.md").resolve()),
         str((home / ".gg" / "skills" / "agent-token-saver.md").resolve()),
         str((project / ".agents" / "skills" / "agent-token-saver" / "SKILL.md").resolve()),
     }
+    assert {entry["agent"] for entry in config["managed_default_policies"]} == {
+        "codex",
+        "claude",
+        "hermes",
+        "ggcoder",
+    }
+    policy_hash = hashlib.sha256(
+        (ROOT / "integration" / "instructions" / "compact-default.md").read_text().strip().encode()
+    ).hexdigest()
+    for entry in config["managed_default_policies"]:
+        assert Path(entry["path"]).is_file()
+        assert entry["policy_sha256"] == policy_hash
+        text = Path(entry["path"]).read_text()
+        assert text.count("<!-- AGENT-TOKEN-SAVER-DEFAULT:START -->") == 1
+        assert text.count("<!-- AGENT-TOKEN-SAVER-DEFAULT:END -->") == 1
     assert {asset["name"] for asset in config["managed_assets"]} == {
         "doctor",
         "ledger",
@@ -76,6 +104,7 @@ def test_all_agents_install_without_overwriting_existing_settings(tmp_path: Path
         "prompt_hook",
         "session_guard",
         "worker_capsule",
+        "default_policy",
     }
     for asset in config["managed_assets"]:
         assert Path(asset["path"]).is_file()
@@ -111,6 +140,43 @@ def test_repeated_install_deduplicates_hooks(tmp_path: Path) -> None:
     assert len(hooks["Stop"]) == 1
 
 
+def test_reinstall_replaces_read_only_managed_skill(tmp_path: Path) -> None:
+    """Hosts such as Hermes mark installed skills 0444; a re-install must still
+    refresh them instead of dying with EACCES halfway through."""
+    first = run_installer(tmp_path, "--agent", "hermes")
+    assert first.returncode == 0
+
+    skill = tmp_path / "home" / ".hermes" / "skills" / "agent-token-saver" / "SKILL.md"
+    assert skill.is_file()
+    skill.chmod(0o644)
+    skill.write_text("stale content\n")
+    skill.chmod(0o444)
+
+    second = run_installer(tmp_path, "--agent", "hermes")
+    assert second.returncode == 0, second.stderr
+    expected = (ROOT / "skills" / "agent-token-saver" / "SKILL.md").read_text()
+    assert skill.read_text() == expected
+
+
+def test_repeated_install_preserves_user_instructions_and_deduplicates_default(
+    tmp_path: Path,
+) -> None:
+    agents = tmp_path / "home" / ".codex" / "AGENTS.md"
+    agents.parent.mkdir(parents=True)
+    agents.write_text("# My rules\n\nKeep this exact sentence.\n")
+
+    first = run_installer(tmp_path, "--agent", "codex")
+    second = run_installer(tmp_path, "--agent", "codex")
+
+    assert first.returncode == second.returncode == 0
+    text = agents.read_text()
+    assert "# My rules" in text
+    assert "Keep this exact sentence." in text
+    assert text.count("<!-- AGENT-TOKEN-SAVER-DEFAULT:START -->") == 1
+    assert text.count("<!-- AGENT-TOKEN-SAVER-DEFAULT:END -->") == 1
+    assert len(list(agents.parent.glob("AGENTS.md.bak-*"))) == 1
+
+
 def test_existing_host_heavy_launcher_is_preserved(tmp_path: Path) -> None:
     launcher = tmp_path / "home" / ".local" / "bin" / "codex-heavy-context"
     launcher.parent.mkdir(parents=True)
@@ -121,17 +187,11 @@ def test_existing_host_heavy_launcher_is_preserved(tmp_path: Path) -> None:
 
     assert result.returncode == 0, result.stderr
     assert launcher.read_text() == local_overlay
-    portable = (
-        tmp_path
-        / "home"
-        / ".agent-token-saver"
-        / "bin"
-        / "codex-heavy-context"
-    )
+    portable = tmp_path / "home" / ".agent-token-saver" / "bin" / "codex-heavy-context"
     assert portable.is_file()
-    assert portable.read_text() == (
-        ROOT / "integration" / "cli" / "codex-heavy-context"
-    ).read_text()
+    assert (
+        portable.read_text() == (ROOT / "integration" / "cli" / "codex-heavy-context").read_text()
+    )
 
 
 def test_existing_llmadapter_override_is_preserved_but_canonical_copy_is_installed(
@@ -163,6 +223,10 @@ def test_dry_run_leaves_home_unchanged(tmp_path: Path) -> None:
     assert result.returncode == 0
     assert not (tmp_path / "home" / ".agent-token-saver").exists()
     assert not (tmp_path / "home" / ".codex" / "hooks.json").exists()
+    assert not (tmp_path / "home" / ".codex" / "AGENTS.md").exists()
+    assert (
+        "AGENT-TOKEN-SAVER-DEFAULT" not in (tmp_path / "home" / ".hermes" / "SOUL.md").read_text()
+    )
 
 
 def test_old_repo_rtk_hook_is_removed_from_codex(tmp_path: Path) -> None:
@@ -213,9 +277,7 @@ def test_claude_prompt_merge_preserves_shared_user_hook_and_stays_idempotent(
 ) -> None:
     settings_path = tmp_path / "home" / ".claude" / "settings.json"
     settings_path.parent.mkdir(parents=True)
-    managed_hook = (
-        f"{tmp_path}/home/.agent-token-saver/hooks/token-stack-prompt.py"
-    )
+    managed_hook = f"{tmp_path}/home/.agent-token-saver/hooks/token-stack-prompt.py"
     settings_path.write_text(
         json.dumps(
             {
@@ -308,6 +370,18 @@ def test_switching_to_minimal_removes_only_managed_visible_skills(tmp_path: Path
 
     assert second.returncode == 0, second.stderr
     assert custom.is_file()
-    assert not (tmp_path / "home" / ".hermes" / "skills" / "agent-token-saver" / "SKILL.md").exists()
+    assert not (
+        tmp_path / "home" / ".hermes" / "skills" / "agent-token-saver" / "SKILL.md"
+    ).exists()
     assert not (tmp_path / "home" / ".gg" / "skills" / "agent-token-saver.md").exists()
-    assert not (tmp_path / "project" / ".agents" / "skills" / "agent-token-saver" / "SKILL.md").exists()
+    assert not (
+        tmp_path / "project" / ".agents" / "skills" / "agent-token-saver" / "SKILL.md"
+    ).exists()
+    for path in (
+        tmp_path / "home" / ".codex" / "AGENTS.md",
+        tmp_path / "home" / ".claude" / "CLAUDE.md",
+        tmp_path / "home" / ".hermes" / "SOUL.md",
+        tmp_path / "home" / "AGENTS.md",
+    ):
+        assert "AGENT-TOKEN-SAVER-DEFAULT" not in path.read_text()
+    assert (tmp_path / "home" / ".hermes" / "SOUL.md").read_text() == "# Hermes fixture\n"

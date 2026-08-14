@@ -23,6 +23,9 @@ HOME = Path.home()
 INSTALL_HOME = HOME / ".agent-token-saver"
 OBSOLETE_INSTALL_FILES = (INSTALL_HOME / "hooks" / "rtk-rewrite.sh",)
 SKILL_VERSION = re.compile(r"^version:\s*([^\s]+)", re.MULTILINE)
+DEFAULT_POLICY_SOURCE = ROOT / "integration" / "instructions" / "compact-default.md"
+DEFAULT_POLICY_START = "<!-- AGENT-TOKEN-SAVER-DEFAULT:START -->"
+DEFAULT_POLICY_END = "<!-- AGENT-TOKEN-SAVER-DEFAULT:END -->"
 
 
 def self_update(dry_run: bool) -> None:
@@ -67,6 +70,67 @@ def atomic_json(path: Path, data: dict[str, Any], dry_run: bool) -> None:
         handle.write("\n")
         temporary = Path(handle.name)
     os.replace(temporary, path)
+
+
+def atomic_text(path: Path, content: str, dry_run: bool) -> bool:
+    if path.exists():
+        if not path.is_file():
+            raise SystemExit(f"refusing to edit non-file text target: {path}")
+        try:
+            current = path.read_text(encoding="utf-8")
+        except OSError as error:
+            raise SystemExit(f"refusing to edit unreadable text target: {path}: {error}") from error
+    else:
+        current = ""
+    if current == content:
+        return False
+    if path.is_symlink():
+        raise SystemExit(f"refusing to replace symlinked text target: {path}")
+    if dry_run:
+        print(f"would merge compact default into {path}")
+        return True
+    path.parent.mkdir(parents=True, exist_ok=True)
+    mode = stat.S_IMODE(path.stat().st_mode) if path.exists() else 0o644
+    if path.exists():
+        backup = path.with_name(
+            f"{path.name}.bak-{time.strftime('%Y%m%d-%H%M%S')}-{time.time_ns()}"
+        )
+        shutil.copy2(path, backup)
+        print(f"backup {backup}")
+    with tempfile.NamedTemporaryFile(
+        "w", encoding="utf-8", dir=path.parent, delete=False
+    ) as handle:
+        handle.write(content)
+        temporary = Path(handle.name)
+    temporary.chmod(mode)
+    os.replace(temporary, path)
+    print(f"merged compact default into {path}")
+    return True
+
+
+def merged_default_policy(current: str, *, enabled: bool) -> str:
+    start_count = current.count(DEFAULT_POLICY_START)
+    end_count = current.count(DEFAULT_POLICY_END)
+    if start_count != end_count or start_count > 1:
+        raise SystemExit("refusing to edit malformed Agent Token Saver default block")
+
+    block = (
+        f"{DEFAULT_POLICY_START}\n"
+        f"{DEFAULT_POLICY_SOURCE.read_text(encoding='utf-8').strip()}\n"
+        f"{DEFAULT_POLICY_END}"
+    )
+    if start_count == 0:
+        if not enabled:
+            return current
+        prefix = current.rstrip()
+        return f"{prefix}\n\n{block}\n" if prefix else f"{block}\n"
+
+    start = current.index(DEFAULT_POLICY_START)
+    end = current.index(DEFAULT_POLICY_END, start) + len(DEFAULT_POLICY_END)
+    before = current[:start].rstrip()
+    after = current[end:].strip()
+    parts = [part for part in (before, block if enabled else "", after) if part]
+    return ("\n\n".join(parts) + "\n") if parts else ""
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -213,6 +277,17 @@ def install_copy(source: Path, target: Path, dry_run: bool, executable: bool = F
         print(f"would copy {source} -> {target}")
         return
     target.parent.mkdir(parents=True, exist_ok=True)
+    # Managed targets can be read-only on the host (agents such as Hermes mark
+    # installed skills 0444). Restore owner write just long enough to replace
+    # our own previous output, so a re-install stays idempotent instead of
+    # failing with EACCES halfway through. A symlinked target is refused: a
+    # managed asset must never be written through a link we do not control.
+    if target.is_symlink():
+        raise SystemExit(f"refusing to replace symlinked install target: {target}")
+    if target.exists():
+        current_mode = stat.S_IMODE(target.stat().st_mode)
+        if not current_mode & stat.S_IWUSR:
+            target.chmod(current_mode | stat.S_IWUSR)
     shutil.copy2(source, target)
     if executable:
         target.chmod(target.stat().st_mode | stat.S_IXUSR)
@@ -258,6 +333,11 @@ def install_files(dry_run: bool) -> None:
     }
     for source, target in copies.items():
         install_copy(source, target, dry_run, executable=True)
+    install_copy(
+        DEFAULT_POLICY_SOURCE,
+        INSTALL_HOME / "instructions" / "compact-default.md",
+        dry_run,
+    )
     launcher = HOME / ".local" / "bin" / "agent-token-saver"
     if dry_run:
         print(f"would link {launcher} -> {copies[ROOT / 'scripts' / 'stack_doctor.py']}")
@@ -329,6 +409,45 @@ def skill_targets(project: Path) -> dict[str, Path]:
     }
 
 
+def instruction_targets() -> dict[str, Path]:
+    return {
+        "codex": HOME / ".codex" / "AGENTS.md",
+        "claude": HOME / ".claude" / "CLAUDE.md",
+        "hermes": HOME / ".hermes" / "SOUL.md",
+        "ggcoder": HOME / "AGENTS.md",
+    }
+
+
+def sync_default_policies(profile: str, agents: list[str], dry_run: bool) -> list[dict[str, str]]:
+    targets = instruction_targets()
+    enabled = profile != "minimal"
+    policy_hash = hashlib.sha256(
+        DEFAULT_POLICY_SOURCE.read_text(encoding="utf-8").strip().encode()
+    ).hexdigest()
+    managed: list[dict[str, str]] = []
+    for agent in agents:
+        target = targets.get(agent)
+        if target is None:
+            continue
+        if enabled and agent == "hermes" and not target.exists():
+            print(
+                "kept Hermes built-in identity: no SOUL.md exists; installed skill remains explicit"
+            )
+            continue
+        current = target.read_text(encoding="utf-8") if target.exists() else ""
+        desired = merged_default_policy(current, enabled=enabled)
+        atomic_text(target, desired, dry_run)
+        if enabled:
+            managed.append(
+                {
+                    "agent": agent,
+                    "path": str(target.resolve()),
+                    "policy_sha256": policy_hash,
+                }
+            )
+    return managed
+
+
 def install_skill(agent: str, project: Path, dry_run: bool) -> None:
     source = ROOT / "skills" / "agent-token-saver" / "SKILL.md"
     install_copy(source, skill_targets(project)[agent], dry_run)
@@ -375,7 +494,13 @@ def detected_agents(requested: str, project: Path) -> list[str]:
     return found or ["repo"]
 
 
-def write_config(profile: str, agents: list[str], project: Path, dry_run: bool) -> None:
+def write_config(
+    profile: str,
+    agents: list[str],
+    project: Path,
+    managed_default_policies: list[dict[str, str]],
+    dry_run: bool,
+) -> None:
     source = ROOT / "skills" / "agent-token-saver" / "SKILL.md"
     content = source.read_text(errors="replace")
     version_match = SKILL_VERSION.search(content)
@@ -393,6 +518,7 @@ def write_config(profile: str, agents: list[str], project: Path, dry_run: bool) 
         "prompt_hook": ROOT / "integration" / "hooks" / "token-stack-prompt.py",
         "session_guard": ROOT / "integration" / "hooks" / "token-session-guard.py",
         "worker_capsule": ROOT / "integration" / "hooks" / "agent-worker-capsule.py",
+        "default_policy": DEFAULT_POLICY_SOURCE,
     }
     managed_asset_targets = {
         "doctor": INSTALL_HOME / "bin" / "agent-token-saver",
@@ -402,11 +528,12 @@ def write_config(profile: str, agents: list[str], project: Path, dry_run: bool) 
         "prompt_hook": INSTALL_HOME / "hooks" / "token-stack-prompt.py",
         "session_guard": INSTALL_HOME / "hooks" / "token-session-guard.py",
         "worker_capsule": INSTALL_HOME / "hooks" / "agent-worker-capsule.py",
+        "default_policy": INSTALL_HOME / "instructions" / "compact-default.md",
     }
     atomic_json(
         INSTALL_HOME / "config.json",
         {
-            "schema_version": 2,
+            "schema_version": 3,
             "profile": profile,
             "agents": agents,
             "project_root": str(project.resolve()),
@@ -416,6 +543,7 @@ def write_config(profile: str, agents: list[str], project: Path, dry_run: bool) 
                 "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
             },
             "managed_skill_paths": managed_skill_paths,
+            "managed_default_policies": managed_default_policies,
             "managed_assets": [
                 {
                     "name": name,
@@ -464,7 +592,14 @@ def main() -> int:
             install_skill(agent, args.project.resolve(), args.dry_run)
         if agent in targets:
             merge_hooks(targets[agent], agent, args.profile, args.dry_run)
-    write_config(args.profile, agents, args.project.resolve(), args.dry_run)
+    managed_default_policies = sync_default_policies(args.profile, agents, args.dry_run)
+    write_config(
+        args.profile,
+        agents,
+        args.project.resolve(),
+        managed_default_policies,
+        args.dry_run,
+    )
     print(f"profile={args.profile}")
     print(f"agents={','.join(agents)}")
     print("third-party tools are never installed silently")

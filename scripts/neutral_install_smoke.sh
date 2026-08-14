@@ -7,7 +7,8 @@ trap 'rm -rf "$TMP_ROOT"' EXIT INT TERM
 
 export HOME="$TMP_ROOT/home"
 PROJECT="$TMP_ROOT/project"
-mkdir -p "$HOME" "$PROJECT/.git"
+mkdir -p "$HOME/.hermes" "$PROJECT/.git"
+printf '%s\n' '# Hermes fixture' >"$HOME/.hermes/SOUL.md"
 
 python3 "$ROOT/scripts/install_agent_token_saver.py" \
   --profile lean --agent all --project "$PROJECT" >/dev/null
@@ -33,13 +34,27 @@ required = [
     home / ".local/bin/agent-token-audit",
     home / ".local/bin/llmadapter",
     home / ".agent-token-saver/skills/agent-token-saver/SKILL.md",
+    home / ".agent-token-saver/instructions/compact-default.md",
     home / ".codex/hooks.json",
+    home / ".codex/AGENTS.md",
     home / ".claude/settings.json",
+    home / ".claude/CLAUDE.md",
     home / ".hermes/skills/agent-token-saver/SKILL.md",
+    home / ".hermes/SOUL.md",
     home / ".gg/skills/agent-token-saver.md",
+    home / "AGENTS.md",
     project / ".agents/skills/agent-token-saver/SKILL.md",
 ]
 assert all(path.exists() or path.is_symlink() for path in required), required
+for path in (
+    home / ".codex/AGENTS.md",
+    home / ".claude/CLAUDE.md",
+    home / ".hermes/SOUL.md",
+    home / "AGENTS.md",
+):
+    text = path.read_text()
+    assert text.count("<!-- AGENT-TOKEN-SAVER-DEFAULT:START -->") == 1, path
+    assert text.count("<!-- AGENT-TOKEN-SAVER-DEFAULT:END -->") == 1, path
 assert not (home / ".codex/skills/agent-token-saver/SKILL.md").exists()
 assert not (home / ".claude/skills/agent-token-saver/SKILL.md").exists()
 print(
