@@ -69,7 +69,7 @@ def test_all_agents_install_without_overwriting_existing_settings(tmp_path: Path
     assert config["profile"] == "lean"
     assert config["agents"] == ["codex", "claude", "hermes", "ggcoder", "repo"]
     assert config["project_root"] == str(project.resolve())
-    assert config["canonical_skill"]["version"] == "4.22.0"
+    assert config["canonical_skill"]["version"] == "4.23.0"
     assert (
         config["canonical_skill"]["sha256"]
         == hashlib.sha256(

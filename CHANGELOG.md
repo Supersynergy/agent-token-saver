@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## 4.23.0 — 2026-08-14
+
 ### Fixed, Re-Install und Doku-Drift, 2026-08-14
 
 - `install_agent_token_saver.py`: ein zweiter Install-Lauf brach mit

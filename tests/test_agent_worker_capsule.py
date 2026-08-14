@@ -86,7 +86,7 @@ def test_precontracted_capsule_gets_only_compact_delta(tmp_path: Path) -> None:
     message = context(output)
     assert "capsule accepted" in message
     assert "preserve its objective, scope and oracle" in message
-    assert "worker contract (v4.22.0)" not in message
+    assert "worker contract (v4.23.0)" not in message
     assert "Tool lane: local source" in message
     assert len(message.encode("utf-8")) < 700
 
@@ -104,7 +104,7 @@ def test_incomplete_capsule_keeps_full_contract(tmp_path: Path) -> None:
     )
 
     message = context(output)
-    assert "worker contract (v4.22.0)" in message
+    assert "worker contract (v4.23.0)" in message
     assert "STATUS: PASS|FAIL|BLOCKED" in message
 
 
@@ -127,7 +127,7 @@ def test_empty_capsule_fields_keep_full_contract(tmp_path: Path) -> None:
     )
 
     message = context(output)
-    assert "worker contract (v4.22.0)" in message
+    assert "worker contract (v4.23.0)" in message
     assert "capsule accepted" not in message
 
 
