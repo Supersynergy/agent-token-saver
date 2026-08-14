@@ -2,15 +2,32 @@
 
 ## [Unreleased]
 
+### Fixed, Re-Install und Doku-Drift, 2026-08-14
+
+- `install_agent_token_saver.py`: ein zweiter Install-Lauf brach mit
+  `PermissionError` ab, sobald ein Host eine installierte Skill-Kopie
+  read-only markiert (Hermes setzt `0444`). `install_copy` stellt jetzt kurz
+  owner-write her, um die eigene vorherige Ausgabe zu ersetzen, und verweigert
+  symlinkte Ziele. Re-Install ist damit idempotent (+Regressionstest).
+- Manifest-Refresh: `config.json` trug den `llmadapter`-Hash vom 2026-08-01,
+  waehrend das installierte Binary bereits dem Repo-Stand (`f37da47`,
+  2026-08-03) entsprach. Der Doctor meldete deshalb
+  `BLOCKED managed_asset_hash_mismatch`; nach dem Refresh wieder
+  `status=full`, Integritaet ohne Fehler.
+- SKILL.md nennt keine volatile Lane-Zahl mehr (dokumentiert waren nacheinander
+  23 und 28, real: 27 builtin, 43 inklusive host-lokaler Lanes). Ein portables
+  Skill mit host-spezifischer Zahl ist auf fremden Hosts konstruktionsbedingt
+  falsch — `llmadapter lanes` ist die einzige Wahrheit, Selektoren sind der
+  stabile Vertrag. Neuer `tests/test_skill_doc_drift.py` haelt das fest und
+  prueft zusaetzlich, dass die `.agents/`-Kopie nicht hinter der kanonischen
+  Quelle zurueckfaellt.
+
 ### Added, vier neue cheap-Lanes, 2026-08-03
 
 - OR_CHEAP: deepseek-v4-flash-0731 (0.09/0.18), qwen3.7-flash (0.03/0.13),
   gpt-5.6-luna-pro (0.10/0.60), kat-coder-air-v2.5 (0.15/0.60). Alle vier
   live geprobt (1,3-5,3 s). Katalog-Sweep nach created-Datum, datierte
   deepseek-ID statt ~latest-Alias.
-
-
-## Unreleased
 
 - **feat: `goal` is a real command, not a shell function.** The 13 `goal-*`
   functions only existed inside a shell that had sourced the wrapper, so hooks,

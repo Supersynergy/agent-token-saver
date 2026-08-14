@@ -40,7 +40,7 @@ Sessions bulk-import into the main brain under `cli-log://`, which `synx hybrid`
 searches in ~0s (the corpus sidecar is opt-in and slower). Job installed as
 `de.supersynergy.synapse-cli-log-ingest`. Do not re-derive what recall returns.
 
-## Fan-out engine — `llmadapter` (28 lanes, one interface)
+## Fan-out engine — `llmadapter` (one interface over every lane)
 
 ```bash
 llmadapter ask-v2 --stdin --swarm --lanes cheap --allow-remote --allow-paid \
@@ -52,6 +52,11 @@ llmadapter lanes | doctor [--probe] | stats      # inventory / health / usage
 
 `ask-v2 --swarm` is the one to reach for: deadline, accounting, per-lane cache,
 first-pass pruning, oracle gate, ledger. Plain `ask` has none of that.
+
+`llmadapter lanes` is the only source of truth for what exists on this host:
+the built-in table plus any host-local lanes, so the count is host-specific
+and drifts with every catalog sweep. Selectors (`cheap`, `free`, `paid`,
+`local`, `cli`) are stable; do not memorise lane names or counts.
 
 **Start with `--lanes cheap`, not `free`.** Measured 2026-08-01 over closed-form
 tasks with known answers, three samples each:
