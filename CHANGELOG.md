@@ -1,5 +1,9 @@
 # Changelog
 
+- 2026-08-15: Let the compact host policy consume the router's bounded
+  multi-phase result: one primary plus at most four independently relevant
+  support skills; preserve zero/one routing for ordinary single-phase work.
+
 ## [Unreleased]
 
 ## 4.23.0 — 2026-08-14
