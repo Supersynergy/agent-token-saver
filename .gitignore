@@ -13,6 +13,9 @@ catboost_info/
 .superverify/
 .repovista/
 .repovista-metareview/
+.gg/
+.pytest_cache/
+.ruff_cache/
 
 # Local-only lanes/wrappers (devin/cursor) — usable locally, never deployed
 integration/cli/devincontrol

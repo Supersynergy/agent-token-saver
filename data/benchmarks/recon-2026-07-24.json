@@ -8,7 +8,7 @@
       "lines": 7,
       "exit_code": 0,
       "success": true,
-      "sample": "scripts/external_usage_gate.py (2 hits):   :423\ts=1.000 main [ORCH] \u2014 // /Users/master/BASE/projects/agent-token-saver/scripts/external_usage_gate.py   :197\ts=0.805 parse_named [DEFI] \u2014 // /Users/mast"
+      "sample": "scripts/external_usage_gate.py (2 hits):   :423\ts=1.000 main [ORCH] \u2014 // <repo>/scripts/external_usage_gate.py   :197\ts=0.805 parse_named [DEFI] \u2014 // <home>"
     },
     {
       "name": "grep_baseline",
@@ -18,7 +18,7 @@
       "lines": 39,
       "exit_code": 0,
       "success": true,
-      "sample": "/Users/master/BASE/projects/agent-token-saver/integration/cli/ats-jury-bench.py:34:        \"question\": \"Where is usage parsing handled in this repo?\", /Users/master/BASE/projects/agent-token-saver/int"
+      "sample": "<repo>/integration/cli/ats-jury-bench.py:34:        \"question\": \"Where is usage parsing handled in this repo?\", <repo>/int"
     },
     {
       "name": "ghx_explore",
@@ -88,7 +88,7 @@
       "lines": 7,
       "exit_code": 0,
       "success": true,
-      "sample": "scripts/external_usage_gate.py (2 hits):   :423\ts=1.000 main [ORCH] \u2014 // /Users/master/BASE/projects/agent-token-saver/scripts/external_usage_gate.py   :197\ts=0.805 parse_named [DEFI] \u2014 // /Users/mast"
+      "sample": "scripts/external_usage_gate.py (2 hits):   :423\ts=1.000 main [ORCH] \u2014 // <repo>/scripts/external_usage_gate.py   :197\ts=0.805 parse_named [DEFI] \u2014 // <home>"
     },
     {
       "name": "grep_baseline",
@@ -98,7 +98,7 @@
       "lines": 39,
       "exit_code": 0,
       "success": true,
-      "sample": "/Users/master/BASE/projects/agent-token-saver/integration/cli/ats-jury-bench.py:34:        \"question\": \"Where is usage parsing handled in this repo?\", /Users/master/BASE/projects/agent-token-saver/int"
+      "sample": "<repo>/integration/cli/ats-jury-bench.py:34:        \"question\": \"Where is usage parsing handled in this repo?\", <repo>/int"
     },
     {
       "name": "ghx_explore",

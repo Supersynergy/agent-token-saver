@@ -55,6 +55,17 @@ The model still gets the decisive lines. It simply carries less baggage.
 | **Team-aware** | Workers receive small task capsules instead of the full parent transcript; one controller keeps the final decision. |
 | **Safe to adopt** | Dry-run, file hashes, merged hook JSON and backups. Optional third-party tools are detected, never silently installed. |
 
+## Requirements
+
+| | |
+|---|---|
+| **Required** | Python **3.11+** and `git`. Nothing else — the core is standard library only. |
+| **OS** | Linux and macOS, both covered by CI on every push. On Windows use WSL2; the installers are POSIX shell. |
+| **Optional** | [Bun](https://bun.sh/) — only for the `llmadapter` adapter. Without it the core installs and runs normally and `doctor` reports `llmadapter: bun_missing`. |
+
+No package manager, no build step, no daemon. Uninstall is deleting the
+installed files; `--dry-run` prints every path first.
+
 ## Quick start
 
 The review-first path is best for a first installation:
@@ -218,6 +229,15 @@ Hermes' built-in identity; it safely merges the default when the user's
 `SOUL.md` already exists. See [Hooks and agents](docs/HOOKS_AND_AGENTS.md).
 Files on disk are not proof of active wiring; the doctor checks installed
 paths, hooks, and the exact managed default blocks.
+
+### Companion: the skill router
+
+`doctor` lists `skill-router` as an optional layer. That is
+[agent-token-saver-skill-router](https://github.com/Supersynergy/agent-token-saver-skill-router),
+a separate stdlib-only CLI that picks zero or one skill (up to four supports
+for genuinely multi-phase work) out of a large local skill catalog. Install it
+when a host loads many `SKILL.md` files; skip it otherwise. Neither installer
+ever installs the other package.
 
 ## AgentMaster protocol
 

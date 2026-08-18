@@ -11,7 +11,7 @@
       "agent_tokens_est": 106,
       "total_tokens": 1570,
       "success": true,
-      "sample": "Canonical parsing lives in [scripts/full_context_ledger.py](/Users/master/BASE/projects/agent-token-saver/scripts/full_context_ledger.py:52): `_usage_candidates`, `inspect_usage_file`, and `_normalize"
+      "sample": "Canonical parsing lives in [scripts/full_context_ledger.py](<repo>/scripts/full_context_ledger.py:52): `_usage_candidates`, `inspect_usage_file`, and `_normalize"
     },
     {
       "agent": "codex",
@@ -50,7 +50,7 @@
       "agent_tokens_est": 85,
       "total_tokens": 85,
       "success": true,
-      "sample": "The current [superweb README](/Users/master/BASE/projects/superweb/README.md) says nothing about PGO; neither \u201cPGO\u201d nor \u201cProfile-Guided Optimization\u201d appears. PGO details are instead in the changelog:"
+      "sample": "The current [superweb README](<home>/BASE/projects/superweb/README.md) says nothing about PGO; neither \u201cPGO\u201d nor \u201cProfile-Guided Optimization\u201d appears. PGO details are instead in the changelog:"
     },
     {
       "agent": "codex",
@@ -89,7 +89,7 @@
       "agent_tokens_est": 132,
       "total_tokens": 132,
       "success": true,
-      "sample": "FTS5 lives in [`synapse-core/src/db.rs`](/Users/master/projects/synapse/crates/synapse-core/src/db.rs:1530): `search_lex()` runs `docs_fts MATCH`, joins `docs`, and ranks with `bm25`; the FTS table an"
+      "sample": "FTS5 lives in [`synapse-core/src/db.rs`](<home>/projects/synapse/crates/synapse-core/src/db.rs:1530): `search_lex()` runs `docs_fts MATCH`, joins `docs`, and ranks with `bm25`; the FTS table an"
     },
     {
       "agent": "codex",
@@ -102,7 +102,7 @@
       "agent_tokens_est": 118,
       "total_tokens": 118,
       "success": true,
-      "sample": "Core FTS5 search is in [`crates/synapse-core/src/db.rs`](/Users/master/BASE/projects/synapse-memory/crates/synapse-core/src/db.rs:1486): `Store::search_lex` runs `docs_fts MATCH ?1`, ranks with `bm25("
+      "sample": "Core FTS5 search is in [`crates/synapse-core/src/db.rs`](<home>/BASE/projects/synapse-memory/crates/synapse-core/src/db.rs:1486): `Store::search_lex` runs `docs_fts MATCH ?1`, ranks with `bm25("
     },
     {
       "agent": "codex",
@@ -115,7 +115,7 @@
       "agent_tokens_est": 57,
       "total_tokens": 57,
       "success": true,
-      "sample": "Cannot determine which LLM providers `codex-pro` supports from this context. The referenced repository `/Users/master/BASE/projects/codex-pro` does not exist, so no provider configuration or documenta"
+      "sample": "Cannot determine which LLM providers `codex-pro` supports from this context. The referenced repository `<home>/BASE/projects/codex-pro` does not exist, so no provider configuration or documenta"
     },
     {
       "agent": "codex",
@@ -128,7 +128,7 @@
       "agent_tokens_est": 64,
       "total_tokens": 64,
       "success": true,
-      "sample": "Cannot determine which LLM providers `codex-pro` supports from the supplied context. The expected repository `/Users/master/BASE/projects/codex-pro` does not exist, so no configuration, documentation,"
+      "sample": "Cannot determine which LLM providers `codex-pro` supports from the supplied context. The expected repository `<home>/BASE/projects/codex-pro` does not exist, so no configuration, documentation,"
     },
     {
       "agent": "codex",
@@ -375,7 +375,7 @@
       "agent_tokens_est": 71,
       "total_tokens": 71,
       "success": true,
-      "sample": "I can\u2019t determine which LLM providers codex-pro supports from the provided context \u2014 the path `/Users/master/BASE/projects/codex-pro` does not exist, so the relevant files aren\u2019t available. You\u2019d need"
+      "sample": "I can\u2019t determine which LLM providers codex-pro supports from the provided context \u2014 the path `<home>/BASE/projects/codex-pro` does not exist, so the relevant files aren\u2019t available. You\u2019d need"
     },
     {
       "agent": "kimi",
@@ -388,7 +388,7 @@
       "agent_tokens_est": 67,
       "total_tokens": 67,
       "success": true,
-      "sample": "I can't determine which LLM providers codex-pro supports from the provided context, because the path `/Users/master/BASE/projects/codex-pro` does not exist on this system. To give a grounded answer, I"
+      "sample": "I can't determine which LLM providers codex-pro supports from the provided context, because the path `<home>/BASE/projects/codex-pro` does not exist on this system. To give a grounded answer, I"
     },
     {
       "agent": "kimi",

@@ -36,7 +36,7 @@
           "provider_usage": true
         },
         "stderr_tail": "",
-        "raw_jsonl": "/Users/master/BASE/projects/agent-token-saver/data/benchmarks/headroom-ab-2026-07-18/runs/large-git-diff-headroom-on.jsonl"
+        "raw_jsonl": "<repo>/data/benchmarks/headroom-ab-2026-07-18/runs/large-git-diff-headroom-on.jsonl"
       },
       "off": {
         "arm": "off",
@@ -62,7 +62,7 @@
           "provider_usage": true
         },
         "stderr_tail": "",
-        "raw_jsonl": "/Users/master/BASE/projects/agent-token-saver/data/benchmarks/headroom-ab-2026-07-18/runs/large-git-diff-headroom-off.jsonl"
+        "raw_jsonl": "<repo>/data/benchmarks/headroom-ab-2026-07-18/runs/large-git-diff-headroom-off.jsonl"
       }
     },
     "provider_delta": {
@@ -204,9 +204,9 @@
     }
   },
   "ledgers": {
-    "on-json": "/Users/master/BASE/projects/agent-token-saver/data/benchmarks/headroom-ab-2026-07-18/ledger-headroom-on.json",
-    "on-md": "/Users/master/BASE/projects/agent-token-saver/data/benchmarks/headroom-ab-2026-07-18/ledger-headroom-on.md",
-    "off-json": "/Users/master/BASE/projects/agent-token-saver/data/benchmarks/headroom-ab-2026-07-18/ledger-headroom-off.json",
-    "off-md": "/Users/master/BASE/projects/agent-token-saver/data/benchmarks/headroom-ab-2026-07-18/ledger-headroom-off.md"
+    "on-json": "<repo>/data/benchmarks/headroom-ab-2026-07-18/ledger-headroom-on.json",
+    "on-md": "<repo>/data/benchmarks/headroom-ab-2026-07-18/ledger-headroom-on.md",
+    "off-json": "<repo>/data/benchmarks/headroom-ab-2026-07-18/ledger-headroom-off.json",
+    "off-md": "<repo>/data/benchmarks/headroom-ab-2026-07-18/ledger-headroom-off.md"
   }
 }

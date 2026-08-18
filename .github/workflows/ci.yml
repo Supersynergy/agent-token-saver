@@ -9,7 +9,11 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
@@ -25,8 +29,14 @@ jobs:
           bash -n install-universal.sh integration/cli/codex-heavy-context
           scripts/neutral_install_smoke.sh scripts/remote_bootstrap_smoke.sh
 
+  # The advertised path: a machine that has only Python 3 and git. Bun is
+  # deliberately absent here so the optional adapter can never gate the core.
   neutral-install:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
@@ -35,3 +45,17 @@ jobs:
         run: bash scripts/neutral_install_smoke.sh
       - name: Standalone remote-bootstrap path
         run: bash scripts/remote_bootstrap_smoke.sh
+
+  # Same smoke with the optional runtime present, so the llmadapter lane and
+  # `doctor --require-llmadapter` stay covered instead of silently rotting.
+  neutral-install-with-bun:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: latest
+      - name: Fresh HOME universal install with llmadapter runtime
+        run: bash scripts/neutral_install_smoke.sh

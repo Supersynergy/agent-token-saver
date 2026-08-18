@@ -42,7 +42,7 @@
     },
     "synx": {
       "status": "integrated (renamed from syn)",
-      "binary": "/Users/master/.local/bin/synx (9767 bytes, full CLI)",
+      "binary": "<home>/.local/bin/synx (9767 bytes, full CLI)",
       "pre_session": "ats-synapse-prime (alias: devin-synapse-prime) → synx hybrid",
       "post_session": "ats-synapse-remember (alias: devin-synapse-remember) → synx put",
       "ingest": "ats-synapse-ingest (alias: devin-synapse-ingest) → devin-usage.py → synapse-ultra ingest"

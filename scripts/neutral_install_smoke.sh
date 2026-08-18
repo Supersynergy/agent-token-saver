@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Proves the promise in the README: a machine with nothing but Python 3 and git
+# gets a healthy portable core. Bun is only needed by the optional llmadapter,
+# so it must never gate this run — it is exercised separately below when the
+# host happens to have it.
+
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TMP_ROOT="$(mktemp -d)"
 trap 'rm -rf "$TMP_ROOT"' EXIT INT TERM
@@ -13,21 +18,48 @@ printf '%s\n' '# Hermes fixture' >"$HOME/.hermes/SOUL.md"
 python3 "$ROOT/scripts/install_agent_token_saver.py" \
   --profile lean --agent all --project "$PROJECT" >/dev/null
 
-REPORT="$TMP_ROOT/doctor.json"
-"$HOME/.local/bin/agent-token-saver" doctor \
-  --profile lean --require-llmadapter --json >"$REPORT"
+if command -v bun >/dev/null 2>&1; then
+  HAS_BUN=yes
+else
+  HAS_BUN=no
+fi
 
-python3 - "$HOME" "$PROJECT" "$REPORT" <<'PY'
+# Never swallow the diagnosis: with --json redirected to a file, a failing
+# doctor exits silently, which is unactionable for both users and CI.
+run_doctor() {
+  local out="$1"
+  shift
+  if ! "$HOME/.local/bin/agent-token-saver" doctor --profile lean --json "$@" >"$out"; then
+    echo "neutral install FAILED: 'agent-token-saver doctor $*' reported an unhealthy stack" >&2
+    cat "$out" >&2 || true
+    exit 1
+  fi
+}
+
+REPORT="$TMP_ROOT/doctor.json"
+run_doctor "$REPORT"
+
+python3 - "$HOME" "$PROJECT" "$REPORT" "$HAS_BUN" <<'PY'
 import json
 import sys
 from pathlib import Path
 
-home, project, report_path = map(Path, sys.argv[1:])
+home, project, report_path = map(Path, sys.argv[1:4])
+has_bun = sys.argv[4] == "yes"
 report = json.loads(report_path.read_text())
 assert report["healthy"] is True, report
 assert report["status"] in {"core-ready", "full"}, report
-assert report["llmadapter"]["ready"] is True, report["llmadapter"]
-assert report["llmadapter"]["capability"]["schema_version"] == 2
+
+adapter = report["llmadapter"]
+if has_bun:
+    assert adapter["ready"] is True, adapter
+    assert adapter["capability"]["schema_version"] == 2, adapter
+else:
+    # Documented contract: the core stays healthy and the adapter names the one
+    # missing runtime instead of failing the install.
+    assert adapter["ready"] is False, adapter
+    assert adapter["error"] == "bun_missing", adapter
+
 required = [
     home / ".local/bin/agent-token-saver",
     home / ".local/bin/agent-token-ledger",
@@ -45,7 +77,8 @@ required = [
     home / "AGENTS.md",
     project / ".agents/skills/agent-token-saver/SKILL.md",
 ]
-assert all(path.exists() or path.is_symlink() for path in required), required
+missing = [str(path) for path in required if not (path.exists() or path.is_symlink())]
+assert not missing, missing
 for path in (
     home / ".codex/AGENTS.md",
     home / ".claude/CLAUDE.md",
@@ -64,6 +97,7 @@ print(
             "status": report["status"],
             "coverage_percent": report["coverage_percent"],
             "missing_optional": report["missing_optional"],
+            "bun": has_bun,
         },
         separators=(",", ":"),
     )
@@ -72,4 +106,12 @@ PY
 
 "$HOME/.local/bin/agent-token-ledger" --help >/dev/null
 "$HOME/.local/bin/agent-token-audit" --help >/dev/null
-"$HOME/.local/bin/llmadapter" contract "neutral install smoke" >/dev/null
+
+# Optional adapter lane: only meaningful where its runtime exists.
+if [ "$HAS_BUN" = yes ]; then
+  run_doctor "$TMP_ROOT/doctor-strict.json" --require-llmadapter
+  "$HOME/.local/bin/llmadapter" contract "neutral install smoke" >/dev/null
+  printf '%s\n' '{"llmadapter_lane":"PASS"}'
+else
+  printf '%s\n' '{"llmadapter_lane":"SKIPPED","reason":"bun not installed"}'
+fi

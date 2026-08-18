@@ -36,7 +36,7 @@
             "provider_usage": true
           },
           "stderr_tail": "",
-          "raw_jsonl": "/Users/master/BASE/projects/agent-token-saver/data/benchmarks/codex-provider-ab-2026-07-15/compact-policy/runs/process-table-baseline.jsonl"
+          "raw_jsonl": "<repo>/data/benchmarks/codex-provider-ab-2026-07-15/compact-policy/runs/process-table-baseline.jsonl"
         },
         "lean": {
           "arm": "lean",
@@ -63,7 +63,7 @@
             "provider_usage": true
           },
           "stderr_tail": "",
-          "raw_jsonl": "/Users/master/BASE/projects/agent-token-saver/data/benchmarks/codex-provider-ab-2026-07-15/compact-policy/runs/process-table-lean.jsonl"
+          "raw_jsonl": "<repo>/data/benchmarks/codex-provider-ab-2026-07-15/compact-policy/runs/process-table-lean.jsonl"
         }
       },
       "provider_delta": {
@@ -105,7 +105,7 @@
             "provider_usage": true
           },
           "stderr_tail": "",
-          "raw_jsonl": "/Users/master/BASE/projects/agent-token-saver/data/benchmarks/codex-provider-ab-2026-07-15/compact-policy/runs/large-git-diff-lean.jsonl"
+          "raw_jsonl": "<repo>/data/benchmarks/codex-provider-ab-2026-07-15/compact-policy/runs/large-git-diff-lean.jsonl"
         },
         "baseline": {
           "arm": "baseline",
@@ -131,7 +131,7 @@
             "provider_usage": true
           },
           "stderr_tail": "",
-          "raw_jsonl": "/Users/master/BASE/projects/agent-token-saver/data/benchmarks/codex-provider-ab-2026-07-15/compact-policy/runs/large-git-diff-baseline.jsonl"
+          "raw_jsonl": "<repo>/data/benchmarks/codex-provider-ab-2026-07-15/compact-policy/runs/large-git-diff-baseline.jsonl"
         }
       },
       "provider_delta": {
@@ -174,7 +174,7 @@
             "provider_usage": true
           },
           "stderr_tail": "",
-          "raw_jsonl": "/Users/master/BASE/projects/agent-token-saver/data/benchmarks/codex-provider-ab-2026-07-15/compact-policy/runs/git-history-baseline.jsonl"
+          "raw_jsonl": "<repo>/data/benchmarks/codex-provider-ab-2026-07-15/compact-policy/runs/git-history-baseline.jsonl"
         },
         "lean": {
           "arm": "lean",
@@ -200,7 +200,7 @@
             "provider_usage": true
           },
           "stderr_tail": "",
-          "raw_jsonl": "/Users/master/BASE/projects/agent-token-saver/data/benchmarks/codex-provider-ab-2026-07-15/compact-policy/runs/git-history-lean.jsonl"
+          "raw_jsonl": "<repo>/data/benchmarks/codex-provider-ab-2026-07-15/compact-policy/runs/git-history-lean.jsonl"
         }
       },
       "provider_delta": {

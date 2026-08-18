@@ -1,5 +1,20 @@
 # Changelog
 
+- 2026-08-18: **Fixed the red CI and the broken fresh-install gate.**
+  `neutral_install_smoke.sh` ran `doctor --require-llmadapter`, so a host
+  without Bun failed the install gate even though the README documents the
+  adapter as optional. Because the JSON report was redirected to a file, the
+  failure printed nothing at all — CI and users got a bare exit 1. The smoke
+  now gates on the portable core, asserts the documented `bun_missing`
+  degradation when the runtime is absent, exercises the adapter lane only
+  where Bun exists, and prints the doctor report on failure.
+- 2026-08-18: CI now runs tests and the neutral install on macOS as well as
+  Linux, plus a dedicated Bun lane so the optional adapter stays covered.
+- 2026-08-18: Removed absolute `/Users/<name>/...` paths from 11 published
+  benchmark artifacts, which leaked the maintainer's username and unrelated
+  private project names. The guard test now scans the whole benchmark
+  directory instead of a hand-listed allowlist that missed them.
+- 2026-08-18: README states supported OS and runtime requirements.
 - 2026-08-15: Let the compact host policy consume the router's bounded
   multi-phase result: one primary plus at most four independently relevant
   support skills; preserve zero/one routing for ordinary single-phase work.

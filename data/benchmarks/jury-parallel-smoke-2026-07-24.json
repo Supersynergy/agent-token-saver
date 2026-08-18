@@ -20,7 +20,7 @@
       "success": true,
       "reviewer": "gemini",
       "reviewer_score": 0.0,
-      "sample": "Canonical usage parsing lives in [`scripts/full_context_ledger.py`](/Users/master/BASE/projects/agent-token-saver/scripts/full_context_ledger.py:43): `_records()` reads JSON/JSONL, `_usage_candidates("
+      "sample": "Canonical usage parsing lives in [`scripts/full_context_ledger.py`](<repo>/scripts/full_context_ledger.py:43): `_records()` reads JSON/JSONL, `_usage_candidates("
     },
     {
       "agent": "codex",
@@ -65,7 +65,7 @@
       "success": true,
       "reviewer": "gemini",
       "reviewer_score": 0.0,
-      "sample": "Canonical parsing lives in [scripts/full_context_ledger.py](/Users/master/BASE/projects/agent-token-saver/scripts/full_context_ledger.py:52): `_records()` reads JSON/JSONL, `_usage_candidates()` finds"
+      "sample": "Canonical parsing lives in [scripts/full_context_ledger.py](<repo>/scripts/full_context_ledger.py:52): `_records()` reads JSON/JSONL, `_usage_candidates()` finds"
     },
     {
       "agent": "claude",
@@ -110,7 +110,7 @@
       "success": true,
       "reviewer": "gemini",
       "reviewer_score": 0.0,
-      "sample": "Usage parsing lives in two scripts under `/Users/master/BASE/projects/agent-token-saver/scripts/`. Core parser: `parse_codex_jsonl` in `scripts/codex_provider_ab.py:125` \u2014 walks Codex JSONL events and"
+      "sample": "Usage parsing lives in two scripts under `<repo>/scripts/`. Core parser: `parse_codex_jsonl` in `scripts/codex_provider_ab.py:125` \u2014 walks Codex JSONL events and"
     },
     {
       "agent": "claude",

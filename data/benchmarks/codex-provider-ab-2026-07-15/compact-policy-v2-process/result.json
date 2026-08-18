@@ -34,7 +34,7 @@
             "provider_usage": false
           },
           "stderr_tail": "",
-          "raw_jsonl": "/Users/master/BASE/projects/agent-token-saver/data/benchmarks/codex-provider-ab-2026-07-15/compact-policy-v2-process/runs/process-table-baseline.jsonl"
+          "raw_jsonl": "<repo>/data/benchmarks/codex-provider-ab-2026-07-15/compact-policy-v2-process/runs/process-table-baseline.jsonl"
         },
         "lean": {
           "arm": "lean",
@@ -60,7 +60,7 @@
             "provider_usage": true
           },
           "stderr_tail": "",
-          "raw_jsonl": "/Users/master/BASE/projects/agent-token-saver/data/benchmarks/codex-provider-ab-2026-07-15/compact-policy-v2-process/runs/process-table-lean.jsonl"
+          "raw_jsonl": "<repo>/data/benchmarks/codex-provider-ab-2026-07-15/compact-policy-v2-process/runs/process-table-lean.jsonl"
         }
       },
       "provider_delta": {

@@ -45,7 +45,7 @@
       "exit_code": 0,
       "success": true,
       "json_valid": false,
-      "sample": "SuperSynergy Operations Agent Hermes v3.1 active. Current context: macOS 15.5 | /Users/master | profile=default. System health: all services nominal. Ready for pipeline execution. No pending cron jobs",
+      "sample": "SuperSynergy Operations Agent Hermes v3.1 active. Current context: macOS 15.5 | <home> | profile=default. System health: all services nominal. Ready for pipeline execution. No pending cron jobs",
       "cost_usd": 0.0
     },
     {
