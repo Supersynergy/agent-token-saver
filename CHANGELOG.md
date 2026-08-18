@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+- `scripts/token_stack_matrix_benchmark.py` crashed outright when the optional
+  Ponytail comparator skill was not installed (`FileNotFoundError`), which took
+  down the four unrelated stack rows (native/RTK/Tilth/context-mode) that do
+  not depend on it. Now degrades: the Ponytail-only row is marked
+  not-accepted with an explicit reason, `ponytail.available: false` is in the
+  JSON output, and the rest of the matrix still runs. Found while checking
+  the tool stack is current and used correctly on this host; also surfaced
+  that the locally installed `agent-token-saver` was stale (2026-08-15,
+  before this session's fixes) with a failing `doctor` integrity check --
+  reinstalled from the current repo, integrity now clean.
 - CI pins the Python version instead of letting uv pick the newest available.
   `requires-python = ">=3.11"` was an unverified claim: every job silently ran
   3.14, so nothing proved the documented floor worked. Tests now run on every

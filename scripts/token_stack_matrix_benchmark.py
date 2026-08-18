@@ -557,7 +557,16 @@ def main() -> int:
         "tool_search_tokens_saved": 0,
         "tool_search_requests": 0,
     }
-    ponytail_skill_tokens = est_tokens(PONYTAIL.read_text(errors="ignore"))
+    try:
+        ponytail_skill_tokens = est_tokens(PONYTAIL.read_text(errors="ignore"))
+        ponytail_available = True
+    except OSError:
+        # Ponytail is an optional third-party comparator, not part of this
+        # repo's stack (research verdict: net negative, not global-loaded).
+        # Its absence must not crash the four stack rows that do not depend
+        # on it; the affected row is marked not-accepted below instead.
+        ponytail_skill_tokens = 0
+        ponytail_available = False
     live = live_ponytail_cases() if args.live_codex else []
     if args.reuse_live:
         previous = json.loads(args.reuse_live.read_text())
@@ -640,8 +649,12 @@ def main() -> int:
             max_input,
             0,
             output_is_provider_reported=False,
-            accepted=all_components_ok and ponytail_live_accepted,
-            note="Current + context-mode MCP + full Ponytail skill; cold-schema cost.",
+            accepted=all_components_ok and ponytail_live_accepted and ponytail_available,
+            note=(
+                "Current + context-mode MCP + full Ponytail skill; cold-schema cost."
+                if ponytail_available
+                else "Ponytail not installed on this host; row excluded from ranking."
+            ),
         ),
     ]
     none_total = matrix[0]["combined_payload_tokens"] or 1
@@ -675,6 +688,7 @@ def main() -> int:
         },
         "ponytail": {
             "type": "behavior/output shaper skill, not a lossless compressor",
+            "available": ponytail_available,
             "full_skill_tokens": ponytail_skill_tokens,
             "live_cases": live,
             "baseline_avg_output_tokens": baseline_output_tokens,
