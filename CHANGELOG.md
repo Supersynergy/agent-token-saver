@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+- CI pins the Python version instead of letting uv pick the newest available.
+  `requires-python = ">=3.11"` was an unverified claim: every job silently ran
+  3.14, so nothing proved the documented floor worked. Tests now run on 3.11
+  (floor) and 3.14 (latest stable) across Linux and macOS.
+
 ## 4.24.0 — 2026-08-18
 
 - 2026-08-18: **Fixed the red CI and the broken fresh-install gate.**

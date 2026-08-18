@@ -13,7 +13,12 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
+        # Floor and latest stable. Without a pin, uv silently picks the newest
+        # available, so `requires-python = ">=3.11"` was an unverified claim.
+        python-version: ["3.11", "3.14"]
     runs-on: ${{ matrix.os }}
+    env:
+      UV_PYTHON: ${{ matrix.python-version }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
@@ -21,6 +26,7 @@ jobs:
       - uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff # v6
         with:
           enable-cache: true
+      - run: uv run python -V
       - run: uv sync --extra dev
       - run: uv run pytest
       - name: Lint release surface
