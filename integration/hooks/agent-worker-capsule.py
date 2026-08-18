@@ -27,7 +27,7 @@ import time
 from pathlib import Path
 
 CONTRACT = (
-    "agent-token-saver worker contract (v4.23.0): give this worker ONE closed "
+    "agent-token-saver worker contract (v4.24.0): give this worker ONE closed "
     "objective and a 300-700 token capsule with exact paths, constraints and a "
     "PASS/FAIL oracle. Never pass the controller's transcript or skill catalog. "
     "Zero or one routed primary skill. Max 3 attempts, result <=500 tokens "

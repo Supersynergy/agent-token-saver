@@ -3,10 +3,14 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+# Read the canonical version instead of hardcoding it; test_skill_doc_drift
+# already proves every release site agrees, so a bump stays a one-line change.
+VERSION = re.search(r'^version = "([^"]+)"', (ROOT / "pyproject.toml").read_text(), re.M).group(1)
 INSTALLER = ROOT / "scripts" / "install_agent_token_saver.py"
 
 
@@ -69,7 +73,7 @@ def test_all_agents_install_without_overwriting_existing_settings(tmp_path: Path
     assert config["profile"] == "lean"
     assert config["agents"] == ["codex", "claude", "hermes", "ggcoder", "repo"]
     assert config["project_root"] == str(project.resolve())
-    assert config["canonical_skill"]["version"] == "4.23.0"
+    assert config["canonical_skill"]["version"] == VERSION
     assert (
         config["canonical_skill"]["sha256"]
         == hashlib.sha256(

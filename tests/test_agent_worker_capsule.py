@@ -4,12 +4,17 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 HOOK = ROOT / "integration" / "hooks" / "agent-worker-capsule.py"
+# Read the canonical version instead of hardcoding it; test_skill_doc_drift
+# already proves every release site agrees, so a bump stays a one-line change.
+VERSION = re.search(r'^version = "([^"]+)"', (ROOT / "pyproject.toml").read_text(), re.M).group(1)
+CONTRACT = f"worker contract (v{VERSION})"
 
 
 def run_hook(tmp_path: Path, payload: dict[object, object]) -> dict[object, object]:
@@ -86,7 +91,7 @@ def test_precontracted_capsule_gets_only_compact_delta(tmp_path: Path) -> None:
     message = context(output)
     assert "capsule accepted" in message
     assert "preserve its objective, scope and oracle" in message
-    assert "worker contract (v4.23.0)" not in message
+    assert CONTRACT not in message
     assert "Tool lane: local source" in message
     assert len(message.encode("utf-8")) < 700
 
@@ -104,7 +109,7 @@ def test_incomplete_capsule_keeps_full_contract(tmp_path: Path) -> None:
     )
 
     message = context(output)
-    assert "worker contract (v4.23.0)" in message
+    assert CONTRACT in message
     assert "STATUS: PASS|FAIL|BLOCKED" in message
 
 
@@ -127,7 +132,7 @@ def test_empty_capsule_fields_keep_full_contract(tmp_path: Path) -> None:
     )
 
     message = context(output)
-    assert "worker contract (v4.23.0)" in message
+    assert CONTRACT in message
     assert "capsule accepted" not in message
 
 

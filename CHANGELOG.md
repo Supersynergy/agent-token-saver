@@ -1,5 +1,9 @@
 # Changelog
 
+## [Unreleased]
+
+## 4.24.0 — 2026-08-18
+
 - 2026-08-18: **Fixed the red CI and the broken fresh-install gate.**
   `neutral_install_smoke.sh` ran `doctor --require-llmadapter`, so a host
   without Bun failed the install gate even though the README documents the
@@ -18,8 +22,6 @@
 - 2026-08-15: Let the compact host policy consume the router's bounded
   multi-phase result: one primary plus at most four independently relevant
   support skills; preserve zero/one routing for ordinary single-phase work.
-
-## [Unreleased]
 
 ## 4.23.0 — 2026-08-14
 
