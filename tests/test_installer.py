@@ -5,6 +5,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -36,7 +37,10 @@ def run_installer(tmp_path: Path, *args: str) -> subprocess.CompletedProcess[str
     env = os.environ.copy()
     env.update(HOME=str(home), PATH=f"{bin_dir}:{env['PATH']}")
     return subprocess.run(
-        ["python3", str(INSTALLER), "--project", str(project), *args],
+        # sys.executable, not "python3": the test prepends bin_dir to PATH, so a
+        # bare name resolves to whatever interpreter happens to come first and
+        # silently escapes the version matrix.
+        [sys.executable, str(INSTALLER), "--project", str(project), *args],
         env=env,
         text=True,
         capture_output=True,

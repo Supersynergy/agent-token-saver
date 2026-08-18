@@ -12,10 +12,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
-        # Floor and latest stable. Without a pin, uv silently picks the newest
+        # Every supported version on Linux; floor and latest on macOS, which is
+        # the expensive runner. Without a pin uv silently picks the newest
         # available, so `requires-python = ">=3.11"` was an unverified claim.
-        python-version: ["3.11", "3.14"]
+        os: [ubuntu-latest]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+        include:
+          - os: macos-latest
+            python-version: "3.11"
+          - os: macos-latest
+            python-version: "3.14"
     runs-on: ${{ matrix.os }}
     env:
       UV_PYTHON: ${{ matrix.python-version }}

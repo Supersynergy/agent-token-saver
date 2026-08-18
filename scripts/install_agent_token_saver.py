@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Install the CLI, skill and fail-open hooks without replacing agent config."""
+"""Install the CLI, skill and fail-open hooks without replacing agent config.
+
+Runs on Python 3.11+ and is tested up to the latest stable release. The floor
+is a compatibility guarantee, not a recommendation: any newer Python already on
+PATH is used automatically.
+"""
 
 from __future__ import annotations
 
@@ -17,6 +22,17 @@ import time
 from contextlib import suppress
 from pathlib import Path
 from typing import Any
+
+MIN_PYTHON = (3, 11)
+if sys.version_info < MIN_PYTHON:  # pragma: no cover - depends on interpreter
+    # Without this, an old interpreter fails somewhere deep in the stdlib with
+    # a message that says nothing about the actual problem.
+    sys.exit(
+        "agent-token-saver needs Python "
+        f"{MIN_PYTHON[0]}.{MIN_PYTHON[1]}+, but this is "
+        f"{sys.version_info[0]}.{sys.version_info[1]}. "
+        "Install a newer Python, then re-run the installer."
+    )
 
 ROOT = Path(__file__).resolve().parents[1]
 HOME = Path.home()

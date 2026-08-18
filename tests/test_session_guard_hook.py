@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -25,7 +26,7 @@ def run_hook_for_transcript(tmp_path: Path, transcript: Path, *, ledger: Path = 
         "ATS_GUARD_STATE_DIR": str(state),
     }
     result = subprocess.run(
-        ["python3", str(HOOK)],
+        [sys.executable, str(HOOK)],
         input=json.dumps(event),
         capture_output=True,
         text=True,
@@ -178,7 +179,7 @@ def test_guard_rejects_symlink_escape(tmp_path: Path) -> None:
     link.symlink_to(outside)
     event = {"session_id": "escape", "transcript_path": str(link)}
     result = subprocess.run(
-        ["python3", str(HOOK)],
+        [sys.executable, str(HOOK)],
         input=json.dumps(event),
         capture_output=True,
         text=True,

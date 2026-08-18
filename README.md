@@ -60,7 +60,7 @@ The model still gets the decisive lines. It simply carries less baggage.
 | | |
 |---|---|
 | **Required** | Python **3.11+** and `git`. Nothing else — the core is standard library only. |
-| **OS** | Linux and macOS on Python 3.11 and 3.14 (latest stable), all covered by CI on every push. On Windows use WSL2; the installers are POSIX shell. |
+| **OS** | Linux and macOS. CI runs the full test suite on every Python from **3.11 to 3.14** (latest stable) on Linux, plus the floor and latest on macOS, on every push. On Windows use WSL2; the installers are POSIX shell. |
 | **Optional** | [Bun](https://bun.sh/) — only for the `llmadapter` adapter. Without it the core installs and runs normally and `doctor` reports `llmadapter: bun_missing`. |
 
 No package manager, no build step, no daemon. Uninstall is deleting the

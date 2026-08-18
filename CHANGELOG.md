@@ -4,8 +4,17 @@
 
 - CI pins the Python version instead of letting uv pick the newest available.
   `requires-python = ">=3.11"` was an unverified claim: every job silently ran
-  3.14, so nothing proved the documented floor worked. Tests now run on 3.11
-  (floor) and 3.14 (latest stable) across Linux and macOS.
+  3.14, so nothing proved the documented floor worked. Tests now run on every
+  supported version, **3.11 through 3.14**, on Linux, plus the floor and
+  latest on macOS.
+- Three test files spawned a bare `"python3"` subprocess instead of
+  `sys.executable`. That interpreter can differ from the one running the
+  suite (the tests prepend a fixture `bin/` to `PATH`), which both caused an
+  intermittent installer test failure and let a version silently escape the
+  CI matrix. Now consistent with the rest of the suite.
+- `scripts/install_agent_token_saver.py` exits with a clear message on
+  Python <3.11 instead of failing deep inside the stdlib with an
+  unrelated-looking error. Verified on 3.10.
 
 ## 4.24.0 — 2026-08-18
 

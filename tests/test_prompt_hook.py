@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -17,7 +18,7 @@ def run_hook(home: Path, prompt: str, router: Path | None = None) -> str:
     if router is not None:
         env["ATS_ROUTER"] = str(router)
     result = subprocess.run(
-        ["python3", str(HOOK)],
+        [sys.executable, str(HOOK)],
         input=json.dumps({"prompt": prompt}),
         text=True,
         capture_output=True,
