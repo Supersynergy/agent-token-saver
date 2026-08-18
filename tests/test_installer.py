@@ -36,6 +36,10 @@ def run_installer(tmp_path: Path, *args: str) -> subprocess.CompletedProcess[str
     rtk.chmod(0o755)
     env = os.environ.copy()
     env.update(HOME=str(home), PATH=f"{bin_dir}:{env['PATH']}")
+    # self_update() runs a real `git pull` against the actual repo checkout
+    # (not the --project fixture) on every install; 15+ installer tests each
+    # doing that made the suite non-hermetic and intermittently timeout-flaky.
+    env["ATS_SKIP_SELF_UPDATE"] = "1"
     return subprocess.run(
         # sys.executable, not "python3": the test prepends bin_dir to PATH, so a
         # bare name resolves to whatever interpreter happens to come first and

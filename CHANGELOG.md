@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+- Found while re-verifying after an unrelated benchmark fix: the installer's
+  `self_update()` runs a real `git pull` against the actual repo checkout on
+  every install, regardless of `--project`. 15+ installer tests each doing a
+  live network pull made the suite non-hermetic and intermittently
+  timeout-flaky (60s subprocess timeout hit under rapid repeat invocation,
+  even though a single standalone `git pull` took <1s). Added
+  `ATS_SKIP_SELF_UPDATE=1`, set only by the test harness; real installs are
+  unaffected. Full suite: 110-126s and occasionally flaky -> 42-43s and
+  clean on two consecutive runs.
+
 - `scripts/token_stack_matrix_benchmark.py` crashed outright when the optional
   Ponytail comparator skill was not installed (`FileNotFoundError`), which took
   down the four unrelated stack rows (native/RTK/Tilth/context-mode) that do

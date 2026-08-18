@@ -46,6 +46,17 @@ DEFAULT_POLICY_END = "<!-- AGENT-TOKEN-SAVER-DEFAULT:END -->"
 
 def self_update(dry_run: bool) -> None:
     """Fast-forward the repo checkout so installs always ship the latest version."""
+    if os.environ.get("ATS_SKIP_SELF_UPDATE"):
+        # A live `git pull` against the real ROOT checkout runs on every
+        # install regardless of --project, which makes the test suite
+        # non-hermetic: 15+ installer tests each trigger a real network pull
+        # within a couple of minutes, and it intermittently hit the 60s
+        # timeout even though a single standalone `git pull` took <1s
+        # (observed: keychain/subprocess contention under rapid repeat
+        # invocation, not a slow network path). Real installs are unaffected;
+        # only the test harness sets this.
+        print("self-update: skipped (ATS_SKIP_SELF_UPDATE)")
+        return
     if not (ROOT / ".git").is_dir() or not shutil.which("git"):
         return
     git = ["git", "-C", str(ROOT)]
