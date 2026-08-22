@@ -340,9 +340,12 @@ def warning_message(guard: dict[str, Any]) -> str:
     labels = [*guard.get("reasons", []), *guard.get("warnings", [])]
     action = str(guard.get("action") or "warn")
     next_step = (
-        "Write a durable handoff and continue in a fresh session before more work."
+        "Invoke warm-handoff when installed; write one reference-only 300-700-token "
+        "handoff with decisions, running state, next action, oracle and test checklist, "
+        "then continue in a fresh session."
         if action == "checkpoint_required"
-        else "Check context quality; checkpoint before it reaches the hard limit."
+        else "Keep model and effort stable; prepare the bounded handoff before the hard "
+        "limit or any pause beyond the host cache TTL."
     )
     return (
         f"agent-token-saver context guard: {action}; "

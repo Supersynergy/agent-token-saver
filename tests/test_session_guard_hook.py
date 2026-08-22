@@ -97,6 +97,9 @@ def test_guard_escalates_to_checkpoint_without_blocking_stop(tmp_path: Path) -> 
 
     payload = json.loads(result.stdout)
     assert "checkpoint_required" in payload["systemMessage"]
+    assert "warm-handoff" in payload["systemMessage"]
+    assert "300-700-token" in payload["systemMessage"]
+    assert "test checklist" in payload["systemMessage"]
     assert "decision" not in payload
     assert "continue" not in payload
     assert json.loads((state / "session-guard-latest.json").read_text())["action"] == (

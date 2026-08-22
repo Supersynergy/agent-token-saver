@@ -86,7 +86,7 @@ AGENT_CANDIDATES: list[tuple[str, list[str]]] = [
             "--provider",
             "openrouter",
             "-m",
-            "inclusionai/ling-3.0-flash:free",
+            "nvidia/nemotron-3-nano-30b-a3b:free",
             "--cli",
             "--ignore-user-config",
         ],

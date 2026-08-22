@@ -73,7 +73,7 @@ AGENTS: list[tuple[str, list[str], dict[str, str]]] = [
         {},
     ),
     (
-        "hermes_free_ling",
+        "hermes_free_nemotron",
         [
             "hermes",
             "-z",
@@ -81,7 +81,7 @@ AGENTS: list[tuple[str, list[str], dict[str, str]]] = [
             "--provider",
             "openrouter",
             "-m",
-            "inclusionai/ling-3.0-flash:free",
+            "nvidia/nemotron-3-nano-30b-a3b:free",
             "--cli",
             "--ignore-user-config",
         ],

@@ -108,6 +108,7 @@ def test_all_agents_install_without_overwriting_existing_settings(tmp_path: Path
         text = Path(entry["path"]).read_text()
         assert text.count("<!-- AGENT-TOKEN-SAVER-DEFAULT:START -->") == 1
         assert text.count("<!-- AGENT-TOKEN-SAVER-DEFAULT:END -->") == 1
+        assert "Cache-aware handoff" in text
     assert {asset["name"] for asset in config["managed_assets"]} == {
         "doctor",
         "ledger",

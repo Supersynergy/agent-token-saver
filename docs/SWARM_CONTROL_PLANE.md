@@ -61,5 +61,7 @@ Transport keeps the prompt out of argv and result metadata, but a model may
 repeat input in its answer. Cached answers can therefore contain repeated
 input; use `--no-cache` when the controller must not persist answers.
 
-There are 21 built-in lanes in this checkout. Private host configuration may
-add more; runtime inventory, not a fixed marketing count, is authoritative.
+The checkout ships a built-in lane table. Private host configuration may add
+more; `llmadapter lanes`, not a fixed marketing count, is authoritative.
+Experimental `ox-alpha` is opt-in and is excluded from class and `all`
+selectors until repeated oracle-backed runs establish quality and availability.

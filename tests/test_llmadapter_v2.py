@@ -887,7 +887,7 @@ def test_openrouter_receives_server_generation_cap(tmp_path: Path) -> None:
             "--stdin",
             "--swarm",
             "--lanes",
-            "gpt-oss-20b",
+            "ox-alpha",
             "--max-tokens",
             "234",
             "--allow-remote",
@@ -934,7 +934,7 @@ def test_http_response_body_is_bounded_before_json_parse(tmp_path: Path) -> None
             "--stdin",
             "--swarm",
             "--lanes",
-            "gpt-oss-20b",
+            "ox-alpha",
             "--allow-remote",
             "--no-cache",
             extra={
@@ -1050,6 +1050,23 @@ def test_cheap_selector_stays_inside_the_wire_class_contract() -> None:
     assert cheap, listing.stdout
     for line in cheap:
         assert "/Mout" in line, line
+
+
+def test_ox_alpha_is_a_named_opt_in_free_lane() -> None:
+    listing = subprocess.run(
+        ["bun", str(ADAPTER), "lanes"],
+        text=True,
+        capture_output=True,
+        check=False,
+        env={**os.environ},
+    )
+    assert listing.returncode == 0, listing.stderr
+    ox = [line for line in listing.stdout.splitlines() if " ox-alpha " in line]
+    assert len(ox) == 1, listing.stdout
+    assert ox[0].startswith("free ")
+    assert "stealth/ox-alpha" in ox[0]
+    assert "$0.00/Mout" in ox[0]
+    assert "[opt-in]" in ox[0]
 
 
 def test_cheap_lanes_are_gated_like_any_other_paid_lane(tmp_path: Path) -> None:
@@ -1208,12 +1225,22 @@ def test_free_reasoning_lane_asks_the_provider_to_skip_visible_reasoning(
     assert requests[0]["reasoning"] == {"enabled": False}
 
 
+def test_ox_alpha_uses_its_lowest_mandatory_reasoning_effort(tmp_path: Path) -> None:
+    requests: list[dict[str, object]] = []
+    result = _serve(
+        _answering_handler(requests),
+        tmp_path,
+        "--lanes",
+        "ox-alpha",
+    )
+    assert result.returncode == 0, result.stdout
+    assert requests[0]["model"] == "stealth/ox-alpha"
+    assert requests[0]["reasoning"] == {"effort": "low", "exclude": True}
+
+
 @pytest.mark.parametrize(
     ("lane", "expected"),
     [
-        # Measured 2026-08-01: gpt-oss-20b answers with an empty completion when
-        # it receives `enabled:false`, so it gets no reasoning field at all.
-        ("gpt-oss-20b", None),
         # nemotron-nano-9b-v2 reasons either way; `exclude` keeps the reasoning
         # out of the returned budget instead of truncating the answer.
         ("nemotron-nano-9b-v2", {"exclude": True}),
@@ -1266,7 +1293,7 @@ def test_dropped_socket_is_retried_instead_of_failing_the_lane(tmp_path: Path) -
         _answering_handler(requests, drop_first=True),
         tmp_path,
         "--lanes",
-        "gpt-oss-20b",
+        "ox-alpha",
         "--deadline-secs",
         "9",
     )
@@ -1285,7 +1312,7 @@ def test_provider_stop_at_token_ceiling_is_reported_as_output_limit(
         _answering_handler(requests, finish_reason="length"),
         tmp_path,
         "--lanes",
-        "gpt-oss-20b",
+        "ox-alpha",
     )
     assert result.returncode == 1
     report = json.loads(result.stdout)

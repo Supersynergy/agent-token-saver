@@ -24,6 +24,19 @@ repeated work, a broad skill catalog, or an agent team.
 5. Use a budgeted code reader only when exact search misses.
 6. Enable graph, browser, or large-context tooling for one session only.
 
+## Cache-aware handoff
+
+Keep model and effort fixed inside a work wave. Before a pause beyond the
+host's cache TTL or when the session guard requests a checkpoint, write one
+reference-only 300–700-token handoff. Record decisions, running state, next
+action, the oracle and a test checklist. Start the next wave in a fresh session.
+Never run a background keepalive or infer provider savings from a local context
+estimate.
+
+The compact rule is always-on. If the optional `warm-handoff` skill is
+installed, use it for the full Claude workflow; the Stop hook only warns and
+never writes files, continues a session or blocks exit.
+
 ## Recall loop (v4.18–4.20) — the compounding half
 
 Every agent CLI session becomes searchable; every new run reads the corpus back.
@@ -57,6 +70,10 @@ first-pass pruning, oracle gate, ledger. Plain `ask` has none of that.
 the built-in table plus any host-local lanes, so the count is host-specific
 and drifts with every catalog sweep. Selectors (`cheap`, `free`, `paid`,
 `local`, `cli`) are stable; do not memorise lane names or counts.
+
+`ox-alpha` is an experimental named OpenRouter lane. It is free in the live
+catalog but stays opt-in because its provider identity and alpha availability
+are not stable evidence. Select it explicitly; it never joins `free` or `all`.
 
 **Start with `--lanes cheap`, not `free`.** Measured 2026-08-01 over closed-form
 tasks with known answers, three samples each:

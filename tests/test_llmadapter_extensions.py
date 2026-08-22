@@ -170,7 +170,7 @@ def test_contract_default_shape_is_frozen_and_extensions_are_opt_in(tmp_path: Pa
     )
     assert set(extended) == CONTRACT_KEYS | {"extensions"}
     assert extended["extensions"]["first_pass"] is True
-    assert extended["extensions"]["opt_in_lanes"] == []
+    assert extended["extensions"]["opt_in_lanes"] == ["ox-alpha"]
     assert extended["extensions"]["terminal_values_extended"] == ["pruned"]
 
 

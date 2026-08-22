@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+- Integrated cache-aware warm handoffs into the compact always-on policy and
+  Stop guard without auto-loading another full skill. Model and effort stay
+  stable per wave. A checkpoint uses one reference-only 300–700-token artifact
+  with the next oracle and test checklist before a cache-expiring pause or hard
+  context threshold. The hook still warns only and never writes, continues or
+  blocks.
+- Added OpenRouter `stealth/ox-alpha` as the explicit `ox-alpha` free lane.
+  The 2026-08-22 catalog reports a 1,048,576-token window, mandatory reasoning,
+  131,072 max output tokens and zero prompt/completion price. The adapter sends
+  the lowest supported effort with returned reasoning excluded and keeps this
+  stealth alpha out of `free` and `all` until it has repeated oracle evidence.
+- Removed the retired `openai/gpt-oss-20b:free` and
+  `inclusionai/ling-3.0-flash:free` catalog slugs from routing and benchmark
+  defaults. Their paid replacements are not promoted without measurements and
+  an explicit paid budget; the Hermes benchmark fallback uses the existing
+  Nemotron free lane instead.
+
 - Found while re-verifying after an unrelated benchmark fix: the installer's
   `self_update()` runs a real `git pull` against the actual repo checkout on
   every install, regardless of `--project`. 15+ installer tests each doing a

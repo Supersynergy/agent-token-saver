@@ -19,7 +19,8 @@
 - Prompt routing is strict: zero or one skill; explicit `$SkillName` wins.
 - The normal route emits a compact policy. The full skill is explicit-only.
 - The Stop guard validates transcript paths, keeps mode-0600 state and never
-  continues or blocks a session.
+  continues or blocks a session. On escalation it requests one bounded,
+  reference-only warm handoff with the next oracle and test checklist.
 - Hooks never decide approval, sandbox or permissions.
 
 Verify the active surface, not only copied files:

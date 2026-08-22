@@ -59,6 +59,9 @@ type Lane = {
 // the catalog with 18 endpoints but every free call returns "Provider returned
 // error" — 8/8 across a session. Catalog presence is not availability; run
 // `doctor --probe` before adding either back.
+// OpenRouter also removed the `openai/gpt-oss-20b:free` and
+// `inclusionai/ling-3.0-flash:free` slugs by 2026-08-22. Their paid variants
+// are not promoted until they have fresh measurements and an explicit budget.
 const OR_FREE = [
   "nvidia/nemotron-3-super-120b-a12b:free",
   "nvidia/nemotron-3-ultra-550b-a55b:free",
@@ -66,9 +69,7 @@ const OR_FREE = [
   "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
   "nvidia/nemotron-nano-9b-v2:free",
   "nvidia/nemotron-nano-12b-v2-vl:free",
-  "openai/gpt-oss-20b:free",
   "google/gemma-4-26b-a4b-it:free",
-  "inclusionai/ling-3.0-flash:free",
   "cohere/north-mini-code:free",
   "poolside/laguna-s-2.1:free",
   "poolside/laguna-xs-2.1:free",
@@ -108,23 +109,30 @@ const OR_PAID: [string, number, string?][] = [
   ["moonshotai/kimi-k3", 15.00],
 ];
 
+// OpenRouter catalog 2026-08-22: free stealth preview, 1,048,576-token
+// context, mandatory reasoning, and a 131,072-token provider output ceiling.
+// It is not allowed into `free` or `all` until repeated oracle-backed runs
+// establish quality and availability. Select it explicitly as `ox-alpha`.
+const OX_ALPHA_MODEL = "stealth/ox-alpha";
+
 // Free reasoning lanes emit their chain of thought as visible content, so at a
 // 400-token ceiling they hand back a truncated deliberation instead of the
 // worker contract. Measured 2026-08-01, 12 free lanes x 2 objectives: turning
 // reasoning off cut median completion tokens from 400 to 39, truncation from
 // 4/24 to 0/24, and lifted contract compliance from 25% to 88%.
 //
-// The two exceptions are measured too: gpt-oss-20b answers with an empty
-// completion when it receives `enabled:false`, and nemotron-nano-9b-v2 needs
-// `exclude` — it keeps reasoning either way, so the only useful setting is the
-// one that stops the reasoning from eating the returned budget.
+// The measured exception is nemotron-nano-9b-v2: it needs `exclude` because it
+// keeps reasoning either way. Excluding the trace stops it from eating the
+// returned worker budget.
 //
 // LLMADAPTER_REASONING=on restores the old behaviour (no reasoning field).
 const OR_REASONING_OFF = process.env.LLMADAPTER_REASONING !== "on";
 const OR_REASONING_DEFAULT: Record<string, unknown> = { enabled: false };
 const OR_REASONING_OVERRIDE: Record<string, Record<string, unknown> | null> = {
-  "openai/gpt-oss-20b:free": null,
   "nvidia/nemotron-nano-9b-v2:free": { exclude: true },
+  // Ox cannot disable reasoning. Use its lowest supported effort and keep the
+  // hidden trace out of the returned worker budget.
+  [OX_ALPHA_MODEL]: { effort: "low", exclude: true },
   // The gpt-oss and luna families were benchmarked without a reasoning field
   // and scored 3/3; gpt-oss is already known to answer empty when it gets one.
   "openai/gpt-oss-120b": null,
@@ -152,6 +160,15 @@ const LANES: Lane[] = [
   ...OR_FREE.map((m): Lane => ({ name: m.split("/")[1].replace(":free", ""), kind: "openrouter", class: "free", model: m, reasoning: orReasoning(m) })),
   ...OR_CHEAP.map(([m, usdOut, name]): Lane => ({ name: name ?? m.split("/")[1], kind: "openrouter", class: "paid", model: m, reasoning: orReasoning(m), usdOut, cheap: true })),
   ...OR_PAID.map(([m, usdOut, name]): Lane => ({ name: name ?? m.split("/")[1], kind: "openrouter", class: "paid", model: m, reasoning: orReasoning(m), usdOut })),
+  {
+    name: "ox-alpha",
+    kind: "openrouter",
+    class: "free",
+    model: OX_ALPHA_MODEL,
+    reasoning: orReasoning(OX_ALPHA_MODEL),
+    usdOut: 0,
+    optIn: true,
+  },
   { name: "ollama-gemma4", kind: "ollama", class: "local", model: "gemma4-31b-fast" },
   {
     name: "codex",
@@ -1773,7 +1790,6 @@ async function verify(question: string, answer: string, maxTokens: number): Prom
 // strong lane AGGREGATES, a fresh strong lane VERIFIES. Best quality per $.
 const TIER_PROPOSERS = [
   "nemotron-3-nano-30b-a3b", "nemotron-nano-9b-v2", "nemotron-nano-12b-v2-vl",
-  "gpt-oss-20b", "ling-3.0-flash",
 ];
 
 function usageOut(path: string, results: Result[]): void {
@@ -2613,7 +2629,7 @@ if (cmd === "ask-v2") {
   for (const l of LANES) {
     const tier = l.cheap ? "cheap" : l.class;
     const price = l.usdOut === undefined ? "" : `  $${l.usdOut.toFixed(2)}/Mout`;
-    console.log(`${tier.padEnd(5)} ${l.name.padEnd(42)} ${l.model ?? l.cmd!("…").join(" ").slice(0, 50)}${price}${l.serial ? "  [serial]" : ""}`);
+    console.log(`${tier.padEnd(5)} ${l.name.padEnd(42)} ${l.model ?? l.cmd!("…").join(" ").slice(0, 50)}${price}${l.optIn ? "  [opt-in]" : ""}${l.serial ? "  [serial]" : ""}`);
   }
   const cheap = LANES.filter((l) => l.cheap).length;
   console.log(`total: ${LANES.length} lanes · \`cheap\` selects ${cheap} paid lanes under $0.60/Mout (needs --allow-paid)`);
