@@ -1,0 +1,8 @@
+{"type":"thread.started","thread_id":"01a02a77-f097-7631-86be-5905089f854e"}
+{"type":"item.completed","item":{"id":"item_0","type":"error","message":"`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation."}}
+{"type":"item.completed","item":{"id":"item_1","type":"error","message":"`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation."}}
+{"type":"turn.started"}
+{"type":"item.started","item":{"id":"item_2","type":"command_execution","command":"/bin/zsh -lc \"ps -ef | awk 'NR == 1 { print }'\"","aggregated_output":"","exit_code":null,"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_2","type":"command_execution","command":"/bin/zsh -lc \"ps -ef | awk 'NR == 1 { print }'\"","aggregated_output":"python3: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead\npython3: error: couldn't create cache file '/tmp/xcrun_db-bdAR7qor' (errno=Operation not permitted)\npython3: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead\npython3: error: couldn't create cache file '/tmp/xcrun_db-4cOgRBt2' (errno=Operation not permitted)\nUSER PID %CPU %MEM VSZ RSS TT STAT STARTED TIME COMMAND\n","exit_code":0,"status":"completed"}}
+{"type":"item.completed","item":{"id":"item_3","type":"agent_message","text":"ATS_PS_OK"}}
+{"type":"turn.completed","usage":{"input_tokens":30415,"cached_input_tokens":25088,"cache_write_input_tokens":0,"output_tokens":186,"reasoning_output_tokens":83}}

@@ -1,0 +1,235 @@
+{
+  "schema_version": 1,
+  "date": "2026-08-22 19:12:49 CEST",
+  "codex_version": "codex-cli 0.147.0",
+  "model": "gpt-5.6-terra",
+  "fixture_head": "243d94d51654cb871d21ab9cf3feb211d32a04f9",
+  "order": "alternating AB/BA; fresh HOME and persisted non-ephemeral run per arm",
+  "tasks": [
+    {
+      "name": "process-table",
+      "prompt": "Minimize token/context bloat. Inspect the full current process table with a ps shell command. If its output contains both PID and COMMAND headings, reply exactly ATS_PS_OK and nothing else.",
+      "expected": "ATS_PS_OK",
+      "accepted": true,
+      "arms": {
+        "baseline": {
+          "arm": "baseline",
+          "return_code": 0,
+          "timed_out": false,
+          "elapsed_ms": 40393,
+          "usage": {
+            "input_tokens": 33472,
+            "cached_input_tokens": 20992,
+            "uncached_input_tokens": 12480,
+            "output_tokens": 148,
+            "total_tokens": 33620
+          },
+          "answer": "ATS_PS_OK",
+          "commands": [
+            "/bin/zsh -lc 'ps -ef'"
+          ],
+          "rtk_observed": false,
+          "accepted": true,
+          "oracle": {
+            "exact_answer": true,
+            "command_terms": true,
+            "provider_usage": true
+          },
+          "stderr_tail": "2026-08-22T17:08:12.647481Z ERROR codex_models_manager::manager: failed to refresh available models: timeout waiting for child process to exit\n2026-08-22T17:08:12.660781Z ERROR codex_models_manager::manager: failed to refresh available models: timeout waiting for child process to exit\n",
+          "raw_jsonl": "data/benchmarks/codex-provider-ab-2026-08-22-terra-v2/runs/process-table-baseline.jsonl"
+        },
+        "lean": {
+          "arm": "lean",
+          "return_code": 0,
+          "timed_out": false,
+          "elapsed_ms": 28175,
+          "usage": {
+            "input_tokens": 32688,
+            "cached_input_tokens": 25088,
+            "uncached_input_tokens": 7600,
+            "output_tokens": 382,
+            "total_tokens": 33070
+          },
+          "answer": "ATS_PS_OK",
+          "commands": [
+            "/bin/zsh -lc 'ps -ef'"
+          ],
+          "rtk_observed": false,
+          "accepted": true,
+          "oracle": {
+            "exact_answer": true,
+            "command_terms": true,
+            "provider_usage": true
+          },
+          "stderr_tail": "",
+          "raw_jsonl": "data/benchmarks/codex-provider-ab-2026-08-22-terra-v2/runs/process-table-lean.jsonl"
+        }
+      },
+      "provider_delta": {
+        "input_tokens": -784,
+        "uncached_input_tokens": -4880,
+        "output_tokens": 234,
+        "total_tokens": -550,
+        "input_saved_percent": 2.34,
+        "total_saved_percent": 1.64
+      }
+    },
+    {
+      "name": "large-git-diff",
+      "prompt": "Minimize token/context bloat. Inspect the repository's full uncommitted change with git diff. Confirm exactly 6000 removed lines, 6000 added lines, and the added marker FIXED-06000. If all are true, reply exactly ATS_DIFF_OK and nothing else.",
+      "expected": "ATS_DIFF_OK",
+      "accepted": true,
+      "arms": {
+        "lean": {
+          "arm": "lean",
+          "return_code": 0,
+          "timed_out": false,
+          "elapsed_ms": 37385,
+          "usage": {
+            "input_tokens": 30648,
+            "cached_input_tokens": 20992,
+            "uncached_input_tokens": 9656,
+            "output_tokens": 242,
+            "total_tokens": 30890
+          },
+          "answer": "ATS_DIFF_OK",
+          "commands": [
+            "/bin/zsh -lc \"git diff --numstat HEAD && git diff --unified=0 HEAD -- | rg '\"'^'\"\\\\+.*FIXED-06000' | wc -l\""
+          ],
+          "rtk_observed": false,
+          "accepted": true,
+          "oracle": {
+            "exact_answer": true,
+            "command_terms": true,
+            "provider_usage": true
+          },
+          "stderr_tail": "2026-08-22T17:09:21.617516Z ERROR codex_models_manager::manager: failed to refresh available models: timeout waiting for child process to exit\n2026-08-22T17:09:21.617516Z ERROR codex_models_manager::manager: failed to refresh available models: timeout waiting for child process to exit\n",
+          "raw_jsonl": "data/benchmarks/codex-provider-ab-2026-08-22-terra-v2/runs/large-git-diff-lean.jsonl"
+        },
+        "baseline": {
+          "arm": "baseline",
+          "return_code": 0,
+          "timed_out": false,
+          "elapsed_ms": 70868,
+          "usage": {
+            "input_tokens": 30041,
+            "cached_input_tokens": 12032,
+            "uncached_input_tokens": 18009,
+            "output_tokens": 191,
+            "total_tokens": 30232
+          },
+          "answer": "ATS_DIFF_OK",
+          "commands": [
+            "/bin/zsh -lc \"git diff --no-ext-diff --unified=0 && git diff --no-ext-diff --numstat && git diff --no-ext-diff | rg -F 'FIXED-06000'\""
+          ],
+          "rtk_observed": false,
+          "accepted": true,
+          "oracle": {
+            "exact_answer": true,
+            "command_terms": true,
+            "provider_usage": true
+          },
+          "stderr_tail": "2026-08-22T17:09:58.995918Z ERROR codex_models_manager::manager: failed to refresh available models: timeout waiting for child process to exit\n2026-08-22T17:09:58.995951Z ERROR codex_models_manager::manager: failed to refresh available models: timeout waiting for child process to exit\n2026-08-22T17:10:40.522233Z ERROR codex_models_manager::manager: failed to refresh available models: timeout waiting for child process to exit\n2026-08-22T17:10:57.941864Z ERROR codex_models_manager::manager: failed to refresh available models: timeout waiting for child process to exit\n",
+          "raw_jsonl": "data/benchmarks/codex-provider-ab-2026-08-22-terra-v2/runs/large-git-diff-baseline.jsonl"
+        }
+      },
+      "provider_delta": {
+        "input_tokens": 607,
+        "uncached_input_tokens": -8353,
+        "output_tokens": 51,
+        "total_tokens": 658,
+        "input_saved_percent": -2.02,
+        "total_saved_percent": -2.18
+      }
+    },
+    {
+      "name": "git-history",
+      "prompt": "Minimize token/context bloat. Inspect the repository history with git log. Confirm there are exactly 121 commits and the oldest subject is ATS seed. Compute the count and oldest subject inside the shell command before output reaches the model. If both are true, reply exactly ATS_HISTORY_OK and nothing else.",
+      "expected": "ATS_HISTORY_OK",
+      "accepted": true,
+      "arms": {
+        "baseline": {
+          "arm": "baseline",
+          "return_code": 0,
+          "timed_out": false,
+          "elapsed_ms": 54262,
+          "usage": {
+            "input_tokens": 29640,
+            "cached_input_tokens": 25088,
+            "uncached_input_tokens": 4552,
+            "output_tokens": 224,
+            "total_tokens": 29864
+          },
+          "answer": "ATS_HISTORY_OK",
+          "commands": [
+            "/bin/zsh -lc 'count=$(git log --format=%H | wc -l | tr -d '\"' '); oldest=\"'$(git log --reverse --format=%s | sed -n '\"'1p'); if [ \\\"\"'$count\" = 121 ] && [ \"$oldest\" = '\"'ATS seed' ]; then printf '%s' ATS_HISTORY_OK; else printf '%s|%s' \\\"\"'$count\" \"$oldest\"; fi'"
+          ],
+          "rtk_observed": false,
+          "accepted": true,
+          "oracle": {
+            "exact_answer": true,
+            "command_terms": true,
+            "provider_usage": true
+          },
+          "stderr_tail": "",
+          "raw_jsonl": "data/benchmarks/codex-provider-ab-2026-08-22-terra-v2/runs/git-history-baseline.jsonl"
+        },
+        "lean": {
+          "arm": "lean",
+          "return_code": 0,
+          "timed_out": false,
+          "elapsed_ms": 50364,
+          "usage": {
+            "input_tokens": 30394,
+            "cached_input_tokens": 25088,
+            "uncached_input_tokens": 5306,
+            "output_tokens": 198,
+            "total_tokens": 30592
+          },
+          "answer": "ATS_HISTORY_OK",
+          "commands": [
+            "/bin/zsh -lc 'commit_count=$(git rev-list --count HEAD) && oldest_subject=$(git log --format=%s --reverse | head -n 1) && if [ \"$commit_count\" -eq 121 ] && [ \"$oldest_subject\" = \"ATS seed\" ]; then printf '\"'OK\\\\n'; else printf 'NOT_OK\\\\n'; fi\""
+          ],
+          "rtk_observed": false,
+          "accepted": true,
+          "oracle": {
+            "exact_answer": true,
+            "command_terms": true,
+            "provider_usage": true
+          },
+          "stderr_tail": "",
+          "raw_jsonl": "data/benchmarks/codex-provider-ab-2026-08-22-terra-v2/runs/git-history-lean.jsonl"
+        }
+      },
+      "provider_delta": {
+        "input_tokens": 754,
+        "uncached_input_tokens": 754,
+        "output_tokens": -26,
+        "total_tokens": 728,
+        "input_saved_percent": -2.54,
+        "total_saved_percent": -2.44
+      }
+    }
+  ],
+  "aggregate": {
+    "accepted": true,
+    "baseline": {
+      "input_tokens": 93153,
+      "cached_input_tokens": 58112,
+      "uncached_input_tokens": 35041,
+      "output_tokens": 563,
+      "total_tokens": 93716
+    },
+    "lean": {
+      "input_tokens": 93730,
+      "cached_input_tokens": 71168,
+      "uncached_input_tokens": 22562,
+      "output_tokens": 822,
+      "total_tokens": 94552
+    },
+    "provider_savings_claim_valid": true,
+    "input_saved_percent": -0.62,
+    "total_saved_percent": -0.89,
+    "ninety_nine_percent_provider_saving": false
+  }
+}

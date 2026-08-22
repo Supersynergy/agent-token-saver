@@ -107,6 +107,49 @@ avoids universal-savings claims. One run per arm; repeat ABBA runs before
 changing organization-wide defaults.
 Artifact: [Codex provider A/B](data/benchmarks/codex-provider-ab-2026-07-15/compact-policy/result.md).
 
+### Three repeated runs: what survives the noise
+
+Three `gpt-5.6-terra` runs on 2026-08-22 (same harness, all oracles passed in
+every run) showed that a single A/B cannot settle this question. Identical
+baseline runs varied by up to 2.2x on the same task — uncached input on the
+git-diff task came out 8,049, then 18,009, then 8,020. Any single-run headline
+number, including the 2026-07-15 one above, sits inside that noise.
+
+Two things survived all three runs.
+
+**Raw token counts misprice a cached prefix.** Lean moves work out of fresh
+input and into cache hits, which a provider bills at a fraction of the rate.
+Summing tokens unweighted therefore reports a regression where the invoice
+shows a saving:
+
+| Run | Raw token change | At list ratios (cached 10%, output 8x) |
+|---|---:|---:|
+| 1 | +11.4% | −18.8% |
+| 2 | +0.9% | −20.1% |
+| 3 | −4.4% | −7.8% |
+
+The weighted column is negative in all three runs (mean −15.6%); the raw
+column straddles zero (mean +2.6%). These are public list ratios, not an
+invoice.
+
+**Lean is far more predictable than the baseline.** Across runs, uncached
+input on the two noisy tasks barely moved under the compact policy while the
+baseline swung wildly:
+
+| Task | Lean spread | Baseline spread |
+|---|---:|---:|
+| process-table | 100 | 7,159 |
+| large-git-diff | 466 | 9,989 |
+| git-history | 203 | 40 |
+
+The lean figures even span two different policy wordings, which is part of the
+point: bounding noisy output early makes the run reproducible, and a
+reproducible context is what keeps a long session inside its budget.
+
+Artifacts: [run 1](data/benchmarks/codex-provider-ab-2026-08-22-terra/result.md),
+[run 2](data/benchmarks/codex-provider-ab-2026-08-22-terra-v2/result.md),
+[run 3](data/benchmarks/codex-provider-ab-2026-08-22-terra-v3/result.md).
+
 ### Fixed payload fixture
 
 The accepted local fixture drops from 375,673 to

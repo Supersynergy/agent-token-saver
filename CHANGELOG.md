@@ -2,6 +2,29 @@
 
 ## [Unreleased]
 
+- Three repeated live provider A/B runs with `gpt-5.6-terra` (3 tasks per run,
+  fresh HOME per arm, all oracles passed in every run) replaced the previous
+  single-run reporting. Two findings survived the noise. First, raw token sums
+  misprice a cached prefix: Lean shifts fresh input into cache hits, so the
+  unweighted sum reported +11.4% / +0.9% / -4.4% while the same runs are
+  -18.8% / -20.1% / -7.8% at public list ratios (cached 10%, output 8x).
+  Second, Lean is markedly more reproducible: across runs, uncached input on
+  the noisy tasks varied by 100 and 466 tokens under the compact policy versus
+  7,159 and 9,989 for the baseline. Identical baseline runs differed by up to
+  2.2x on one task, so every earlier single-run headline (including
+  2026-07-15) sits inside that noise; the README now says so and links all
+  three artifacts. RTK engaged in no arm of any run, so the measured deltas
+  come from the prompt and Stop hooks alone. Also reran the local fixture
+  matrix (raw 406,991 -> lean 3,803) and the hook hot path (only drift versus
+  the pinned ref is the capsule version string, p50 ~22 ms).
+- Tested a reworded compact policy (name rtk first, forbid invented one-liner
+  projections) across two further live A/B runs and reverted it. An early
+  variant that let the model skip projection when it judged output "already
+  small" made it paste a full 165 KB process table, tripling output tokens on
+  the task the policy exists for; the corrected variant matched the shipped
+  wording within noise. No measured gain, so the shipped policy text is
+  unchanged.
+
 - Rewrote the README as an invitation instead of a wall: hero pitch plus a
   60-second dry-run install above the fold, one credible headline number
   (the real Codex A/B, 19.67%), condensed benchmark sections that link to the

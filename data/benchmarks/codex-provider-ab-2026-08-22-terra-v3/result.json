@@ -1,0 +1,235 @@
+{
+  "schema_version": 1,
+  "date": "2026-08-22 19:16:42 CEST",
+  "codex_version": "codex-cli 0.147.0",
+  "model": "gpt-5.6-terra",
+  "fixture_head": "88973410322198cc19df2cdd6dd4d5e5000d2344",
+  "order": "alternating AB/BA; fresh HOME and persisted non-ephemeral run per arm",
+  "tasks": [
+    {
+      "name": "process-table",
+      "prompt": "Minimize token/context bloat. Inspect the full current process table with a ps shell command. If its output contains both PID and COMMAND headings, reply exactly ATS_PS_OK and nothing else.",
+      "expected": "ATS_PS_OK",
+      "accepted": true,
+      "arms": {
+        "baseline": {
+          "arm": "baseline",
+          "return_code": 0,
+          "timed_out": false,
+          "elapsed_ms": 17910,
+          "usage": {
+            "input_tokens": 33444,
+            "cached_input_tokens": 25088,
+            "uncached_input_tokens": 8356,
+            "output_tokens": 121,
+            "total_tokens": 33565
+          },
+          "answer": "ATS_PS_OK",
+          "commands": [
+            "/bin/zsh -lc 'ps -ef'"
+          ],
+          "rtk_observed": false,
+          "accepted": true,
+          "oracle": {
+            "exact_answer": true,
+            "command_terms": true,
+            "provider_usage": true
+          },
+          "stderr_tail": "",
+          "raw_jsonl": "data/benchmarks/codex-provider-ab-2026-08-22-terra-v3/runs/process-table-baseline.jsonl"
+        },
+        "lean": {
+          "arm": "lean",
+          "return_code": 0,
+          "timed_out": false,
+          "elapsed_ms": 14542,
+          "usage": {
+            "input_tokens": 30415,
+            "cached_input_tokens": 25088,
+            "uncached_input_tokens": 5327,
+            "output_tokens": 186,
+            "total_tokens": 30601
+          },
+          "answer": "ATS_PS_OK",
+          "commands": [
+            "/bin/zsh -lc \"ps -ef | awk 'NR == 1 { print }'\""
+          ],
+          "rtk_observed": false,
+          "accepted": true,
+          "oracle": {
+            "exact_answer": true,
+            "command_terms": true,
+            "provider_usage": true
+          },
+          "stderr_tail": "",
+          "raw_jsonl": "data/benchmarks/codex-provider-ab-2026-08-22-terra-v3/runs/process-table-lean.jsonl"
+        }
+      },
+      "provider_delta": {
+        "input_tokens": -3029,
+        "uncached_input_tokens": -3029,
+        "output_tokens": 65,
+        "total_tokens": -2964,
+        "input_saved_percent": 9.06,
+        "total_saved_percent": 8.83
+      }
+    },
+    {
+      "name": "large-git-diff",
+      "prompt": "Minimize token/context bloat. Inspect the repository's full uncommitted change with git diff. Confirm exactly 6000 removed lines, 6000 added lines, and the added marker FIXED-06000. If all are true, reply exactly ATS_DIFF_OK and nothing else.",
+      "expected": "ATS_DIFF_OK",
+      "accepted": true,
+      "arms": {
+        "lean": {
+          "arm": "lean",
+          "return_code": 0,
+          "timed_out": false,
+          "elapsed_ms": 16462,
+          "usage": {
+            "input_tokens": 30614,
+            "cached_input_tokens": 25088,
+            "uncached_input_tokens": 5526,
+            "output_tokens": 318,
+            "total_tokens": 30932
+          },
+          "answer": "ATS_DIFF_OK",
+          "commands": [
+            "/bin/zsh -lc \"git diff --no-ext-diff | awk 'BEGIN { add=0; del=0; marker=0 } /\"'^'\"\\\\+\\\\+\\\\+/ || /\"'^---/ { next } /''^'\"\\\\+/ { add++; if (\"'$0 == \"+FIXED-06000\") marker=1; next } /''^-/ { del++; next } END { printf \"added=%d removed=%d marker=%d'\"\\\\n\\\", add, del, marker }'\""
+          ],
+          "rtk_observed": false,
+          "accepted": true,
+          "oracle": {
+            "exact_answer": true,
+            "command_terms": true,
+            "provider_usage": true
+          },
+          "stderr_tail": "",
+          "raw_jsonl": "data/benchmarks/codex-provider-ab-2026-08-22-terra-v3/runs/large-git-diff-lean.jsonl"
+        },
+        "baseline": {
+          "arm": "baseline",
+          "return_code": 0,
+          "timed_out": false,
+          "elapsed_ms": 18028,
+          "usage": {
+            "input_tokens": 33108,
+            "cached_input_tokens": 25088,
+            "uncached_input_tokens": 8020,
+            "output_tokens": 160,
+            "total_tokens": 33268
+          },
+          "answer": "ATS_DIFF_OK",
+          "commands": [
+            "/bin/zsh -lc 'git diff --no-ext-diff --unified=0 && git diff --no-ext-diff --numstat && git diff --no-ext-diff --check'"
+          ],
+          "rtk_observed": false,
+          "accepted": true,
+          "oracle": {
+            "exact_answer": true,
+            "command_terms": true,
+            "provider_usage": true
+          },
+          "stderr_tail": "",
+          "raw_jsonl": "data/benchmarks/codex-provider-ab-2026-08-22-terra-v3/runs/large-git-diff-baseline.jsonl"
+        }
+      },
+      "provider_delta": {
+        "input_tokens": -2494,
+        "uncached_input_tokens": -2494,
+        "output_tokens": 158,
+        "total_tokens": -2336,
+        "input_saved_percent": 7.53,
+        "total_saved_percent": 7.02
+      }
+    },
+    {
+      "name": "git-history",
+      "prompt": "Minimize token/context bloat. Inspect the repository history with git log. Confirm there are exactly 121 commits and the oldest subject is ATS seed. Compute the count and oldest subject inside the shell command before output reaches the model. If both are true, reply exactly ATS_HISTORY_OK and nothing else.",
+      "expected": "ATS_HISTORY_OK",
+      "accepted": true,
+      "arms": {
+        "baseline": {
+          "arm": "baseline",
+          "return_code": 0,
+          "timed_out": false,
+          "elapsed_ms": 29103,
+          "usage": {
+            "input_tokens": 29607,
+            "cached_input_tokens": 25088,
+            "uncached_input_tokens": 4519,
+            "output_tokens": 192,
+            "total_tokens": 29799
+          },
+          "answer": "ATS_HISTORY_OK",
+          "commands": [
+            "/bin/zsh -lc 'count=$(git log --format=%H | wc -l | tr -d '\"' '); oldest=\"'$(git log --reverse --format=%s | head -n 1); if [ \"$count\" = 121 ] && [ \"$oldest\" = '\"'ATS seed' ]; then printf 'ATS_HISTORY_OK'; else printf 'ATS_HISTORY_CHECK_FAILED'; fi\""
+          ],
+          "rtk_observed": false,
+          "accepted": true,
+          "oracle": {
+            "exact_answer": true,
+            "command_terms": true,
+            "provider_usage": true
+          },
+          "stderr_tail": "",
+          "raw_jsonl": "data/benchmarks/codex-provider-ab-2026-08-22-terra-v3/runs/git-history-baseline.jsonl"
+        },
+        "lean": {
+          "arm": "lean",
+          "return_code": 0,
+          "timed_out": false,
+          "elapsed_ms": 26361,
+          "usage": {
+            "input_tokens": 30615,
+            "cached_input_tokens": 25088,
+            "uncached_input_tokens": 5527,
+            "output_tokens": 221,
+            "total_tokens": 30836
+          },
+          "answer": "ATS_HISTORY_OK",
+          "commands": [
+            "/bin/zsh -lc 'count=$(git rev-list --count HEAD) && oldest=$(git log --reverse --format=%s | sed -n '\"'1p') && if [ \\\"\"'$count\" = 121 ] && [ \"$oldest\" = '\"'ATS seed' ]; then printf ATS_HISTORY_OK; else printf ATS_HISTORY_CHECK_FAILED; fi\""
+          ],
+          "rtk_observed": false,
+          "accepted": true,
+          "oracle": {
+            "exact_answer": true,
+            "command_terms": true,
+            "provider_usage": true
+          },
+          "stderr_tail": "",
+          "raw_jsonl": "data/benchmarks/codex-provider-ab-2026-08-22-terra-v3/runs/git-history-lean.jsonl"
+        }
+      },
+      "provider_delta": {
+        "input_tokens": 1008,
+        "uncached_input_tokens": 1008,
+        "output_tokens": 29,
+        "total_tokens": 1037,
+        "input_saved_percent": -3.4,
+        "total_saved_percent": -3.48
+      }
+    }
+  ],
+  "aggregate": {
+    "accepted": true,
+    "baseline": {
+      "input_tokens": 96159,
+      "cached_input_tokens": 75264,
+      "uncached_input_tokens": 20895,
+      "output_tokens": 473,
+      "total_tokens": 96632
+    },
+    "lean": {
+      "input_tokens": 91644,
+      "cached_input_tokens": 75264,
+      "uncached_input_tokens": 16380,
+      "output_tokens": 725,
+      "total_tokens": 92369
+    },
+    "provider_savings_claim_valid": true,
+    "input_saved_percent": 4.7,
+    "total_saved_percent": 4.41,
+    "ninety_nine_percent_provider_saving": false
+  }
+}
