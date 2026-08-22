@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+- Rewrote the README as an invitation instead of a wall: hero pitch plus a
+  60-second dry-run install above the fold, one credible headline number
+  (the real Codex A/B, 19.67%), condensed benchmark sections that link to the
+  full artifacts, and 441 -> ~210 lines. The full AgentMaster protocol
+  (lane selectors, oracles, opt-in extensions) moved unchanged to
+  `docs/AGENTMASTER_PROTOCOL.md`; the README keeps a short pointer section.
+  All honesty constraints stay: per-task regression shown, estimate vs.
+  provider-counter labeling, no universal-savings claim.
 - Integrated cache-aware warm handoffs into the compact always-on policy and
   Stop guard without auto-loading another full skill. Model and effort stay
   stable per wave. A checkpoint uses one reference-only 300–700-token artifact

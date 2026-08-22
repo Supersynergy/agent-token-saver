@@ -2,35 +2,55 @@
 
 ![agent-token-saver — less noise, better judgment](docs/assets/social-preview.svg)
 
-**Use your coding agent more. Spend far fewer tokens getting there.**
+**Your coding agent burns most of its tokens on junk it never asked for.
+This strips the junk before the model sees it.**
 
 [![MIT](https://img.shields.io/badge/license-MIT-1c7c54.svg)](LICENSE)
 [![CI](https://github.com/Supersynergy/agent-token-saver/actions/workflows/ci.yml/badge.svg)](https://github.com/Supersynergy/agent-token-saver/actions/workflows/ci.yml)
 ![Agents](https://img.shields.io/badge/agents-Codex%20%7C%20Claude%20%7C%20Hermes%20%7C%20GG%20Coder-5b5bd6)
 ![Measured](https://img.shields.io/badge/evidence-fixture%20%2B%20provider%20A%2FB-1c7c54)
 
-> **Measured, not magic:** the accepted local fixture drops from **375,673**
-> to **1,887** estimated visible-input units — **99.50% less payload** and
-> **199.1x** the comparable payload capacity. A separate real Codex A/B saved
-> **19.67% provider-reported total tokens**. These are different measurement
-> layers, not a universal billing promise.
+Works with Codex CLI, Claude Code, Hermes and GG Coder. Requires Python 3.11+
+and `git`; the core is standard library only. No daemon, no build step.
+Uninstall is deleting the installed files.
 
-`agent-token-saver` is a small context-control layer for coding agents. It keeps
-the evidence needed for a good decision and removes predictable waste before it
-reaches the model: giant skill catalogs, raw logs, full process tables,
-unbounded file reads and duplicated parent context.
+**Measured:** a real Codex A/B on identical tasks used **19.67% fewer**
+provider-reported tokens. [Benchmarks →](#benchmarks)
 
-It does **not** replace your agent, weaken its approval rules or hide quality
-failures. It helps the same agent start with a smaller, more relevant packet.
+## Try it in 60 seconds
 
-## The 30-second version
+```bash
+curl -fsSL https://raw.githubusercontent.com/Supersynergy/agent-token-saver/main/install-universal.sh \
+  | bash -s -- --profile lean --agent auto --dry-run
+```
 
-Without routing, one task can accidentally load:
+`--dry-run` only prints what it would change; nothing is installed yet.
+Liked what you saw? Run the same line again without `--dry-run`, then check
+the wiring:
 
-- hundreds of skill descriptions when only one is relevant;
-- a full source file when one symbol is enough;
-- a 20,000-line log when the error count and final failures answer the question;
-- the same tool catalog and instructions again for every worker.
+```bash
+agent-token-saver doctor --profile lean --json
+```
+
+Prefer reviewing the code first?
+
+```bash
+git clone https://github.com/Supersynergy/agent-token-saver.git
+cd agent-token-saver
+./install-universal.sh --profile lean --agent auto --dry-run
+./install-universal.sh --profile lean --agent auto
+```
+
+`--agent auto` configures the supported hosts it finds. Use `--agent all` only
+when you intentionally want every host integration. The installer copies and
+hashes its own files, merges existing Codex and Claude hook JSON, and creates
+backups. It leaves host configs and optional packages alone.
+
+## What it removes
+
+Without routing, one task can accidentally load hundreds of skill
+descriptions, a full source file for one symbol, a 20,000-line log for one
+error count, and the same tool catalog again for every worker.
 
 With `agent-token-saver`, the normal path is:
 
@@ -42,7 +62,8 @@ exact local evidence
   → broader tools only when the task earns them
 ```
 
-The model still gets the decisive lines. It simply carries less baggage.
+The model still gets the decisive lines. It carries less baggage. Your agent,
+its approval rules and its quality gates stay exactly as they are.
 
 ## Why people use it
 
@@ -51,46 +72,9 @@ The model still gets the decisive lines. It simply carries less baggage.
 | **Automatic, but reversible** | Lean prompt and Stop hooks reduce routine waste; hooks are fail-open and preserve host control. |
 | **Measured honestly** | Fixture estimates, provider counters and team projections are labeled separately. Failed task oracles invalidate a saving. |
 | **Works across agents** | One portable core supports Codex CLI, Claude Code, Hermes, GG Coder and generic CLI/JSON hosts. |
-| **Low fixed overhead** | CLI-first routing avoids loading a broad MCP schema just to discover one useful tool. |
+| **Low fixed overhead** | CLI-first routing avoids loading a broad MCP schema to discover one useful tool. |
 | **Team-aware** | Workers receive small task capsules instead of the full parent transcript; one controller keeps the final decision. |
 | **Safe to adopt** | Dry-run, file hashes, merged hook JSON and backups. Optional third-party tools are detected, never silently installed. |
-
-## Requirements
-
-| | |
-|---|---|
-| **Required** | Python **3.11+** and `git`. Nothing else — the core is standard library only. |
-| **OS** | Linux and macOS. CI runs the full test suite on every Python from **3.11 to 3.14** (latest stable) on Linux, plus the floor and latest on macOS, on every push. On Windows use WSL2; the installers are POSIX shell. |
-| **Optional** | [Bun](https://bun.sh/) — only for the `llmadapter` adapter. Without it the core installs and runs normally and `doctor` reports `llmadapter: bun_missing`. |
-
-No package manager, no build step, no daemon. Uninstall is deleting the
-installed files; `--dry-run` prints every path first.
-
-## Quick start
-
-The review-first path is best for a first installation:
-
-```bash
-git clone https://github.com/Supersynergy/agent-token-saver.git
-cd agent-token-saver
-./install-universal.sh --profile lean --agent auto --dry-run
-./install-universal.sh --profile lean --agent auto
-agent-token-saver doctor --profile lean --json
-```
-
-`--agent auto` configures the supported hosts it finds. Use `--agent all` only
-when you intentionally want every host integration.
-
-Short installer:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/Supersynergy/agent-token-saver/main/install-universal.sh \
-  | bash -s -- --profile lean --agent auto
-```
-
-The installer copies and hashes its own files, merges existing Codex and Claude
-hook JSON, and creates backups. It does not overwrite an entire host config or
-silently install optional packages.
 
 ## What happens after installation
 
@@ -101,43 +85,15 @@ silently install optional packages.
 4. **Guard:** the Stop hook checks measured session budgets and requests a
    checkpoint when needed. It never auto-continues or blocks the session.
 
-The compact “Caveman” policy is intentionally terse. Ponytail and other
-large-context helpers remain explicit, on-demand options instead of permanent
-prompt tax.
-
 ## Benchmarks
 
-### 1. Fixed payload fixture
+Provider counters are authoritative; local payload numbers are transparent
+`bytes / 4` estimates and say so.
 
-This benchmark measures visible local payload with a transparent UTF-8
-`bytes / 4` proxy. It is useful for comparing context paths; it is not a
-provider invoice.
+### Real Codex provider A/B
 
-| Stack | Estimated visible input | Reduction vs. raw | Comparable payload capacity |
-|---|---:|---:|---:|
-| CLI selective | 1,887 | 99.50% | 199.1x |
-| Lean automatic | 3,782 | 98.99% | 99.3x |
-| Context mode on demand | 9,420 | 97.49% | 39.9x |
-| Everything + Ponytail | 12,614 | 96.64% | 29.8x |
-| No saver / raw | 375,673 | 0% | 1.0x |
-
-Where the fixture savings come from:
-
-| Component | Raw | Optimized | Reduction |
-|---|---:|---:|---:|
-| Skill routing | 36,107 | 68 | 99.81% |
-| Noisy process output | 32,210 | 887 | 97.25% |
-| Bounded structural source read | 6,882 | 747 | 89.15% |
-| 20,000-line log projection | 300,474 | 185 | 99.94% |
-
-Full artifact and method:
-[token-stack-matrix-2026-07-15.md](data/benchmarks/token-stack-matrix-2026-07-15.md).
-
-### 2. Real Codex provider A/B
-
-Fresh home directory per run; same model, task and fixture. Baseline disabled
-the hooks; Lean installed the canonical prompt and Stop hooks. The numbers
-below are provider-reported total tokens, not the local bytes proxy.
+Fresh home directory per run, same model, task and fixture; baseline disabled
+the hooks:
 
 | Task | Baseline total | Lean total | Change |
 |---|---:|---:|---:|
@@ -146,61 +102,37 @@ below are provider-reported total tokens, not the local bytes proxy.
 | Git history | 38,500 | 25,678 | **33.30% less** |
 | **Aggregate** | **112,488** | **90,364** | **19.67% less** |
 
-All three task oracles passed. The process-table task got worse, which is why
-the README does not claim universal savings. This is one run per arm, not a
-confidence interval; repeat ABBA runs before changing organization-wide
-defaults.
+All three task oracles passed. One task got worse, which is why this README
+avoids universal-savings claims. One run per arm; repeat ABBA runs before
+changing organization-wide defaults.
+Artifact: [Codex provider A/B](data/benchmarks/codex-provider-ab-2026-07-15/compact-policy/result.md).
 
-Full artifact:
-[Codex provider A/B](data/benchmarks/codex-provider-ab-2026-07-15/compact-policy/result.md).
+### Fixed payload fixture
 
-### 3. Bounded worker packets
+The accepted local fixture drops from 375,673 to
+1,887 estimated visible-input units (99.50% less) on the CLI-selective path;
+the automatic Lean path lands at 3,782 (98.99% less). Skill routing, log
+projection and bounded reads carry most of it.
+Artifact and method: [token-stack-matrix-2026-07-15.md](data/benchmarks/token-stack-matrix-2026-07-15.md).
 
-The three-worker control-plane fixture compares repeated full context with one
-small route hint per worker.
+### Bounded worker packets
+
+One controller, compact capsules, independent lanes, one machine-checkable
+oracle:
 
 ![Raw context compressed into bounded agent capsules and one verified result](docs/assets/agentmaster-swarm-flow.png)
 
-One controller. Compact capsules. Independent lanes. One machine-checkable
-oracle.
-
-| Three-worker packet | Estimated visible input |
-|---|---:|
-| Naive: registry + same task capsules + full hook | 3,800 |
-| Routed: same task capsules + full hook | 932 |
-| Routed: same task capsules + compact hook | 530 |
-| **Avoided with compact hook** | **3,270 (86.1%)** |
-
-Capsule deduplication removes another 43.1% from the complete routed packet.
-This is a no-provider-call projection, not a cost or quality claim.
-Artifacts: [swarm control](data/benchmarks/swarm-control-2026-07-27.md) and
+The three-worker fixture avoids 86.1% of the naive packet (3,800 → 530
+estimated visible-input units); capsule deduplication removes another 43.1%.
+Artifacts: [swarm control](data/benchmarks/swarm-control-2026-07-27.md),
 [hook hot path](data/benchmarks/hook-and-capsule-hotpath-2026-07-27.md).
 
-### 4. Why heavier retrieval stays on demand
+### Heavier retrieval stays on demand
 
-The local retrieval benchmark on an already-indexed repository shows why one
-tool should not be forced onto every task. Visible output again uses the
-`bytes / 4` proxy; Gmax index/update cost is excluded:
-
-| Probe | Accepted | Warm median | Estimated visible output | Median peak RSS |
-|---|:--:|---:|---:|---:|
-| Tilth, symbol neighborhood | yes | 27 ms | 475 | 4.0 MB |
-| Gmax, symbol neighborhood | yes | 372 ms | 395 | 110 MB |
-| Tilth, natural-language recall | no | 13 ms | 191 | 2.8 MB |
-| Gmax, natural-language recall | yes | 3,807 ms | 113 | 90 MB |
-
-Tilth is the better Lean route for bounded symbol and file structure. Gmax
-earns its cost for semantic recall or a prebuilt call graph. In this run, Gmax
-also left five background processes using about 2.65 GiB combined, so it remains
-an explicit session tool.
-
-A separate code-only Graphify pilot compressed a 169,165-unit raw graph to a
-477-unit bounded answer — **99.72% less visible output** — but needed an
-8.3-second, 100-MiB graph build. That makes it valuable for repeated deep
-analysis, not for every one-symbol question.
-
-Artifacts:
-[Tilth vs. Gmax](data/benchmarks/tilth-vs-gmax-2026-07-27.md) and
+Tilth answers bounded symbol lookups
+in 27 ms at 4 MB RSS, while graph tools like Gmax and Graphify earn their
+90-110 MB and multi-second builds only for semantic recall or repeated deep
+analysis. Artifacts: [Tilth vs. Gmax](data/benchmarks/tilth-vs-gmax-2026-07-27.md),
 [Graphify code-only](data/benchmarks/graphify-code-only-2026-07-27.md).
 
 ## Choose a profile
@@ -224,33 +156,25 @@ Start with `lean`. Change profiles only for a concrete need.
 | GG Coder | compact home `AGENTS.md` default plus installed Markdown skill |
 | Other agents | repo-local `SKILL.md` plus CLI/JSON |
 
-The installer never creates a new Hermes `SOUL.md`, because that would replace
-Hermes' built-in identity; it safely merges the default when the user's
-`SOUL.md` already exists. See [Hooks and agents](docs/HOOKS_AND_AGENTS.md).
-Files on disk are not proof of active wiring; the doctor checks installed
-paths, hooks, and the exact managed default blocks.
+The installer merges into existing host files and never creates a new Hermes
+`SOUL.md`. Files on disk are not proof of active wiring; the doctor checks
+installed paths, hooks and the exact managed default blocks. Details:
+[Hooks and agents](docs/HOOKS_AND_AGENTS.md).
 
 ### Companion: the skill router
 
-`doctor` lists `skill-router` as an optional layer. That is
-[agent-token-saver-skill-router](https://github.com/Supersynergy/agent-token-saver-skill-router),
-a separate stdlib-only CLI that picks zero or one skill (up to four supports
-for genuinely multi-phase work) out of a large local skill catalog. Install it
-when a host loads many `SKILL.md` files; skip it otherwise. Neither installer
-ever installs the other package.
+[agent-token-saver-skill-router](https://github.com/Supersynergy/agent-token-saver-skill-router)
+is a separate stdlib-only CLI that picks zero or one skill out of a large
+local skill catalog. Install it when a host loads many `SKILL.md` files; skip
+it otherwise. Neither installer ever installs the other package.
 
-## AgentMaster protocol
+## AgentMaster protocol (optional)
 
-`llmadapter ask-v2` is the strict machine interface for an external controller.
-The universal installer places a managed copy on `PATH`; this optional adapter
-requires [Bun](https://bun.sh/) at runtime, and `agent-token-saver doctor --json`
-reports its exact capability/launcher status without starting a provider.
-Use `doctor --require-llmadapter` for fail-closed AgentMaster automation.
-It reads prompts from stdin or a regular file, never a positional argument.
-Input is limited to 1,800 UTF-8 bytes so the worker capsule never silently
-truncates it. Prompt files must be regular, owned by the current user and have
-no group/other permissions. Three selected workers, a 500-token requested
-ceiling and a 120-second global deadline are the defaults.
+`llmadapter ask-v2` is the strict machine interface for an external
+controller: stdin-only prompts, bounded capsules, lane selectors
+(`free`/`cheap`/`paid`/`local`/`cli`), health-ordered routing, oracles,
+budgets and one schema-fixed JSON result. It requires [Bun](https://bun.sh/)
+at runtime and stays optional.
 
 ```bash
 printf '%s' "$TASK" | llmadapter ask-v2 \
@@ -258,124 +182,10 @@ printf '%s' "$TASK" | llmadapter ask-v2 \
   --usage-out run-accounting.json
 ```
 
-`--contract verdict|prose|json` picks the answer shape. `verdict` is the default
-and is what a controller gates on:
-`STATUS: PASS|FAIL|BLOCKED; EVIDENCE: …; HANDOFF: …`. Use `prose` or `json` for
-work that is not a verification — a verdict shape around a prose objective makes
-workers argue about format instead of answering.
-
-`--lanes` takes a lane name or a selector: `free`, `cheap`, `paid`, `local`,
-`cli`, `all`. `cheap` is the measured band of paid models that cost a rounding
-error — over closed-form tasks with known answers, three samples each,
-`openai/gpt-oss-120b` scored 9/9 for $0.00046 per nine calls and
-`openai/gpt-5.6-luna` 9/9 for $0.00093, against 6-7/9 for the best free lanes.
-It is a selector keyword and not a class, so the wire `class` stays `paid` and
-`--allow-paid` still applies.
-
-A class selector is ordered by measured lane health — a 7-day Laplace-smoothed
-success rate over the call ledger — so a provider outage sinks that lane and a
-working one takes the worker slot. An explicit `--lanes a,b,c` keeps the
-caller's order. `LLMADAPTER_LANE_HEALTH=0` restores table order.
-`llmadapter doctor` reports which lanes a selector will actually run and checks
-every configured model id against the live OpenRouter catalog; `doctor --probe`
-adds one 32-token call per free lane, because a model can sit in the catalog and
-still return a provider error on every request.
-
-`--cap` is the total selected-worker limit: at most three normally, or at most
-64 with explicit `--fanout`. OpenRouter is always remote; CLI agents are remote
-unless a private host lane explicitly declares `local_safe`; Ollama is local
-only on a loopback URL. Remote lanes require `--allow-remote`; paid lanes also
-require `--allow-paid`. HTTP redirects are rejected. Host lanes load only from
-a current-user-owned, regular, non-symlink `0600`
-`~/.agent-token-saver/local-lanes.json`.
-The command emits exactly one
-[`llmadapter.result` v2](schemas/llmadapter-result-v2.schema.json) JSON object.
-The private `0600` usage file contains its completed accounting object. Token
-counts remain `reported`, `estimated` or `unknown`; cost is `null` unless a
-future provider supplies authoritative billing. The requested output cap is
-server-side for OpenRouter, native for Ollama and advisory-only for CLI agents,
-whose captured output is still byte-bounded. Every lane record exposes
-`call_started`, so a controller can independently derive call counts, cache
-hits, and token-coverage totals instead of trusting the summary. Shield, key,
-configuration and spawn failures before transport starts remain false.
-
-Stdin/file transport prevents prompt leakage through process arguments. It does
-not stop a model from repeating input in its answer. With cache enabled, that
-answer is stored in the private cache and may therefore contain repeated input;
-use `--no-cache` for sensitive tasks.
-
-The repository defines 21 built-in lanes. A host may add local lanes through
-its private configuration; `llmadapter lanes` is the runtime inventory. A host
-lane marked `"opt_in": true` is skipped by `all` and by the class selectors and
-is reachable only by name, so a heavy lane never joins a swarm by accident.
-
-### Opt-in extensions
-
-Every flag below is off by default. The capability contract and the default
-result envelope are unchanged, so a controller written against the strict v2
-protocol keeps working without knowing these exist. `contract --extended`
-advertises them for controllers that opt in.
-
-```bash
-printf '%s' "$TASK" | llmadapter ask-v2 \
-  --stdin --swarm --lanes local --first-pass \
-  --oracle 'grep -qi sqlite "$LLMADAPTER_ANSWER_PATH"' \
-  --budget-tokens 2000
-```
-
-- `--first-pass` starts every selected lane at once, runs the oracle on each
-  answer as it lands and prunes the peers at the first PASS. Pruned lanes keep a
-  record with terminal `pruned`, which appears only in this mode. Without an
-  oracle the first valid answer wins.
-- `--oracle` is a shell command; exit 0 is PASS. It receives
-  `LLMADAPTER_ANSWER_PATH` (a private `0600` file) and `LLMADAPTER_RUN_DIR`, and
-  is killed after two seconds. The answer never reaches it through argv. The
-  oracle verdict is reported in `first_pass.winner`, not in the exit code: the
-  v2 contract fixes exit 0 to mean status `ok` or `partial`, and a lane that
-  answered did answer.
-- `--oracle-env-prefix NAME` additionally exports `NAME_ANSWER_PATH` and
-  `NAME_RUN_DIR`, so a controller can hand down an oracle it already wrote
-  against its own variable names. Without it that oracle reads an empty path,
-  never passes, and `--first-pass` degrades into a full-price run with nothing
-  pruned.
-- `llmadapter evidence [--mode …] (--target X | --stdin) [--bytes N] [--out PATH]`
-  runs the gather step alone: no lane, no model token, a private artifact and a
-  report with `model_tokens_spent: 0`. Use it to gather once and give N workers
-  a path instead of a payload.
-- `--budget-tokens N` is enforced locally rather than requested from a provider:
-  an input estimate above the budget refuses before the call, a CLI lane's
-  stdout is bounded at four bytes per budgeted token, and a reported total above
-  the budget fails the record with `budget_exceeded`.
-- `--evidence` gathers one primary-source artifact before the workers start,
-  projects it to `--evidence-bytes` (default 600) and injects it into every
-  capsule, so tool-less lanes can cite a fresh fact instead of being told not to
-  claim one. Lookup order is `ats-url-cache`, then the provider, then the cache
-  write. No scraper is bundled: the provider is a host executable named by
-  `LLMADAPTER_EVIDENCE_CMD`, called as `"$LLMADAPTER_EVIDENCE_CMD" <mode>` with
-  the query on stdin and the artifact on stdout. Modes are `research` (default),
-  `mega`, `fetch` (needs `--evidence-target <url>`) and `primary`, which asks the
-  provider's primary-source registry so a version, price or policy claim can
-  cite whoever owns the fact. If the artifact reports
-  a bot wall (`page_status: challenge`), it is discarded and the capsule asks
-  the worker for BLOCKED — the adapter never attempts a bypass. Without a
-  provider the run continues with evidence marked unavailable. The provider
-  receives `LLMADAPTER_EVIDENCE_DEADLINE_MS` so it can bound itself, and may
-  exit 4 to report that it is busy rather than out of answers — that surfaces as
-  `evidence_provider_busy`, which is worth retrying.
-- `--skill-route` asks `si` for one skill and puts its path in the capsule
-  instead of relying on the four built-in regex routes. Fail-open.
-- `llmadapter council` runs the identical worker stage and adds one
-  fresh-context lane that reports CONSENSUS, DISSENT and CONFIDENCE. Choose it
-  with `--synth-lane NAME`.
-- `llmadapter cache-export --out PATH.jsonl [--with-answers] [--duckdb PATH]`
-  snapshots the private cache for replay or analysis. Answers are hashed unless
-  `--with-answers` is passed; the live cache keeps its `0600` files.
+Full contract, lane table, extensions:
+[AgentMaster protocol](docs/AGENTMASTER_PROTOCOL.md).
 
 ## Measure your own result
-
-The included ledger combines parent runs, workers, retries and fallbacks.
-Provider counters are authoritative; visible local files remain clearly marked
-estimates.
 
 ```bash
 agent-token-ledger \
@@ -388,9 +198,9 @@ agent-token-ledger \
   --out token-ledger.md
 ```
 
-For a credible before/after result, keep the model, task, fixture and acceptance
-oracle fixed. Record provider input/output, cache classes, latency, retries and
-failures. Never translate a local payload estimate directly into money saved.
+Keep the model, task, fixture and acceptance oracle fixed for a credible
+before/after. Never translate a local payload estimate directly into money
+saved.
 
 ## Verify the checkout
 
@@ -403,16 +213,11 @@ agent-token-saver doctor --profile teams --json
 ```
 
 `core-ready` means the portable core works while an optional tool is missing.
-`full` means every tool required by the selected profile is detected. Neither
-status claims that provider credentials, private infrastructure or browser
-sessions work.
+`full` means every tool required by the selected profile is detected.
 
 ## Safety and honest limits
 
 - Hooks are fail-open and preserve host approval, sandbox and Stop ownership.
-- No expensive maintenance scan belongs in a hot hook.
-- Release gate: scan public artifacts for private paths, credentials, process
-  IDs and raw controller/transcript output before publishing.
 - The installer merges recognized config sections and creates backups.
 - Optional tools remain optional; no always-on broad tool catalog.
 - Savings depend on workload. Quality gates come before token counts.
@@ -423,6 +228,7 @@ sessions work.
 
 - [Tooling and wiring](docs/TOOLING_AND_WIRING.md)
 - [Hooks and agents](docs/HOOKS_AND_AGENTS.md)
+- [AgentMaster protocol](docs/AGENTMASTER_PROTOCOL.md)
 - [Full measurement method](docs/FULL_CONTEXT_MEASUREMENT.md)
 - [Subagent context protocol](docs/SUBAGENT_CONTEXT_PROTOCOL.md)
 - [Worker control plane](docs/SWARM_CONTROL_PLANE.md)
