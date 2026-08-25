@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -108,6 +109,40 @@ def test_explicit_skill_override_wins_even_for_context_prompt(tmp_path: Path) ->
 
     assert str(selected.resolve()) in context
     assert str(canonical) not in context
+
+
+def test_injected_context_is_byte_stable_across_runs(tmp_path: Path) -> None:
+    """The hook's own output lands in a cached prefix, so it must not vary.
+
+    A clock, run counter or session id here would change the prefix on every
+    turn and silently cost a full cache miss per request — the exact failure
+    this project exists to prevent.
+    """
+    skill = tmp_path / ".agent-token-saver" / "skills" / "agent-token-saver" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text("---\nname: agent-token-saver\n---\n")
+    prompt = "Compress this noisy log without wasting context tokens"
+
+    first = run_hook(tmp_path, prompt)
+    second = run_hook(tmp_path, prompt)
+
+    assert first == second
+    assert first != ""
+
+
+def test_injected_context_carries_no_clock_or_session_id(tmp_path: Path) -> None:
+    """Guard the cached prefix against the top cache-miss cause found in review."""
+    skill = tmp_path / ".agent-token-saver" / "skills" / "agent-token-saver" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text("---\nname: agent-token-saver\n---\n")
+
+    context = json.loads(
+        run_hook(tmp_path, "Compress this noisy log without wasting context tokens")
+    )["hookSpecificOutput"]["additionalContext"]
+
+    assert not re.search(r"\d{4}-\d{2}-\d{2}T\d{2}:", context)  # ISO timestamp
+    assert not re.search(r"\b1[7-9]\d{8}\b", context)  # unix epoch seconds
+    assert "session_id" not in context.lower()
 
 
 def test_skill_metadata_covers_token_stack_router_intents() -> None:

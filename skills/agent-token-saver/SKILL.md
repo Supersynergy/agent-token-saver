@@ -37,6 +37,27 @@ The compact rule is always-on. If the optional `warm-handoff` skill is
 installed, use it for the full Claude workflow; the Stop hook only warns and
 never writes files, continues a session or blocks exit.
 
+A prefix is reusable only while it stays byte-identical. Grow context
+append-only, keep clocks and session ids out of it, hold tool definitions
+stable within a wave, and compact at a stable boundary.
+
+## Price the cache, don't just count tokens
+
+Raw token sums misprice a cached prefix: moving fresh input into cache reads
+raises the raw input count while lowering the bill, so an unweighted
+before/after can call a cheaper run a regression.
+
+```bash
+ats-cache usage.json                      # hit rate, split, weighted vs no-cache
+ats-cache - --format line < usage.json    # one-line statusline summary
+ats-cache lean.json --against base.json   # weighted A/B
+```
+
+The ledger reports the same block. Weighted tokens are a list-ratio estimate
+against an explicit no-cache counterfactual, never an invoice; provider
+counters stay authoritative. Ratios live in `scripts/cache_economics.py`, each
+pinned to its published per-MTok price by a test.
+
 ## Recall loop (v4.18–4.20) — the compounding half
 
 Every agent CLI session becomes searchable; every new run reads the corpus back.

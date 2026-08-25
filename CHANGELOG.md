@@ -2,6 +2,42 @@
 
 ## [Unreleased]
 
+- `scripts/codex_provider_ab.py` now computes weighted (cache-priced) A/B
+  numbers in code instead of leaving them to the hand calculation quoted
+  below. `summarize_pair()` gains a `weighted_delta` block and `aggregate()` a
+  `weighted` block, both via `cache_economics.compare()`; the markdown report
+  shows raw and weighted savings side by side plus cache hit rate per arm and
+  the ratio profile with its verified date. Raw provider counters stay
+  authoritative and visible, because raw and weighted can disagree; weighted
+  stays a labelled list-ratio estimate against a no-cache counterfactual, not
+  an invoice. The harness prices itself with `openai-gpt-5.6-terra`, the model
+  it actually drives, rather than the Anthropic default.
+  `result.json` `schema_version` 1 -> 2 for the new keys; existing artifacts
+  remain valid v1 records.
+- Re-checked the hand-computed ratios quoted below against vendor pricing on
+  2026-08-25 and corrected two of them. Cache reads are 0.1x as stated, but
+  `gpt-5.6-terra` output is 6x its input ($12.00 vs $2.00 per MTok), not the
+  8x used in that prose, and OpenAI now charges an explicit 1.25x cache write
+  rather than writing for free. Weighted *input* savings therefore stand;
+  weighted *total* moves slightly. `tests/test_cache_economics.py` pins every
+  profile to its published per-MTok prices so the next ratio change fails a
+  test instead of ageing quietly in a changelog entry.
+- New `scripts/cache_economics.py` prices a cached prefix instead of counting
+  raw tokens, and is the single place ratios live. It folds both vendor usage
+  conventions into one shape (Anthropic reports `input_tokens` excluding
+  cache; OpenAI reports it including cache with `cached_input_tokens` as a
+  subset), reports cache hit rate, and expresses savings against an explicit
+  no-cache counterfactual. Wired into `full_context_ledger.py` (optional and
+  fail-open: a missing module degrades to the previous cache-unaware output)
+  and exposed as `ats-cache` for a markdown, JSON or one-line statusline view.
+  The installer ships it beside the installed ledger as a managed asset, so an
+  installed ledger keeps pricing the prefix.
+- Compact policy gains cache hygiene, the behavioural half of the same
+  problem: grow context append-only, keep clocks and session ids out of a
+  cached prefix, hold tool definitions stable within a wave, and compact at a
+  stable boundary. `tests/test_prompt_hook.py` now asserts the hook's own
+  injected context is byte-stable across runs and carries no timestamp or
+  session id, since that text sits inside the cached prefix it protects.
 - Three repeated live provider A/B runs with `gpt-5.6-terra` (3 tasks per run,
   fresh HOME per arm, all oracles passed in every run) replaced the previous
   single-run reporting. Two findings survived the noise. First, raw token sums

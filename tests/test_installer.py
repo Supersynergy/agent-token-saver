@@ -112,6 +112,7 @@ def test_all_agents_install_without_overwriting_existing_settings(tmp_path: Path
     assert {asset["name"] for asset in config["managed_assets"]} == {
         "doctor",
         "ledger",
+        "cache_economics",
         "audit",
         "llmadapter",
         "prompt_hook",
@@ -141,6 +142,39 @@ def test_all_agents_install_without_overwriting_existing_settings(tmp_path: Path
         for entry in codex["hooks"]["Stop"]
         for hook in entry["hooks"]
     )
+
+
+def test_installed_ledger_still_prices_the_cached_prefix(tmp_path: Path) -> None:
+    """The ledger loads its pricing module as a sibling, so both must ship.
+
+    Installing only the ledger degrades it to cache-unaware output silently,
+    which is exactly the mispricing this project set out to remove.
+    """
+    assert run_installer(tmp_path, "--agent", "codex").returncode == 0
+    ledger = tmp_path / "home" / ".agent-token-saver" / "bin" / "agent-token-ledger"
+    assert (ledger.parent / "cache_economics.py").is_file()
+
+    usage = tmp_path / "usage.json"
+    usage.write_text(
+        json.dumps(
+            {
+                "usage": {
+                    "input_tokens": 100,
+                    "cache_creation_input_tokens": 500,
+                    "cache_read_input_tokens": 9_000,
+                    "output_tokens": 200,
+                }
+            }
+        )
+    )
+    result = subprocess.run(
+        [sys.executable, str(ledger), "--usage", f"parent={usage}", "--provider", "codex"],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "cache_economics" in result.stdout
 
 
 def test_repeated_install_deduplicates_hooks(tmp_path: Path) -> None:

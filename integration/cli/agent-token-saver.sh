@@ -157,6 +157,47 @@ EOF
     --out token-ledger.md
 }
 
+# --- Cache economics display -----------------------------------------------
+# Prices a cached prefix instead of counting raw tokens. Raw counts misprice
+# cache: shifting fresh input into cache reads raises the raw input count
+# while lowering the bill, so an unweighted view calls a cheaper run a
+# regression. Fail-open: no module or no python -> hint and return 0.
+
+ats-cache() {
+  local _root _script
+  _root="${ATS_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/../.." 2>/dev/null && pwd)}"
+  # Repo checkout first, then the copy the installer ships beside the ledger.
+  _script="$_root/scripts/cache_economics.py"
+  [[ -f "$_script" ]] || _script="$HOME/.agent-token-saver/bin/cache_economics.py"
+  if [[ ! -f "$_script" ]]; then
+    echo "agent-token-saver: cache_economics.py not found — skipping." >&2
+    return 0
+  fi
+  if ! command -v python3 >/dev/null 2>&1; then
+    echo "agent-token-saver: python3 not on PATH — skipping." >&2
+    return 0
+  fi
+  if [[ $# -lt 1 ]]; then
+    cat <<'EOF'
+Usage: ats-cache <usage.json|-> [--against baseline.json] [--format markdown|json|line]
+                 [--profile NAME]
+
+Shows cache hit rate, the read/write/fresh split, and weighted input against
+an explicit no-cache counterfactual. Weighted tokens are a list-ratio
+estimate, never an invoice; provider counters stay authoritative.
+
+Run with --help for the current price-profile list.
+
+Examples:
+  ats-cache ~/usage.json
+  ats-cache - --format line < usage.json      # statusline-sized summary
+  ats-cache lean.json --against baseline.json # weighted A/B
+EOF
+    return 0
+  fi
+  python3 "$_script" "$@"
+}
+
 # --- Capsule template helper (see capsule-template.md for full version) -----
 
 ats-capsule-template() {

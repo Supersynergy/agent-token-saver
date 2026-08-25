@@ -338,6 +338,9 @@ def install_files(dry_run: bool) -> None:
         ROOT / "stack" / "catalog.json": INSTALL_HOME / "stack" / "catalog.json",
         ROOT / "scripts" / "stack_doctor.py": INSTALL_HOME / "bin" / "agent-token-saver",
         ROOT / "scripts" / "full_context_ledger.py": INSTALL_HOME / "bin" / "agent-token-ledger",
+        # Sibling of the installed ledger: full_context_ledger loads it by path
+        # to price the cached prefix, and degrades quietly when it is absent.
+        ROOT / "scripts" / "cache_economics.py": INSTALL_HOME / "bin" / "cache_economics.py",
         ROOT / "scripts" / "external_usage_gate.py": INSTALL_HOME / "bin" / "agent-token-audit",
         ROOT / "scripts" / "llmadapter.ts": INSTALL_HOME / "bin" / "llmadapter",
         ROOT / "integration" / "hooks" / "token-stack-prompt.py": INSTALL_HOME
@@ -540,6 +543,7 @@ def write_config(
     managed_asset_sources = {
         "doctor": ROOT / "scripts" / "stack_doctor.py",
         "ledger": ROOT / "scripts" / "full_context_ledger.py",
+        "cache_economics": ROOT / "scripts" / "cache_economics.py",
         "audit": ROOT / "scripts" / "external_usage_gate.py",
         "llmadapter": ROOT / "scripts" / "llmadapter.ts",
         "prompt_hook": ROOT / "integration" / "hooks" / "token-stack-prompt.py",
@@ -550,6 +554,7 @@ def write_config(
     managed_asset_targets = {
         "doctor": INSTALL_HOME / "bin" / "agent-token-saver",
         "ledger": INSTALL_HOME / "bin" / "agent-token-ledger",
+        "cache_economics": INSTALL_HOME / "bin" / "cache_economics.py",
         "audit": INSTALL_HOME / "bin" / "agent-token-audit",
         "llmadapter": INSTALL_HOME / "bin" / "llmadapter",
         "prompt_hook": INSTALL_HOME / "hooks" / "token-stack-prompt.py",

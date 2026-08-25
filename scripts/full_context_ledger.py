@@ -10,8 +10,10 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import re
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -36,6 +38,51 @@ DEFAULT_GUARD_THRESHOLDS = {
     "warn_tool_output_bytes": 5_000_000,
     "checkpoint_compactions": 2,
 }
+
+
+def _load_cache_economics() -> Any | None:
+    """Load the optional cache pricing module without ever raising.
+
+    This file is also executed by path from a fail-open hook and installed as a
+    single standalone script, so the sibling ``cache_economics.py`` may simply
+    be absent. Only that sibling is loaded, never a same-named module from
+    ``sys.path`` or the caller's working directory. Any failure degrades the
+    ledger to its previous, cache-unaware behaviour.
+    """
+    name = "ats_cache_economics"
+    try:
+        path = Path(__file__).resolve().with_name("cache_economics.py")
+        spec = importlib.util.spec_from_file_location(name, path)
+        if spec is None or spec.loader is None:
+            return None
+        module = importlib.util.module_from_spec(spec)
+        # Dataclass field resolution needs the module reachable by name.
+        sys.modules[name] = module
+        try:
+            spec.loader.exec_module(module)
+        except Exception:
+            sys.modules.pop(name, None)
+            return None
+        return module
+    except Exception:
+        sys.modules.pop(name, None)
+        return None
+
+
+CACHE_ECONOMICS = _load_cache_economics()
+CACHE_PRICE_PROFILE = "anthropic"
+
+
+def build_cache_economics(
+    usage: dict[str, int], profile: str | None = None
+) -> dict[str, Any] | None:
+    """Price the cached prefix, or return None when pricing is unavailable."""
+    if CACHE_ECONOMICS is None:
+        return None
+    try:
+        return CACHE_ECONOMICS.build(usage, profile or CACHE_PRICE_PROFILE)
+    except Exception:
+        return None
 
 
 def est_tokens(value: bytes) -> int:
@@ -438,6 +485,7 @@ def build_ledger(
             seen_hashes.add(digest)
     team_accounting = build_team_accounting(usage_sources, expected_workers)
     session_guard = build_session_guard(usage, usage_sources, guard_thresholds)
+    cache_economics = build_cache_economics(usage)
     if not team_accounting["complete"]:
         session_guard["action"] = "checkpoint_required"
         session_guard["reasons"].append("team_usage_incomplete")
@@ -455,6 +503,7 @@ def build_ledger(
         "unattributed_input_tokens": unattributed,
         "over_attributed_tokens": over_attributed,
         "attribution_coverage_percent": coverage,
+        **({"cache_economics": cache_economics} if cache_economics else {}),
         "method": {
             "provider_total": "authoritative usage reported by the agent/provider",
             "visible_components": "UTF-8 bytes / 4 estimate",
@@ -462,6 +511,7 @@ def build_ledger(
                 "provider input minus visible estimates; may include system prompt, built-in "
                 "tools, hidden schemas, plugins, history, cache accounting and tokenizer drift"
             ),
+            **({"cache_economics": cache_economics["basis"]} if cache_economics else {}),
         },
     }
 
@@ -509,6 +559,22 @@ def render_markdown(ledger: dict[str, Any]) -> str:
             f"| **Provider total** | **{usage['reported_total_tokens']:,}** | reported |",
         ]
     )
+    cache = ledger.get("cache_economics")
+    if cache:
+        hit_rate = cache["cache_hit_rate_percent"]
+        saving = cache["cache_saving_percent"]
+        lines.extend(
+            [
+                f"| — input served from cache | {cache['cache_read_tokens']:,} | reported |",
+                f"| — input written to cache | {cache['cache_write_tokens']:,} | reported |",
+                f"| — fresh input | {cache['uncached_input_tokens']:,} | reported |",
+                f"| Cache hit rate | {'n/a' if hit_rate is None else f'{hit_rate:.2f}%'} | reported ratio |",
+                f"| Weighted input (fresh-equivalents) | {cache['weighted_input_tokens']:,.0f} | list-ratio estimate |",
+                f"| Same stream with no cache | {cache['nocache_input_tokens']:,.0f} | counterfactual |",
+                f"| Input saved by cache | {'n/a' if saving is None else f'{saving:.2f}%'} | list-ratio estimate |",
+                f"| Weighted total (incl. output) | {cache['weighted_total_tokens']:,.0f} | list-ratio estimate |",
+            ]
+        )
     if ledger["usage_sources"]:
         lines.extend(
             [
@@ -535,6 +601,17 @@ def render_markdown(ledger: dict[str, Any]) -> str:
             "target, not a claimed saving.",
         ]
     )
+    if cache:
+        profile = cache["profile"]
+        lines.extend(
+            [
+                "",
+                f"Cache ratios: read {profile['cache_read_ratio']}x, write "
+                f"{profile['cache_write_ratio']}x, output {profile['output_ratio']}x base input "
+                f"(profile `{profile['name']}`, verified {profile['verified']}).",
+                cache["basis"],
+            ]
+        )
     return "\n".join(lines) + "\n"
 
 

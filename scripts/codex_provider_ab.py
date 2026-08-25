@@ -9,11 +9,15 @@ import os
 import shutil
 import stat
 import subprocess
+import sys
 import tempfile
 import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import cache_economics  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 INSTALLER = ROOT / "scripts" / "install_agent_token_saver.py"
@@ -278,6 +282,47 @@ def percent_saved(baseline: int, lean: int) -> float | None:
     return round((1 - lean / baseline) * 100, 2)
 
 
+WEIGHTED_BASIS = (
+    "Weighted numbers are a list-ratio estimate against a no-cache counterfactual, "
+    "not an invoice. Raw provider counters stay authoritative."
+)
+
+
+# This harness drives Codex, so it must be priced with Codex ratios rather
+# than the Anthropic default. gpt-5.6-terra is the model these runs use.
+WEIGHTED_PROFILE = "openai-gpt-5.6-terra"
+
+
+def weighted_delta(
+    baseline: dict[str, int], lean: dict[str, int], accepted: bool
+) -> dict[str, Any]:
+    """Price the cached prefix instead of counting raw tokens.
+
+    Lean converts fresh input into cache reads, so the raw input sum can rise
+    while the bill falls. Both views ship side by side because they disagree.
+    """
+    comparison = cache_economics.compare(baseline, lean, WEIGHTED_PROFILE)
+    base = comparison["baseline"]
+    cand = comparison["candidate"]
+    return {
+        "baseline_weighted_input_tokens": base["weighted_input_tokens"],
+        "lean_weighted_input_tokens": cand["weighted_input_tokens"],
+        "baseline_weighted_total_tokens": base["weighted_total_tokens"],
+        "lean_weighted_total_tokens": cand["weighted_total_tokens"],
+        "baseline_cache_hit_rate_percent": base["cache_hit_rate_percent"],
+        "lean_cache_hit_rate_percent": cand["cache_hit_rate_percent"],
+        "cache_hit_rate_delta": comparison["cache_hit_rate_delta"],
+        "input_saved_percent": (
+            comparison["weighted_input_saved_percent"] if accepted else None
+        ),
+        "total_saved_percent": (
+            comparison["weighted_total_saved_percent"] if accepted else None
+        ),
+        "profile": comparison["profile"],
+        "basis": WEIGHTED_BASIS,
+    }
+
+
 def summarize_pair(task: Task, arms: dict[str, dict[str, Any]]) -> dict[str, Any]:
     baseline = arms["baseline"]["usage"]
     lean = arms["lean"]["usage"]
@@ -306,6 +351,7 @@ def summarize_pair(task: Task, arms: dict[str, dict[str, Any]]) -> dict[str, Any
                 else None
             ),
         },
+        "weighted_delta": weighted_delta(baseline, lean, accepted),
     }
 
 
@@ -319,10 +365,12 @@ def aggregate(tasks: list[dict[str, Any]]) -> dict[str, Any]:
         key: sum(task["arms"]["lean"]["usage"][key] for task in tasks)
         for key in baseline
     }
+    weighted = weighted_delta(baseline, lean, accepted)
     return {
         "accepted": accepted,
         "baseline": baseline,
         "lean": lean,
+        "weighted": weighted,
         "provider_savings_claim_valid": accepted,
         "input_saved_percent": percent_saved(baseline["input_tokens"], lean["input_tokens"]) if accepted else None,
         "total_saved_percent": percent_saved(baseline["total_tokens"], lean["total_tokens"]) if accepted else None,
@@ -334,36 +382,65 @@ def aggregate(tasks: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def _percent(value: float | None) -> str:
+    return "n/a" if value is None else f"{value:.2f}%"
+
+
 def render_markdown(payload: dict[str, Any]) -> str:
     lines = [
         f"# Codex provider A/B — {payload['date']}",
         "",
         "Fresh HOME per run; same model, fixture and task oracle. Baseline disables hooks; Lean installs the canonical prompt and Stop hooks. Provider-reported Codex usage is authoritative.",
         "",
-        "| Task | Baseline input | Lean input | Input saved | Baseline total | Lean total | Accepted | RTK in Lean |",
-        "|---|---:|---:|---:|---:|---:|:--:|:--:|",
+        "Raw columns count tokens. Weighted columns price them: Lean turns fresh input into cache reads, so raw and weighted savings can disagree, and a raw regression can still be a cheaper run.",
+        "",
+        "| Task | Baseline input | Lean input | Input saved (raw) | Input saved (weighted) | Baseline total | Lean total | Total saved (weighted) | Cache hit baseline -> Lean | Accepted | RTK in Lean |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|:--:|:--:|",
     ]
     for task in payload["tasks"]:
         baseline = task["arms"]["baseline"]["usage"]
         lean = task["arms"]["lean"]["usage"]
         delta = task["provider_delta"]
-        saved = "n/a" if delta["input_saved_percent"] is None else f"{delta['input_saved_percent']:.2f}%"
+        weighted = task["weighted_delta"]
         lines.append(
-            f"| {task['name']} | {baseline['input_tokens']:,} | {lean['input_tokens']:,} | {saved} | "
+            f"| {task['name']} | {baseline['input_tokens']:,} | {lean['input_tokens']:,} | "
+            f"{_percent(delta['input_saved_percent'])} | "
+            f"{_percent(weighted['input_saved_percent'])} | "
             f"{baseline['total_tokens']:,} | {lean['total_tokens']:,} | "
+            f"{_percent(weighted['total_saved_percent'])} | "
+            f"{_percent(weighted['baseline_cache_hit_rate_percent'])} -> "
+            f"{_percent(weighted['lean_cache_hit_rate_percent'])} | "
             f"{'yes' if task['accepted'] else 'no'} | {'yes' if task['arms']['lean']['rtk_observed'] else 'no'} |"
         )
     aggregate_result = payload["aggregate"]
+    weighted = aggregate_result["weighted"]
+    profile = weighted["profile"]
     lines.extend(
         [
             "",
             "## Aggregate gate",
             "",
             f"- All task oracles accepted: **{'yes' if aggregate_result['accepted'] else 'no'}**.",
-            f"- Baseline provider total: **{aggregate_result['baseline']['total_tokens']:,}**.",
-            f"- Lean provider total: **{aggregate_result['lean']['total_tokens']:,}**.",
-            f"- Provider total saving: **{aggregate_result['total_saved_percent'] if aggregate_result['total_saved_percent'] is not None else 'not claimable'}%**.",
-            f"- 99%+ provider saving proven: **{'yes' if aggregate_result['ninety_nine_percent_provider_saving'] else 'no'}**.",
+            f"- Baseline provider total (raw): **{aggregate_result['baseline']['total_tokens']:,}**.",
+            f"- Lean provider total (raw): **{aggregate_result['lean']['total_tokens']:,}**.",
+            f"- Provider total saving (raw): **{aggregate_result['total_saved_percent'] if aggregate_result['total_saved_percent'] is not None else 'not claimable'}%**.",
+            f"- 99%+ provider saving proven (raw): **{'yes' if aggregate_result['ninety_nine_percent_provider_saving'] else 'no'}**.",
+            "",
+            "## Weighted (cache-priced) aggregate",
+            "",
+            f"- Baseline weighted input (fresh-equivalents): **{weighted['baseline_weighted_input_tokens']:,.0f}**.",
+            f"- Lean weighted input (fresh-equivalents): **{weighted['lean_weighted_input_tokens']:,.0f}**.",
+            f"- Weighted input saved: **{_percent(weighted['input_saved_percent'])}**.",
+            f"- Weighted total saved (incl. output): **{_percent(weighted['total_saved_percent'])}**.",
+            f"- Cache hit rate: baseline **{_percent(weighted['baseline_cache_hit_rate_percent'])}**, "
+            f"Lean **{_percent(weighted['lean_cache_hit_rate_percent'])}** "
+            f"(delta {_percent(weighted['cache_hit_rate_delta'])}).",
+            "",
+            f"Ratio profile `{profile['name']}` (verified {profile['verified']}): cache read "
+            f"{profile['cache_read_ratio']}x, cache write {profile['cache_write_ratio']}x, "
+            f"output {profile['output_ratio']}x base input. Source: {profile['source']}.",
+            "",
+            weighted["basis"],
             "",
             "A failed oracle invalidates the saving claim. One run per arm is fresh evidence, not a statistical confidence interval; repeat ABBA before changing defaults.",
         ]
@@ -420,7 +497,8 @@ def main() -> int:
             rows.append(summarize_pair(task, arms))
     version = run(["codex", "--version"]).stdout.strip()
     payload = {
-        "schema_version": 1,
+        # 2: adds weighted (cache-priced) deltas alongside the raw ones.
+        "schema_version": 2,
         "date": time.strftime("%Y-%m-%d %H:%M:%S %Z"),
         "codex_version": version,
         "model": args.model,

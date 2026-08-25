@@ -1,6 +1,9 @@
 import json
 from pathlib import Path
 
+import pytest
+
+from scripts import full_context_ledger
 from scripts.full_context_ledger import (
     build_ledger,
     build_session_guard,
@@ -259,6 +262,74 @@ def test_session_guard_requires_checkpoint_for_context_rot(tmp_path: Path) -> No
     assert guard["action"] == "checkpoint_required"
     assert "provider_total_tokens>=25000000" in guard["reasons"]
     assert "compactions>=2" in guard["reasons"]
+
+
+CACHE_USAGE = {
+    "input_tokens": 100,
+    "cache_creation_input_tokens": 500,
+    "cache_read_input_tokens": 9_000,
+    "cached_input_tokens_subset": 0,
+    "total_input_tokens": 9_600,
+    "output_tokens": 40,
+    "reasoning_output_tokens_subset": 0,
+    "reported_total_tokens": 9_640,
+}
+
+
+def test_ledger_prices_the_cached_prefix() -> None:
+    ledger = build_ledger(CACHE_USAGE, [], "fixture")
+
+    cache = ledger["cache_economics"]
+    assert cache["cache_hit_rate_percent"] == 93.75
+    assert cache["cache_read_tokens"] == 9_000
+    assert cache["cache_write_tokens"] == 500
+    assert cache["uncached_input_tokens"] == 100
+    # 100 fresh + 500 * 1.25 write + 9000 * 0.1 read.
+    assert cache["weighted_input_tokens"] == 1_625.0
+    assert cache["nocache_input_tokens"] == 9_600.0
+    assert cache["cache_saving_percent"] == 83.07
+    assert "not an invoice" in cache["basis"]
+    assert "not an invoice" in ledger["method"]["cache_economics"]
+
+
+def test_ledger_works_without_cache_economics_module(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(full_context_ledger, "CACHE_ECONOMICS", None)
+
+    ledger = build_ledger(CACHE_USAGE, [], "fixture")
+
+    assert "cache_economics" not in ledger
+    assert "cache_economics" not in ledger["method"]
+    assert ledger["provider_usage"]["total_input_tokens"] == 9_600
+    assert json.loads(serialize_ledger(ledger, "json")) == ledger
+    assert "Cache hit rate" not in serialize_ledger(ledger, "markdown")
+
+
+def test_broken_cache_economics_module_never_breaks_the_ledger(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class Broken:
+        @staticmethod
+        def build(usage, profile):
+            raise RuntimeError("boom")
+
+    monkeypatch.setattr(full_context_ledger, "CACHE_ECONOMICS", Broken)
+
+    ledger = build_ledger(CACHE_USAGE, [], "fixture")
+
+    assert "cache_economics" not in ledger
+
+
+def test_markdown_reports_cache_rows() -> None:
+    markdown = serialize_ledger(build_ledger(CACHE_USAGE, [], "fixture"), "markdown")
+
+    assert "| Cache hit rate | 93.75% | reported ratio |" in markdown
+    assert "| — input served from cache | 9,000 | reported |" in markdown
+    assert "| — input written to cache | 500 | reported |" in markdown
+    assert "| — fresh input | 100 | reported |" in markdown
+    assert "| Weighted input (fresh-equivalents) | 1,625 | list-ratio estimate |" in markdown
+    assert "| Same stream with no cache | 9,600 | counterfactual |" in markdown
+    assert "| Input saved by cache | 83.07% | list-ratio estimate |" in markdown
+    assert "not an invoice" in markdown
 
 
 def test_duplicate_visible_components_are_reported(tmp_path: Path) -> None:

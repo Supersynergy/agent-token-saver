@@ -245,6 +245,31 @@ Keep the model, task, fixture and acceptance oracle fixed for a credible
 before/after. Never translate a local payload estimate directly into money
 saved.
 
+### Price the cache, don't just count tokens
+
+Raw token sums misprice a cached prefix. Moving fresh input into cache reads
+raises the raw input count while lowering the bill, so an unweighted
+before/after can call a cheaper run a regression.
+
+```bash
+ats-cache usage.json                      # hit rate, split, weighted vs no-cache
+ats-cache - --format line < usage.json    # one-line statusline summary
+ats-cache lean.json --against base.json   # weighted A/B
+```
+
+```
+cache 90.00% hit | 9,000 read / 0 write / 1,000 fresh | weighted in 1,900 vs 10,000 uncached (81.00% saved)
+```
+
+The ledger reports the same block. Weighted tokens are a list-ratio estimate
+against an explicit no-cache counterfactual, never an invoice; provider
+counters stay authoritative. Ratios live in `scripts/cache_economics.py`, each
+pinned to its published per-MTok price by a test.
+
+The cache only pays while the prefix stays byte-identical: grow context
+append-only, keep clocks and session ids out of it, hold tool definitions
+stable within a wave, and don't switch model or effort mid-wave.
+
 ## Verify the checkout
 
 ```bash
