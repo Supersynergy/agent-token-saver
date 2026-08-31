@@ -315,3 +315,29 @@ def test_healthy_cache_is_not_flagged() -> None:
 def test_line_output_carries_the_verdict_for_a_broken_cache() -> None:
     line = ce.render_line(ce.build({"input_tokens": 2, "cache_creation_input_tokens": 19_967}))
     assert line.endswith("| write-only")
+
+
+def test_codex_cache_write_counter_is_not_invisible() -> None:
+    """Codex names its write counter `cache_write_input_tokens`.
+
+    While that field was unknown, a Codex prefix re-written on every turn
+    reported 0 writes, no verdict and a flattering saving: the one stream shape
+    the diagnosis exists to catch was the one it could not see.
+    """
+    usage = ce.build(
+        {"input_tokens": 20_000, "cached_input_tokens": 0, "cache_write_input_tokens": 19_967},
+        "anthropic",
+    )
+    assert usage["cache_write_tokens"] == 19_967
+    assert usage["diagnosis"]["verdict"] == "write-only"
+    assert usage["cache_saving_percent"] < 0
+
+
+def test_codex_write_counter_is_a_subset_not_an_extra_class() -> None:
+    """Codex counts writes inside input_tokens; Anthropic bills them beside it."""
+    subset = ce.build({"input_tokens": 20_000, "cache_write_input_tokens": 19_967}, "anthropic")
+    disjoint = ce.build(
+        {"input_tokens": 33, "cache_creation_input_tokens": 19_967}, "anthropic"
+    )
+    assert subset["total_input_tokens"] == 20_000
+    assert disjoint["total_input_tokens"] == 20_000

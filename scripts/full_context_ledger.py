@@ -142,6 +142,9 @@ def _normalize_usage(usage: dict[str, Any]) -> dict[str, int]:
     cache_creation = _int(usage.get("cache_creation_input_tokens"))
     cache_read = _int(usage.get("cache_read_input_tokens"))
     cached_subset = _int(usage.get("cached_input_tokens"))
+    # Codex reports its cache writes as a subset of input_tokens, so this one
+    # must not be added to the total the way Anthropic's disjoint field is.
+    cache_write_subset = _int(usage.get("cache_write_input_tokens"))
     total_input = _int(usage.get("total_input_tokens"))
     if not total_input:
         total_input = input_tokens + cache_creation + cache_read
@@ -152,6 +155,7 @@ def _normalize_usage(usage: dict[str, Any]) -> dict[str, int]:
         "cache_creation_input_tokens": cache_creation,
         "cache_read_input_tokens": cache_read,
         "cached_input_tokens_subset": cached_subset,
+        "cache_write_input_tokens": cache_write_subset,
         "total_input_tokens": total_input,
         "output_tokens": output_tokens,
         "reasoning_output_tokens_subset": _int(usage.get("reasoning_output_tokens")),
@@ -245,6 +249,7 @@ def _accumulator_metadata(value: Any) -> dict[str, int] | None:
                 "cache_creation_input_tokens",
                 "cache_read_input_tokens",
                 "cached_input_tokens_subset",
+                "cache_write_input_tokens",
                 "total_input_tokens",
                 "output_tokens",
                 "reasoning_output_tokens_subset",

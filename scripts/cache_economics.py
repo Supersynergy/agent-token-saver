@@ -136,6 +136,7 @@ CAMEL_ALIASES = {
     "cachedInputTokens": "cached_input_tokens",
     "cacheWrite": "cache_creation_input_tokens",
     "cacheCreationInputTokens": "cache_creation_input_tokens",
+    "cacheWriteInputTokens": "cache_write_input_tokens",
     "totalInputTokens": "total_input_tokens",
 }
 
@@ -174,7 +175,13 @@ def normalize_usage(usage: dict[str, Any]) -> dict[str, int]:
     """
     usage = canonical_keys(usage)
     input_tokens = _int(usage.get("input_tokens", usage.get("prompt_tokens")))
-    cache_write = _int(usage.get("cache_creation_input_tokens"))
+    # Anthropic bills cache writes as their own class alongside input_tokens;
+    # Codex reports cache_write_input_tokens as a subset of input_tokens, the
+    # same way it reports cached_input_tokens. Adding the subset field to the
+    # total would double-count it, and ignoring it hides every write.
+    disjoint_write = _int(usage.get("cache_creation_input_tokens"))
+    subset_write = _int(usage.get("cache_write_input_tokens"))
+    cache_write = disjoint_write or subset_write
     explicit_read = _int(usage.get("cache_read_input_tokens"))
     subset_read = _int(usage.get("cached_input_tokens"))
     if not subset_read:
@@ -184,9 +191,9 @@ def normalize_usage(usage: dict[str, Any]) -> dict[str, int]:
 
     total_input = _int(usage.get("total_input_tokens"))
     if not total_input:
-        if explicit_read or cache_write:
+        if explicit_read or disjoint_write:
             # Anthropic convention: the three classes are disjoint.
-            total_input = input_tokens + cache_write + explicit_read
+            total_input = input_tokens + disjoint_write + explicit_read
         else:
             # Subset convention: input_tokens already contains the cached part.
             total_input = input_tokens

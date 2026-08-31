@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+- Codex's cache-write counter is no longer invisible. Codex reports
+  `cache_write_input_tokens` as a subset of `input_tokens`; that field was
+  unknown to both the pricer and the ledger, so a Codex prefix re-written every
+  turn reported zero writes, no verdict and a flattering saving — the one
+  stream shape the diagnosis exists to catch was the one it could not see.
+  Anthropic's disjoint `cache_creation_input_tokens` still adds to the input
+  total, the Codex subset field does not.
+- New regression test: the prompt gate's injected context must be byte-identical
+  across runs. That string sits inside the host's cached prefix on later turns,
+  so a clock, counter or session id leaking into it would break cache reuse
+  silently.
 - `ats-cache` and the ledger now name the cache failure mode instead of only
   reporting a rate: `write-only` (prefix written every turn, never read back),
   `rewriting` (more written than read), `uncached`, or nothing at all when the

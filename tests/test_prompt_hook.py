@@ -331,3 +331,21 @@ def test_audit_log_rotates_instead_of_growing_forever(tmp_path: Path) -> None:
 
     assert (state / "hook-events.jsonl.1").stat().st_size == 1_000_001
     assert 0 < log.stat().st_size < 1_000
+
+
+def test_injected_context_is_byte_identical_across_runs(tmp_path: Path) -> None:
+    """What we inject sits inside the host's cached prefix on later turns.
+
+    A clock, counter, session id or run id leaking into this string makes the
+    prefix differ every turn, which is exactly the write-only stream the cache
+    diagnosis reports after the money is already spent.
+    """
+    skill = tmp_path / ".agent-token-saver" / "skills" / "agent-token-saver" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text("---\nname: agent-token-saver\n---\n")
+    prompt = "my agent burns tokens on noisy logs, compress the context"
+
+    first = run_hook(tmp_path, prompt)
+    assert first, "expected the gate to inject context for this prompt"
+    for _ in range(3):
+        assert run_hook(tmp_path, prompt) == first
