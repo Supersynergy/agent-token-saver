@@ -271,3 +271,47 @@ def test_unknown_payload_fails_loudly_instead_of_reporting_zero(tmp_path: Path) 
     payload = tmp_path / "usage.json"
     payload.write_text(json.dumps({"tokens_used": 12}))
     assert ce.main([str(payload), "--format", "line"]) == 1
+
+
+# --- diagnosis: the numbers must name the failure mode, not just report it ---
+
+
+def diagnosis(usage: dict[str, int]) -> dict[str, str]:
+    return ce.build(usage, "anthropic")["diagnosis"]
+
+
+def test_prefix_written_every_turn_and_never_read_is_called_out() -> None:
+    """A re-written prefix reports a low hit rate and a small negative saving.
+
+    That reads like rounding noise, but it is a 1.25x penalty on every input
+    token: the failure mode has to be named, not left to the reader.
+    """
+    verdict = diagnosis({"input_tokens": 2, "cache_creation_input_tokens": 19_967})
+    assert verdict["verdict"] == "write-only"
+    assert "cold start" in verdict["detail"]
+
+
+def test_writing_more_than_reading_is_called_out() -> None:
+    verdict = diagnosis(
+        {
+            "input_tokens": 1_000,
+            "cache_read_input_tokens": 900,
+            "cache_creation_input_tokens": 4_000,
+        }
+    )
+    assert verdict["verdict"] == "rewriting"
+
+
+def test_no_cache_at_all_is_distinct_from_a_broken_cache() -> None:
+    assert diagnosis({"input_tokens": 5_000})["verdict"] == "uncached"
+
+
+def test_healthy_cache_is_not_flagged() -> None:
+    healthy = {"input_tokens": 1_000, "cache_read_input_tokens": 9_000}
+    assert diagnosis(healthy)["verdict"] == "healthy"
+    assert "|" not in ce.render_line(ce.build(healthy, "anthropic")).split("uncached")[1]
+
+
+def test_line_output_carries_the_verdict_for_a_broken_cache() -> None:
+    line = ce.render_line(ce.build({"input_tokens": 2, "cache_creation_input_tokens": 19_967}))
+    assert line.endswith("| write-only")

@@ -262,7 +262,13 @@ sourced CLI helper defines the same name as a shell function.
 
 ```
 cache 90.00% hit | 9,000 read / 0 write / 1,000 fresh | weighted in 1,900 vs 10,000 uncached (81.00% saved)
+cache 0.00% hit | 0 read / 19,967 write / 2 fresh | weighted in 24,961 vs 19,969 uncached (-25.00% saved) | write-only
 ```
+
+The trailing verdict names the failure mode instead of leaving it to the
+reader: `write-only` (a prefix written every turn and never read back),
+`rewriting` (more written than read), or `uncached`. A healthy run prints no
+verdict. The ledger carries the same row.
 
 The ledger reports the same block. Weighted tokens are a list-ratio estimate
 against an explicit no-cache counterfactual, never an invoice; provider

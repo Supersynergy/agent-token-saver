@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+- `ats-cache` and the ledger now name the cache failure mode instead of only
+  reporting a rate: `write-only` (prefix written every turn, never read back),
+  `rewriting` (more written than read), `uncached`, or nothing at all when the
+  run is healthy. A re-written prefix previously surfaced as a low hit rate and
+  a small negative saving, which reads like rounding noise rather than the
+  1.25x write penalty on every input token it actually is.
 - The compact default and README now name two vendor-documented cache failure
   modes: a byte-identical prefix still misses once the breakpoint drifts past
   the 20-block lookback window, and a mid-wave tool/catalog load or compaction

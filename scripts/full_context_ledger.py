@@ -563,6 +563,8 @@ def render_markdown(ledger: dict[str, Any]) -> str:
     if cache:
         hit_rate = cache["cache_hit_rate_percent"]
         saving = cache["cache_saving_percent"]
+        # A sibling pricer older than this renderer still produces a ledger.
+        diagnosis = cache.get("diagnosis") or {"verdict": "n/a", "detail": "pricer too old"}
         lines.extend(
             [
                 f"| — input served from cache | {cache['cache_read_tokens']:,} | reported |",
@@ -573,6 +575,7 @@ def render_markdown(ledger: dict[str, Any]) -> str:
                 f"| Same stream with no cache | {cache['nocache_input_tokens']:,.0f} | counterfactual |",
                 f"| Input saved by cache | {'n/a' if saving is None else f'{saving:.2f}%'} | list-ratio estimate |",
                 f"| Weighted total (incl. output) | {cache['weighted_total_tokens']:,.0f} | list-ratio estimate |",
+                f"| Cache verdict | {diagnosis['verdict']} | {diagnosis['detail']} |",
             ]
         )
     if ledger["usage_sources"]:

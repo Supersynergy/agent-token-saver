@@ -228,6 +228,49 @@ def cache_hit_rate(usage: dict[str, int]) -> float | None:
     return round(usage["cache_read_tokens"] / total * 100, 2)
 
 
+def diagnose(usage: dict[str, int]) -> dict[str, str]:
+    """Name the cache failure mode the counters describe.
+
+    A hit rate alone does not say whether a run is broken: a prefix that is
+    re-written every turn reports a low rate and a *negative* saving, which
+    reads like a rounding detail rather than the 1.25x penalty it is. The two
+    documented causes are a breakpoint that drifts past the vendor lookback
+    window and a mid-wave tool, catalog or compaction change that invalidates
+    the prefix from the first changed token.
+    """
+    read = usage["cache_read_tokens"]
+    write = usage["cache_write_tokens"]
+    if usage["total_input_tokens"] <= 0:
+        return {"verdict": "unknown", "detail": "no input tokens in this record"}
+    if not read and not write:
+        return {
+            "verdict": "uncached",
+            "detail": "no cached prefix at all; every input token billed fresh",
+        }
+    if not read:
+        return {
+            "verdict": "write-only",
+            "detail": (
+                f"{write:,} tokens written to cache, none read back. Expected once on a "
+                "cold start; across a run it means the prefix is re-written every turn "
+                "at the write ratio. Check breakpoint placement, lookback drift and "
+                "mid-wave tool or catalog changes."
+            ),
+        }
+    if write > read:
+        return {
+            "verdict": "rewriting",
+            "detail": (
+                f"{write:,} written vs {read:,} read: the prefix changes faster than it "
+                "is reused, so cache writes cost more than the reads save."
+            ),
+        }
+    return {
+        "verdict": "healthy",
+        "detail": f"{read:,} tokens served from cache against {write:,} written",
+    }
+
+
 def build(usage: dict[str, Any], profile: str | PriceProfile | None = None) -> dict[str, Any]:
     """Cache economics for one usage record."""
     resolved = resolve_profile(profile)
@@ -246,6 +289,7 @@ def build(usage: dict[str, Any], profile: str | PriceProfile | None = None) -> d
     economics: dict[str, Any] = {
         **normalized,
         "cache_hit_rate_percent": cache_hit_rate(normalized),
+        "diagnosis": diagnose(normalized),
         "weighted_input_tokens": round(weighted_in, 2),
         "weighted_output_tokens": round(weighted_out, 2),
         "weighted_total_tokens": round(weighted_in + weighted_out, 2),
@@ -321,6 +365,7 @@ def render_line(economics: dict[str, Any]) -> str:
     """One-line summary, short enough for a statusline."""
     hit = _fmt_percent(economics["cache_hit_rate_percent"])
     saved = _fmt_percent(economics["cache_saving_percent"])
+    verdict = economics["diagnosis"]["verdict"]
     return (
         f"cache {hit} hit | "
         f"{economics['cache_read_tokens']:,} read / "
@@ -328,6 +373,7 @@ def render_line(economics: dict[str, Any]) -> str:
         f"{economics['uncached_input_tokens']:,} fresh | "
         f"weighted in {economics['weighted_input_tokens']:,.0f} "
         f"vs {economics['nocache_input_tokens']:,.0f} uncached ({saved} saved)"
+        + ("" if verdict == "healthy" else f" | {verdict}")
     )
 
 
@@ -343,6 +389,7 @@ def render_markdown(economics: dict[str, Any]) -> str:
         f"| — written to cache | {economics['cache_write_tokens']:,} |",
         f"| — fresh | {economics['uncached_input_tokens']:,} |",
         f"| Cache hit rate | {_fmt_percent(economics['cache_hit_rate_percent'])} |",
+        f"| Verdict | {economics['diagnosis']['verdict']} |",
         f"| Output tokens | {economics['output_tokens']:,} |",
         f"| Weighted input (fresh-equivalents) | {economics['weighted_input_tokens']:,.0f} |",
         f"| Same stream with no cache | {economics['nocache_input_tokens']:,.0f} |",
@@ -358,6 +405,8 @@ def render_markdown(economics: dict[str, Any]) -> str:
             f"cache write {profile['cache_write_ratio']}x, "
             f"output {profile['output_ratio']}x base input "
             f"(profile `{profile['name']}`, verified {profile['verified']}).",
+            "",
+            economics["diagnosis"]["detail"],
             "",
             economics["basis"],
         ]
