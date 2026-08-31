@@ -273,6 +273,18 @@ The cache only pays while the prefix stays byte-identical: grow context
 append-only, keep clocks and session ids out of it, hold tool definitions
 stable within a wave, and don't switch model or effort mid-wave.
 
+Two failure modes cost more than they look, both vendor-documented:
+
+- A byte-identical prefix still misses once the breakpoint drifts past the
+  [lookback window](https://platform.claude.com/docs/en/build-with-claude/prompt-caching)
+  (20 blocks on Anthropic), so a burst of large turns silently pays a full
+  re-write. Add a breakpoint at the end of the static prefix, or keep per-turn
+  growth small.
+- Loading a tool or skill catalog mid-session, and compaction itself, invalidate
+  the prefix [from the first changed token onward](https://developers.openai.com/api/docs/guides/prompt-caching).
+  Lazy-loading definitions to save their tokens can therefore cost a whole
+  cached prefix; price the re-write before calling it a saving.
+
 ## Verify the checkout
 
 ```bash

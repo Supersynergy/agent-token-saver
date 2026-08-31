@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+- The compact default and README now name two vendor-documented cache failure
+  modes: a byte-identical prefix still misses once the breakpoint drifts past
+  the 20-block lookback window, and a mid-wave tool/catalog load or compaction
+  voids the prefix from the first changed token. Both make lazy loading and
+  eager compaction cost a full re-write, which the previous "keep it
+  byte-identical" wording did not cover. Cache price ratios re-verified against
+  the published tables on 2026-08-31: unchanged.
 - The cache pricer is now reachable as a command: the installer links
   `~/.local/bin/ats-cache` to the installed `cache_economics.py`, next to the
   existing doctor, ledger and audit launchers. Before this it existed only as
