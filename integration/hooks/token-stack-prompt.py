@@ -22,6 +22,7 @@ ATS_TRIGGER = re.compile(
     re.IGNORECASE,
 )
 EXPLICIT_SKILL = re.compile(r"\$[a-z0-9][a-z0-9_.-]*", re.IGNORECASE)
+AUDIT_MAX_BYTES = 1_000_000
 FRONTMATTER_NAME = re.compile(r"^name:\s*['\"]?([^'\"\s]+)", re.MULTILINE)
 RECON_TRIGGER = re.compile(
     r"\b(?:deep\s+research|detailed\s+(?:research|analysis)|research\s+in\s+detail|"
@@ -36,6 +37,20 @@ def quoteattr(value: str) -> str:
     return f'"{escape(value, quote=True)}"'
 
 
+def rotate(path: Path) -> None:
+    """Keep append-only telemetry bounded at two generations.
+
+    Nothing else ever truncates this file, so an unrotated log grows for the
+    lifetime of the installation.
+    """
+    try:
+        if path.stat().st_size < AUDIT_MAX_BYTES:
+            return
+        os.replace(path, path.with_suffix(".jsonl.1"))
+    except OSError:
+        return
+
+
 def audit(event: str, reason: str, name: str = "") -> None:
     """Write rejection telemetry without prompts, commands or routed paths."""
     try:
@@ -43,6 +58,7 @@ def audit(event: str, reason: str, name: str = "") -> None:
         state.mkdir(parents=True, exist_ok=True, mode=0o700)
         state.chmod(0o700)
         path = state / "hook-events.jsonl"
+        rotate(path)
         payload = json.dumps(
             {"ts": int(time.time()), "event": event, "reason": reason, "name": name},
             ensure_ascii=False,

@@ -177,6 +177,28 @@ def test_installed_ledger_still_prices_the_cached_prefix(tmp_path: Path) -> None
     assert "cache_economics" in result.stdout
 
 
+def test_cache_pricer_is_callable_from_path(tmp_path: Path) -> None:
+    """Hosts that cannot source a shell file still need the cache pricer.
+
+    Codex, Claude and generic CLI agents run commands, not shell functions, so
+    a pricer reachable only through the sourced helper is invisible to them.
+    """
+    assert run_installer(tmp_path, "--agent", "codex").returncode == 0
+    launcher = tmp_path / "home" / ".local" / "bin" / "ats-cache"
+    assert launcher.is_symlink()
+
+    usage = tmp_path / "usage.json"
+    usage.write_text(json.dumps({"input_tokens": 1_000, "cache_read_input_tokens": 9_000}))
+    result = subprocess.run(
+        [sys.executable, str(launcher), str(usage), "--format", "line"],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "cache 90.00% hit" in result.stdout
+
+
 def test_repeated_install_deduplicates_hooks(tmp_path: Path) -> None:
     first = run_installer(tmp_path, "--agent", "codex")
     second = run_installer(tmp_path, "--agent", "codex")

@@ -19,6 +19,7 @@ MAX_EVENT_BYTES = 1_000_000
 MAX_INCREMENTAL_BYTES = 8_000_000
 STATE_MAX_BYTES = 16_384
 HASH_WINDOW_BYTES = 4_096
+STATE_RETENTION_SECONDS = 14 * 24 * 3_600
 ACTION_RANK = {"continue": 0, "warn": 1, "checkpoint_required": 2}
 
 
@@ -332,7 +333,29 @@ def atomic_state(path: Path, payload: dict[str, Any]) -> None:
         try:
             os.unlink(temporary)
         except FileNotFoundError:
-            return
+            pass
+
+
+def prune_state(directory: Path, keep: set[str]) -> None:
+    """Drop per-session guard files the next run can no longer resume from.
+
+    One state file per session with no expiry path grows without bound for the
+    lifetime of the installation.
+    """
+    cutoff = time.time() - STATE_RETENTION_SECONDS
+    try:
+        entries = list(directory.glob("session-guard-*.json"))
+    except OSError:
+        return
+    for entry in entries:
+        if entry.name in keep:
+            continue
+        try:
+            if entry.stat().st_mtime >= cutoff:
+                continue
+            entry.unlink()
+        except OSError:
+            continue
 
 
 def warning_message(guard: dict[str, Any]) -> str:
@@ -404,6 +427,7 @@ def main() -> int:
         return 0
     atomic_state(current_path, record)
     atomic_state(directory / "session-guard-latest.json", record)
+    prune_state(directory, keep={current_path.name, "session-guard-latest.json"})
     action = record["action"]
     if ACTION_RANK.get(action, 0) > ACTION_RANK.get(str(previous.get("action")), 0):
         emit({"systemMessage": warning_message(guard)})

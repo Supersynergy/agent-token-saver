@@ -126,6 +126,42 @@ def _int(value: Any) -> int:
     return max(0, number)
 
 
+CAMEL_ALIASES = {
+    "inputTokens": "input_tokens",
+    "promptTokens": "prompt_tokens",
+    "outputTokens": "output_tokens",
+    "completionTokens": "completion_tokens",
+    "cacheRead": "cache_read_input_tokens",
+    "cacheReadInputTokens": "cache_read_input_tokens",
+    "cachedInputTokens": "cached_input_tokens",
+    "cacheWrite": "cache_creation_input_tokens",
+    "cacheCreationInputTokens": "cache_creation_input_tokens",
+    "totalInputTokens": "total_input_tokens",
+}
+
+
+KNOWN_COUNTERS = set(CAMEL_ALIASES.values()) | {
+    "cached_input_tokens_subset",
+    "cache_read_tokens",
+    "cache_write_tokens",
+    "uncached_input_tokens",
+}
+
+
+def canonical_keys(usage: dict[str, Any]) -> dict[str, Any]:
+    """Accept camelCase usage blocks from JS hosts such as GG Coder.
+
+    An unknown key name is not a zero-token turn: reading one as the other
+    reports a perfect 0-vs-0 run and hides the very mispricing this module
+    exists to catch.
+    """
+    merged = dict(usage)
+    for camel, snake in CAMEL_ALIASES.items():
+        if camel in usage and snake not in merged:
+            merged[snake] = usage[camel]
+    return merged
+
+
 def normalize_usage(usage: dict[str, Any]) -> dict[str, int]:
     """Fold both vendor usage conventions into one shape.
 
@@ -136,6 +172,7 @@ def normalize_usage(usage: dict[str, Any]) -> dict[str, int]:
     silently double-counts or drops the cached prefix, so detect which is in
     play before doing any arithmetic.
     """
+    usage = canonical_keys(usage)
     input_tokens = _int(usage.get("input_tokens", usage.get("prompt_tokens")))
     cache_write = _int(usage.get("cache_creation_input_tokens"))
     explicit_read = _int(usage.get("cache_read_input_tokens"))
@@ -337,7 +374,13 @@ def _load(source: str) -> dict[str, Any]:
     for key in ("usage", "totals", "provider_usage"):
         nested = data.get(key)
         if isinstance(nested, dict):
-            return nested
+            data = nested
+            break
+    if not KNOWN_COUNTERS & set(canonical_keys(data)):
+        raise ValueError(
+            "no known token counters in this payload; "
+            "expected input_tokens/cache_read_input_tokens or their camelCase form"
+        )
     return data
 
 

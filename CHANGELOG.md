@@ -2,6 +2,34 @@
 
 ## [Unreleased]
 
+- The cache pricer is now reachable as a command: the installer links
+  `~/.local/bin/ats-cache` to the installed `cache_economics.py`, next to the
+  existing doctor, ledger and audit launchers. Before this it existed only as
+  a shell function in `integration/cli/agent-token-saver.sh`, so Codex, Claude
+  and any other host that runs commands rather than sourcing a helper could
+  not price a cached prefix at all. Covered by a new installer test that runs
+  the launcher end to end.
+- `agent-token-saver doctor` now reports Codex hook trust. Codex 0.147 refuses
+  to run a hook without a persisted `[hooks.state]` entry, and that trust is
+  keyed by event *position*, so another tool inserting an entry ahead of ours
+  silently disables the gate or the guard while `hooks.json` still looks
+  correct. The doctor prints `N trusted` or `N UNTRUSTED`, and stays `unknown`
+  when the host keeps no trust table at all.
+- `cache_economics` accepts camelCase usage blocks (`inputTokens`, `cacheRead`,
+  `cacheWrite`) from JS hosts such as GG Coder, and now exits non-zero on a
+  payload with no recognised token counters instead of printing a confident
+  0-vs-0 report.
+- The Stop guard now prunes its own per-session state: files older than 14 days
+  are removed on write, keeping the current session and `-latest`. One file per
+  session with no expiry path meant `~/.local/state/agent-token-saver/` grew
+  without bound for the lifetime of the installation.
+- The prompt hook rotates `hook-events.jsonl` at 1 MB into one `.1` generation
+  instead of appending to it forever.
+- `integration/hooks/token-session-guard.py` no longer returns from a `finally`
+  block. Python 3.12+ emits a `SyntaxWarning` for that pattern, which the Stop
+  hook printed to the host's stderr on every run, and the `return` silently
+  discarded any in-flight exception from the state write.
+
 - `scripts/codex_provider_ab.py` now computes weighted (cache-priced) A/B
   numbers in code instead of leaving them to the hand calculation quoted
   below. `summarize_pair()` gains a `weighted_delta` block and `aggregate()` a

@@ -254,3 +254,20 @@ def test_cli_fails_cleanly_on_malformed_json():
 def test_cli_fails_cleanly_on_a_missing_file():
     result = _run(["/nonexistent/usage.json"])
     assert result.returncode == 1
+
+
+def test_camelcase_usage_from_js_hosts_is_priced_not_silently_zeroed() -> None:
+    """GG Coder and other JS hosts emit camelCase usage keys."""
+    usage = ce.normalize_usage(
+        {"inputTokens": 2, "outputTokens": 5, "cacheRead": 9_000, "cacheWrite": 1_000}
+    )
+    assert usage["cache_read_tokens"] == 9_000
+    assert usage["cache_write_tokens"] == 1_000
+    assert usage["output_tokens"] == 5
+
+
+def test_unknown_payload_fails_loudly_instead_of_reporting_zero(tmp_path: Path) -> None:
+    """A silent 0-vs-0 report is the mispricing this module exists to catch."""
+    payload = tmp_path / "usage.json"
+    payload.write_text(json.dumps({"tokens_used": 12}))
+    assert ce.main([str(payload), "--format", "line"]) == 1

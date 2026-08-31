@@ -12,6 +12,7 @@ import shlex
 import shutil
 import subprocess
 import tempfile
+import tomllib
 from pathlib import Path
 from typing import Any
 
@@ -131,6 +132,52 @@ def hot_path_counts(commands: list[str]) -> dict[str, int]:
     }
 
 
+def codex_event_key(event: str) -> str:
+    """Codex trust keys use snake_case for the CamelCase hook event names."""
+    return re.sub(r"(?<!^)(?=[A-Z])", "_", event).lower()
+
+
+def codex_trust(home: Path, hooks: Any, path: Path) -> dict[str, Any]:
+    """Report whether Codex has persisted trust for the managed hook entries.
+
+    Codex refuses to run an untrusted hook, so a merged `hooks.json` is not
+    proof that the gate or the guard ever executes. Trust is keyed by position,
+    so another tool inserting an entry ahead of ours invalidates it silently.
+    """
+    config = home / ".codex" / "config.toml"
+    try:
+        state = tomllib.loads(config.read_text()).get("hooks", {}).get("state", {})
+    except (OSError, tomllib.TOMLDecodeError, AttributeError):
+        return {"status": "unknown", "reason": "unreadable_config"}
+    if not isinstance(state, dict) or not state:
+        return {"status": "unknown", "reason": "no_trust_table"}
+    if not isinstance(hooks, dict):
+        return {"status": "none", "trusted": 0, "untrusted": []}
+    untrusted: list[str] = []
+    trusted = 0
+    for event, entries in hooks.items():
+        if not isinstance(entries, list):
+            continue
+        for entry_index, entry in enumerate(entries):
+            hook_list = entry.get("hooks", []) if isinstance(entry, dict) else []
+            for hook_index, hook in enumerate(hook_list):
+                command = hook.get("command") if isinstance(hook, dict) else None
+                if not isinstance(command, str) or "agent-token-saver" not in command:
+                    continue
+                key = f"{path}:{codex_event_key(str(event))}:{entry_index}:{hook_index}"
+                if key in state:
+                    trusted += 1
+                else:
+                    untrusted.append(key)
+    if not trusted and not untrusted:
+        return {"status": "none", "trusted": 0, "untrusted": []}
+    return {
+        "status": "ok" if not untrusted else "untrusted",
+        "trusted": trusted,
+        "untrusted": untrusted,
+    }
+
+
 def inspect_hooks(home: Path | None = None) -> dict[str, Any]:
     home = home or Path.home()
     targets = {
@@ -170,6 +217,8 @@ def inspect_hooks(home: Path | None = None) -> dict[str, Any]:
             "commands": commands,
             "hot_path": hot_path_counts(all_commands),
         }
+        if agent == "codex":
+            report[agent]["trust"] = codex_trust(home, data.get("hooks", {}), path)
     skill_targets = {
         "hermes": home / ".hermes" / "skills" / "agent-token-saver" / "SKILL.md",
         "ggcoder": home / ".gg" / "skills" / "agent-token-saver.md",
@@ -745,7 +794,16 @@ def main() -> int:
                 marker = "installed" if hook["exists"] else "optional"
                 print(f"skill    {agent:18} {marker}")
             else:
-                print(f"hooks    {agent:18} {len(hook['commands'])} agent-token-saver entries")
+                trust = hook.get("trust", {})
+                suffix = ""
+                if trust.get("status") == "untrusted":
+                    suffix = f" · {len(trust['untrusted'])} UNTRUSTED (codex will not run them)"
+                elif trust.get("status") == "ok":
+                    suffix = f" · {trust['trusted']} trusted"
+                print(
+                    f"hooks    {agent:18} {len(hook['commands'])} "
+                    f"agent-token-saver entries{suffix}"
+                )
         default_policy = report["integrity"]["default_policy"]
         print(
             f"default  compact-policy     "

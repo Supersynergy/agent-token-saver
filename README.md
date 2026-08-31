@@ -257,6 +257,9 @@ ats-cache - --format line < usage.json    # one-line statusline summary
 ats-cache lean.json --against base.json   # weighted A/B
 ```
 
+`ats-cache` is installed on `PATH`, so an agent can call it as a command; the
+sourced CLI helper defines the same name as a shell function.
+
 ```
 cache 90.00% hit | 9,000 read / 0 write / 1,000 fresh | weighted in 1,900 vs 10,000 uncached (81.00% saved)
 ```

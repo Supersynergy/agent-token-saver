@@ -313,3 +313,21 @@ def test_deep_research_gets_safe_low_cost_route(tmp_path: Path) -> None:
     assert "--lanes cheap --allow-paid" in context
     assert "consent to spend" in context
     assert "Never send PII" in context
+
+
+def test_audit_log_rotates_instead_of_growing_forever(tmp_path: Path) -> None:
+    """Nothing else truncates this file, so an unrotated log grows unbounded."""
+    state = tmp_path / ".local" / "state" / "agent-token-saver"
+    state.mkdir(parents=True)
+    log = state / "hook-events.jsonl"
+    log.write_bytes(b"x" * 1_000_001)
+    router = tmp_path / "router.py"
+    missing = tmp_path / ".agents" / "skills" / "ghost" / "SKILL.md"
+    router.write_text(
+        f"print({json.dumps({'selected': [{'name': 'ghost', 'path': str(missing)}]})!r})\n"
+    )
+
+    run_hook(tmp_path, "$ghost compress this noisy log", router)
+
+    assert (state / "hook-events.jsonl.1").stat().st_size == 1_000_001
+    assert 0 < log.stat().st_size < 1_000

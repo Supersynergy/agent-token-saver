@@ -384,6 +384,14 @@ def install_files(dry_run: bool) -> None:
         ledger_launcher.unlink(missing_ok=True)
         ledger_launcher.symlink_to(ledger_target)
         print(f"linked {ledger_launcher}")
+    cache_launcher = HOME / ".local" / "bin" / "ats-cache"
+    cache_target = copies[ROOT / "scripts" / "cache_economics.py"]
+    if dry_run:
+        print(f"would link {cache_launcher} -> {cache_target}")
+    else:
+        cache_launcher.unlink(missing_ok=True)
+        cache_launcher.symlink_to(cache_target)
+        print(f"linked {cache_launcher}")
     audit_launcher = HOME / ".local" / "bin" / "agent-token-audit"
     audit_target = copies[ROOT / "scripts" / "external_usage_gate.py"]
     if dry_run:

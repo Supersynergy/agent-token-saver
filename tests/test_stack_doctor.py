@@ -435,3 +435,41 @@ def test_end_to_end_integrity_does_not_execute_unmanaged_hook_path(tmp_path: Pat
     assert report["healthy"] is False
     assert "prompt_hook_command_path_mismatch" in report["integrity"]["errors"]
     assert not marker.exists()
+
+
+def codex_hook_home(tmp_path: Path, *, trusted: bool) -> Path:
+    home = tmp_path / "home"
+    hooks_path = home / ".codex" / "hooks.json"
+    hooks_path.parent.mkdir(parents=True)
+    command = str(home / ".agent-token-saver" / "hooks" / "token-stack-prompt.py")
+    hooks_path.write_text(
+        json.dumps(
+            {"hooks": {"UserPromptSubmit": [{"hooks": [{"type": "command", "command": command}]}]}}
+        )
+    )
+    key = f"{hooks_path}:user_prompt_submit:0:0" if trusted else "other:stop:0:0"
+    (home / ".codex" / "config.toml").write_text(
+        f'[hooks.state."{key}"]\ntrusted_hash = "sha256:deadbeef"\n'
+    )
+    return home
+
+
+def test_doctor_reports_codex_hook_trust(tmp_path: Path) -> None:
+    """Codex refuses untrusted hooks, so a merged hooks.json proves nothing."""
+    report = stack_doctor.inspect_hooks(codex_hook_home(tmp_path, trusted=True))
+    assert report["codex"]["trust"] == {"status": "ok", "trusted": 1, "untrusted": []}
+
+
+def test_doctor_flags_codex_hooks_that_lost_their_trust_entry(tmp_path: Path) -> None:
+    report = stack_doctor.inspect_hooks(codex_hook_home(tmp_path, trusted=False))
+    trust = report["codex"]["trust"]
+    assert trust["status"] == "untrusted"
+    assert trust["untrusted"] == [
+        f"{tmp_path / 'home' / '.codex' / 'hooks.json'}:user_prompt_submit:0:0"
+    ]
+
+
+def test_doctor_stays_quiet_when_codex_has_no_trust_table(tmp_path: Path) -> None:
+    home = codex_hook_home(tmp_path, trusted=True)
+    (home / ".codex" / "config.toml").write_text("model = 'gpt-5.6'\n")
+    assert stack_doctor.inspect_hooks(home)["codex"]["trust"]["status"] == "unknown"

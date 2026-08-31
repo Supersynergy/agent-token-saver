@@ -22,6 +22,9 @@
   continues or blocks a session. On escalation it requests one bounded,
   reference-only warm handoff with the next oracle and test checklist.
 - Hooks never decide approval, sandbox or permissions.
+- Codex only runs hooks it has persisted trust for, keyed by event position.
+  The doctor reports that trust; re-approve in Codex after another tool
+  reorders `~/.codex/hooks.json`.
 
 Verify the active surface, not only copied files:
 

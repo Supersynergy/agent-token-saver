@@ -4,6 +4,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -198,3 +199,25 @@ def test_guard_rejects_symlink_escape(tmp_path: Path) -> None:
     assert result.returncode == 0
     assert json.loads(result.stdout) == {}
     assert not (tmp_path / "state").exists()
+
+
+def test_guard_prunes_stale_session_state_but_keeps_recent(tmp_path: Path) -> None:
+    """One state file per session with no expiry fills the user's home."""
+    state = tmp_path / "state"
+    state.mkdir()
+    stale = state / "session-guard-old.json"
+    recent = state / "session-guard-new.json"
+    unrelated = state / "hook-events.jsonl"
+    for path in (stale, recent, unrelated):
+        path.write_text("{}")
+    old = time.time() - 30 * 24 * 3_600
+    os.utime(stale, (old, old))
+    os.utime(unrelated, (old, old))
+
+    result, _ = run_hook(tmp_path, [token_record(1_000)])
+
+    assert result.returncode == 0
+    assert not stale.exists()
+    assert recent.exists()
+    assert unrelated.exists()
+    assert (state / "session-guard-latest.json").exists()
