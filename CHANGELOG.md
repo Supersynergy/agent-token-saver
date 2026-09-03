@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+- The Stop hook now tracks outcome, not only cost. The ledger records the exit
+  status of verification commands (pytest, cargo test, go test, npm/bun test,
+  just/make check, ruff, mypy, tsc) from Codex and Claude transcripts, keeping
+  only call ids, never command text. `session_guard.observed.verify_status` is
+  `none`, `green` or `red`; a red last run adds the `last_verification_failed`
+  warning and a one-time system message: do not report done or count a saving
+  until the check is green. Fail-open, warns only, never blocks STOP. Old guard
+  state without the new counters falls back to one full replay.
 - Codex's cache-write counter is no longer invisible. Codex reports
   `cache_write_input_tokens` as a subset of `input_tokens`; that field was
   unknown to both the pricer and the ledger, so a Codex prefix re-written every

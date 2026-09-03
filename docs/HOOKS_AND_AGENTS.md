@@ -21,6 +21,10 @@
 - The Stop guard validates transcript paths, keeps mode-0600 state and never
   continues or blocks a session. On escalation it requests one bounded,
   reference-only warm handoff with the next oracle and test checklist.
+- The Stop guard also reads the outcome: the exit status of the last
+  test/lint/typecheck command (Codex `exec_command`, Claude `Bash`). A red last
+  run warns once — "not done, saving unproven" — and clears when a later run is
+  green. It stores call ids only, never commands or output.
 - Hooks never decide approval, sandbox or permissions.
 - Codex only runs hooks it has persisted trust for, keyed by event position.
   The doctor reports that trust; re-approve in Codex after another tool

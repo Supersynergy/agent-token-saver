@@ -354,3 +354,123 @@ def test_duplicate_visible_components_are_reported(tmp_path: Path) -> None:
     assert ledger["estimated_visible_input_tokens"] == 40
     assert ledger["duplicate_visible_input_tokens"] == 20
     assert ledger["unique_visible_input_tokens"] == 20
+
+
+def _codex_call(call_id: str, cmd: str) -> dict:
+    return {
+        "type": "response_item",
+        "payload": {
+            "type": "function_call",
+            "name": "exec_command",
+            "call_id": call_id,
+            "arguments": json.dumps({"cmd": cmd}),
+        },
+    }
+
+
+def _codex_output(call_id: str, exit_code: int) -> dict:
+    return {
+        "type": "response_item",
+        "payload": {
+            "type": "function_call_output",
+            "call_id": call_id,
+            "output": f"Chunk ID: x\nProcess exited with code {exit_code}\nOutput:\n...",
+        },
+    }
+
+
+def test_verification_tracks_last_test_exit_status_codex(tmp_path: Path) -> None:
+    usage = tmp_path / "codex.jsonl"
+    records = [
+        {"usage": {"input_tokens": 10, "output_tokens": 2}},
+        _codex_call("c1", "uv run pytest -q"),
+        _codex_output("c1", 1),
+        _codex_call("c2", "ls -la"),
+        _codex_output("c2", 1),
+        _codex_call("c3", "uv run pytest -q tests/test_x.py"),
+        _codex_output("c3", 0),
+    ]
+    usage.write_text("\n".join(json.dumps(record) for record in records) + "\n")
+
+    accumulator = inspect_usage_accumulator(usage)
+    metadata = accumulator["metadata"]
+    assert metadata["verify_calls"] == 2
+    assert metadata["verify_failures"] == 1
+    assert metadata["last_verify_failed"] == 0
+    assert accumulator["pending_verify_calls"] == []
+
+    guard = build_session_guard(load_usage(usage), [{"metadata": metadata}])
+    assert guard["observed"]["verify_status"] == "green"
+    assert "last_verification_failed" not in guard["warnings"]
+
+
+def test_verification_red_warns_and_marks_saving_unproven_claude(tmp_path: Path) -> None:
+    usage = tmp_path / "claude.jsonl"
+    records = [
+        {
+            "type": "assistant",
+            "message": {
+                "usage": {"input_tokens": 10, "output_tokens": 2},
+                "content": [
+                    {
+                        "type": "tool_use",
+                        "id": "t1",
+                        "name": "Bash",
+                        "input": {"command": "cargo test"},
+                    }
+                ],
+            },
+        },
+        {
+            "type": "user",
+            "message": {
+                "content": [
+                    {
+                        "type": "tool_result",
+                        "tool_use_id": "t1",
+                        "content": "boom",
+                        "is_error": True,
+                    }
+                ]
+            },
+        },
+    ]
+    usage.write_text("\n".join(json.dumps(record) for record in records) + "\n")
+
+    accumulator = inspect_usage_accumulator(usage)
+    guard = build_session_guard(load_usage(usage), [{"metadata": accumulator["metadata"]}])
+    observed = guard["observed"]
+    assert (observed["verify_calls"], observed["verify_failures"], observed["verify_status"]) == (
+        1,
+        1,
+        "red",
+    )
+    assert guard["action"] == "warn"
+    assert "last_verification_failed" in guard["warnings"]
+    assert "unproven" in serialize_ledger(
+        build_ledger(
+            load_usage(usage),
+            [],
+            "claude",
+            usage_sources=[
+                {
+                    "name": "p",
+                    "path": "p",
+                    "usage": load_usage(usage),
+                    "metadata": accumulator["metadata"],
+                }
+            ],
+        ),
+        "markdown",
+    )
+
+
+def test_pending_verify_calls_stay_bounded(tmp_path: Path) -> None:
+    usage = tmp_path / "codex.jsonl"
+    records = [{"usage": {"input_tokens": 10, "output_tokens": 2}}]
+    records += [_codex_call(f"c{i}", "pytest") for i in range(50)]
+    usage.write_text("\n".join(json.dumps(record) for record in records) + "\n")
+
+    accumulator = inspect_usage_accumulator(usage)
+    assert len(accumulator["pending_verify_calls"]) == full_context_ledger.MAX_PENDING_VERIFY
+    assert accumulator["metadata"]["verify_calls"] == 0

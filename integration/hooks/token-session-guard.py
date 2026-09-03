@@ -362,6 +362,13 @@ def warning_message(guard: dict[str, Any]) -> str:
     observed = guard.get("observed") if isinstance(guard.get("observed"), dict) else {}
     labels = [*guard.get("reasons", []), *guard.get("warnings", [])]
     action = str(guard.get("action") or "warn")
+    if "last_verification_failed" in labels:
+        return (
+            f"agent-token-saver outcome guard: the last test/lint/typecheck run exited non-zero "
+            f"({int(observed.get('verify_failures', 0))}/{int(observed.get('verify_calls', 0))} failed). "
+            "Do not report done or count a token saving until it is green: re-run the check, "
+            "fix the root cause, or state the failure plainly. This hook warns only; it never blocks STOP."
+        )
     next_step = (
         "Invoke warm-handoff when installed; write one reference-only 300-700-token "
         "handoff with decisions, running state, next action, oracle and test checklist, "

@@ -40,7 +40,7 @@ Persist one 0600 JSON object per session key, atomically as today. It contains n
   "schema_version": 2,
   "transcript_fingerprint": "sha256(device,inode,path-hash)",
   "cursor": {"byte_offset": 1234, "prefix_sha256": "...", "tail_sha256": "..."},
-  "accumulator": {"latest_codex_total": {"...numeric usage only...": 0}, "last_usage_candidate": {"...numeric usage only...": 0}, "metadata": {"records": 0, "token_count_events": 0, "compactions": 0, "tool_output_bytes": 0, "spawned_workers": 0, "shell_exec_calls": 0, "rtk_mentions": 0}},
+  "accumulator": {"latest_codex_total": {"...numeric usage only...": 0}, "last_usage_candidate": {"...numeric usage only...": 0}, "metadata": {"records": 0, "token_count_events": 0, "compactions": 0, "tool_output_bytes": 0, "spawned_workers": 0, "shell_exec_calls": 0, "rtk_mentions": 0, "verify_calls": 0, "verify_failures": 0, "last_verify_failed": 0}, "pending_verify_calls": []},
   "guard": {"action": "continue", "observed": {}, "reasons": [], "warnings": []},
   "transcript_bytes": 1234,
   "timestamp_unix": 0

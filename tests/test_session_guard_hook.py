@@ -221,3 +221,44 @@ def test_guard_prunes_stale_session_state_but_keeps_recent(tmp_path: Path) -> No
     assert recent.exists()
     assert unrelated.exists()
     assert (state / "session-guard-latest.json").exists()
+
+
+def test_guard_flags_red_verification_once_and_clears_on_green(tmp_path: Path) -> None:
+    def call(call_id: str, cmd: str) -> dict:
+        return {
+            "type": "response_item",
+            "payload": {
+                "type": "function_call",
+                "name": "exec_command",
+                "call_id": call_id,
+                "arguments": json.dumps({"cmd": cmd}),
+            },
+        }
+
+    def output(call_id: str, code: int) -> dict:
+        return {
+            "type": "response_item",
+            "payload": {
+                "type": "function_call_output",
+                "call_id": call_id,
+                "output": f"Process exited with code {code}\nOutput:\n",
+            },
+        }
+
+    red = [token_record(1_000), call("a", "uv run pytest -q"), output("a", 1)]
+    first, state = run_hook(tmp_path, red)
+    message = json.loads(first.stdout)["systemMessage"]
+    assert "outcome guard" in message
+    assert "1/1 failed" in message
+    assert "never blocks STOP" in message
+
+    second, _ = run_hook(tmp_path, red)
+    assert json.loads(second.stdout) == {}
+
+    green = red + [call("b", "uv run pytest -q"), output("b", 0)]
+    third, _ = run_hook(tmp_path, green)
+    assert json.loads(third.stdout) == {}
+    latest = json.loads((state / "session-guard-latest.json").read_text())
+    assert latest["action"] == "continue"
+    assert latest["observed"]["verify_status"] == "green"
+    assert "pytest" not in (state / "session-guard-latest.json").read_text()

@@ -32,6 +32,14 @@ USAGE_KEYS = {
 SPAWN_CALL_RE = re.compile(r"\bspawn_agent\s*\(")
 EXEC_CALL_RE = re.compile(r"\bexec_command\s*\(")
 RTK_CALL_RE = re.compile(r"(?<![\w-])rtk(?:\s|[\"'])")
+# Commands whose exit status is a task oracle: tests, type checks, linters, project gates.
+VERIFY_CMD_RE = re.compile(
+    r"(?<![\w/.-])(?:pytest|cargo\s+(?:test|check|clippy)|go\s+(?:test|vet)|"
+    r"(?:npm|pnpm|yarn|bun)\s+(?:run\s+)?(?:test|check|lint|typecheck)|vitest|"
+    r"(?:just|make)\s+(?:test|check|lint|verify)|ruff\s+check|mypy|pyright|tsc)(?![\w-])"
+)
+EXIT_CODE_RE = re.compile(r"(?:Process exited with code|Exit code:|\"exit_code\":)\s*(\d+)")
+MAX_PENDING_VERIFY = 16
 DEFAULT_GUARD_THRESHOLDS = {
     "warn_total_tokens": 10_000_000,
     "checkpoint_total_tokens": 25_000_000,
@@ -169,6 +177,72 @@ def _payload_text(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
 
 
+def _tool_events(record: dict[str, Any]) -> list[tuple[str, str, str, bool]]:
+    """Yield (kind, call_id, text, is_error) for Codex and Claude tool records.
+
+    kind is "call" (text = tool input) or "output" (text = tool output).
+    """
+    events: list[tuple[str, str, str, bool]] = []
+    payload = record.get("payload")
+    if isinstance(payload, dict):
+        payload_type = str(payload.get("type") or "")
+        call_id = str(payload.get("call_id") or "")
+        if payload_type in {"function_call", "custom_tool_call"}:
+            events.append(
+                (
+                    "call",
+                    call_id,
+                    _payload_text(payload.get("input") or payload.get("arguments") or ""),
+                    False,
+                )
+            )
+        elif payload_type in {"function_call_output", "custom_tool_call_output"}:
+            events.append(("output", call_id, _payload_text(payload.get("output") or ""), False))
+        return events
+    message = record.get("message")
+    content = message.get("content") if isinstance(message, dict) else None
+    for block in content if isinstance(content, list) else []:
+        if not isinstance(block, dict):
+            continue
+        if block.get("type") == "tool_use":
+            events.append(
+                ("call", str(block.get("id") or ""), _payload_text(block.get("input") or ""), False)
+            )
+        elif block.get("type") == "tool_result":
+            events.append(
+                (
+                    "output",
+                    str(block.get("tool_use_id") or ""),
+                    _payload_text(block.get("content") or ""),
+                    bool(block.get("is_error")),
+                )
+            )
+    return events
+
+
+def _update_verification(record: dict[str, Any], accumulator: dict[str, Any]) -> None:
+    """Track the last verification command's exit status; keeps only call ids."""
+    metadata = accumulator["metadata"]
+    pending: list[str] = accumulator["pending_verify_calls"]
+    for kind, call_id, text, is_error in _tool_events(record):
+        if not call_id:
+            continue
+        if kind == "call":
+            if VERIFY_CMD_RE.search(text) and call_id not in pending:
+                pending.append(call_id)
+                del pending[:-MAX_PENDING_VERIFY]
+            continue
+        if call_id not in pending:
+            continue
+        pending.remove(call_id)
+        match = EXIT_CODE_RE.search(text)
+        failed = is_error or (match is not None and int(match.group(1)) != 0)
+        metadata["verify_calls"] += 1
+        if failed:
+            metadata["verify_failures"] += 1
+        metadata["last_verify_failed"] = int(failed)
+
+
 def _update_source_metadata(record: Any, metadata: dict[str, int]) -> None:
     if not isinstance(record, dict):
         return
@@ -208,6 +282,7 @@ def new_usage_accumulator() -> dict[str, Any]:
     return {
         "latest_codex_total": None,
         "last_usage_candidate": None,
+        "pending_verify_calls": [],
         "metadata": {
             "records": 0,
             "token_count_events": 0,
@@ -216,6 +291,9 @@ def new_usage_accumulator() -> dict[str, Any]:
             "spawned_workers": 0,
             "shell_exec_calls": 0,
             "rtk_mentions": 0,
+            "verify_calls": 0,
+            "verify_failures": 0,
+            "last_verify_failed": 0,
         },
     }
 
@@ -234,9 +312,19 @@ def _accumulator_metadata(value: Any) -> dict[str, int] | None:
         "spawned_workers",
         "shell_exec_calls",
         "rtk_mentions",
+        "verify_calls",
+        "verify_failures",
+        "last_verify_failed",
     }
     if set(metadata) != required or any(
         not isinstance(metadata[key], int) or metadata[key] < 0 for key in required
+    ):
+        return None
+    pending = value.get("pending_verify_calls")
+    if (
+        not isinstance(pending, list)
+        or len(pending) > MAX_PENDING_VERIFY
+        or any(not isinstance(item, str) for item in pending)
     ):
         return None
     for key in ("latest_codex_total", "last_usage_candidate"):
@@ -269,6 +357,7 @@ def update_usage_accumulator(record: Any, accumulator: dict[str, Any]) -> None:
     _update_source_metadata(record, metadata)
     if not isinstance(record, dict):
         return
+    _update_verification(record, accumulator)
     payload = record.get("payload")
     if (
         record.get("type") == "event_msg"
@@ -414,9 +503,18 @@ def build_session_guard(
         _int(source.get("metadata", {}).get("shell_exec_calls")) for source in sources
     )
     rtk_mentions = sum(_int(source.get("metadata", {}).get("rtk_mentions")) for source in sources)
+    verify_calls = sum(_int(source.get("metadata", {}).get("verify_calls")) for source in sources)
+    verify_failures = sum(
+        _int(source.get("metadata", {}).get("verify_failures")) for source in sources
+    )
+    last_verify_failed = any(
+        _int(source.get("metadata", {}).get("last_verify_failed")) for source in sources
+    )
     total_tokens = usage["reported_total_tokens"]
     reasons: list[str] = []
     warnings: list[str] = []
+    if last_verify_failed:
+        warnings.append("last_verification_failed")
     if total_tokens >= limits["checkpoint_total_tokens"]:
         reasons.append(f"provider_total_tokens>={limits['checkpoint_total_tokens']}")
     elif total_tokens >= limits["warn_total_tokens"]:
@@ -440,7 +538,13 @@ def build_session_guard(
             "rtk_signal_percent": (
                 round(rtk_mentions / shell_exec_calls * 100, 2) if shell_exec_calls else 0.0
             ),
+            "verify_calls": verify_calls,
+            "verify_failures": verify_failures,
+            "verify_status": (
+                "none" if not verify_calls else ("red" if last_verify_failed else "green")
+            ),
         },
+        "verify_note": "exit status of test/lint/typecheck commands; red means the saving is unproven",
         "rtk_note": "heuristic signal only; denominator is not an eligibility classifier",
     }
 
@@ -549,6 +653,7 @@ def render_markdown(ledger: dict[str, Any]) -> str:
             f"- Compactions: **{guard['observed']['compactions']}**.",
             f"- Tool output bytes: **{guard['observed']['tool_output_bytes']:,}**.",
             f"- RTK signal: **{guard['observed']['rtk_mentions']} / {guard['observed']['shell_exec_calls']}** shell calls (heuristic).",
+            f"- Verification: **{guard['observed']['verify_status']}** ({guard['observed']['verify_failures']} / {guard['observed']['verify_calls']} test/lint runs failed; red = saving unproven).",
         ]
     )
     if guard["reasons"]:
