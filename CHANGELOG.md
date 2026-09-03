@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+- New `scripts/benchmark_freshdocs_lane.py` plus its 2026-09-03 artifact:
+  measures the documentation lane against freshdocs 0.2.0 in both retrieval
+  modes. Context packs cost **80.8-96.9% fewer tokens** than the upstream
+  sources they cite, at **~70 ms** versus ~200 ms for a single network fetch.
+  Correctness, not size, decides the lane, and each mode fails differently:
+  `--project` is version-exact (`ruff 0.14.14`, matching the manifest) but
+  answered **5 of 6** off-topic queries from ruff when the library was not
+  declared; `--lib` is always on topic but served **2 of 6** at upstream
+  versions that differ from the installed binary (`uv 0.12.9` vs `0.11.5`,
+  `bun 1.4.0` vs `1.3.14`). A refusal is scored as a refusal, never as the
+  cheapest answer — the benchmark would otherwise rank "said nothing" first,
+  which is the same mistake as scoring an empty failing test run as a saving.
+- Playbook phase 4 now names freshdocs, both modes and the rule for choosing
+  between them, instead of a generic URL cache.
 - New `docs/PLAYBOOK.md`: the universal path in eight phases (recall, contract,
   locate, fresh docs, build, verify, account, learn), one worked example each,
   every command executed while writing it. Two of those examples are corrections

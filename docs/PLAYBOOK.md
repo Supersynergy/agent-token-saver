@@ -25,7 +25,7 @@ that happening.
 | 1 | Recall | Did we already solve this? | `ats-recall` |
 | 2 | Contract | What counts as done? | `goal-init` |
 | 3 | Locate | Where is the code? | `rg`, `code_nav`, Tilth |
-| 4 | Fresh docs | What is the API *today*? | source on disk, `ats-url-cache` |
+| 4 | Fresh docs | What is the API *in the version I have*? | `freshdocs`, `--version` |
 | 5 | Build | Smallest reversible slice | your editor |
 | 6 | Verify | Did it actually work? | **`ats-verify`** |
 | 7 | Account | What did it cost? | `agent-token-ledger`, `ats-cache` |
@@ -122,14 +122,59 @@ Order of trust:
 
 1. **The binary on this machine.** `--help` and `--version` cannot be out of date.
 2. **The installed source.** Read the dependency you actually import.
-3. **Official docs, cached.** `ats-url-cache` keeps one copy per TTL window, so
+3. **Version-pinned local docs.** `freshdocs`, pinned to the version in the
+   project manifest — not the newest release upstream.
+4. **Upstream docs, cached.** `ats-url-cache` keeps one copy per TTL window, so
    re-reading the same page in a later phase is free.
-4. **Memory.** Only to form a hypothesis you are about to check against 1–3.
+5. **Memory.** Only to form a hypothesis you are about to check against 1–4.
+
+The tool for rung 3 on this machine is **freshdocs 0.2.0**: a local,
+version-pinned documentation index (35 libraries, re-synced daily).
+
+```bash
+freshdocs status
+freshdocs analyze
+freshdocs context "how do I configure lint rules" --project . --limit 3
+freshdocs context "how do I add a dev dependency" --lib uv --limit 3
+```
+
+Measured on 2026-09-03, six queries in both modes
+(`data/benchmarks/freshdocs-lane-2026-09-03.md`):
+
+- **80.8–96.9% fewer tokens** than loading the upstream sources the pack cites.
+- **~70 ms** per pack, against ~200 ms for a *single* network fetch — and a pack
+  usually cites three sources, so the serial-fetch alternative is far worse.
+- **Fails closed.** When nothing is indexed it refuses and prints the exact
+  `--sync-stale` command, instead of answering from something adjacent.
+
+### The two modes fail differently — this is the part to get right
+
+`freshdocs` retrieves either by project or by library, and the benchmark found a
+distinct failure in each. Neither mode is safe used blindly.
+
+| Mode | Version fidelity | Failure found |
+|---|---|---|
+| `--project` | pinned to the manifest — `ruff 0.14.14`, exactly what is installed | **5 of 6 off-topic.** Queries about libraries the project does not declare were answered from ruff, silently |
+| `--lib` | registry's cached version | **2 of 6 drifted** from the installed binary: `uv 0.12.9` served vs `0.11.5` installed, `bun 1.4.0` vs `1.3.14` |
+
+So the rule is:
+
+- **Use `--project` for the code you are editing.** Its version pin is exact,
+  and that is the whole point of the phase: it hands you the API of the version
+  you actually import, not the newest one on the internet.
+- **Use `--lib` only for a library the project genuinely does not declare**, and
+  then confirm the version against the installed binary before trusting a flag
+  or a default.
+- **Never ask `--project` about an undeclared library.** It answers, confidently,
+  from the wrong one. That is the most expensive failure on this page, because
+  it looks exactly like a correct answer.
+
+Rung 1 stays mandatory regardless: `--version` on the binary is the only source
+that cannot be stale.
 
 ```bash
 rtk --version
 rtk pipe --help
-ats-url-cache get https://example.com/docs --ttl 86400
 ```
 
 **Worked example, and the reason this phase exists.** Memory said RTK was 0.43
@@ -260,6 +305,7 @@ recorded; this table is the live delta.
 |---|---|---|---|
 | RTK | 0.43.0 | **0.46.0** | **corrected** in the research addendum; 25 `pipe` filters now |
 | Tilth | 0.9.0 | 0.9.0 | matches |
+| freshdocs | not pinned | 0.2.0 | unpinned; 35 libs indexed, all synced 2026-09-03 |
 | Synapse (`synx`) | not pinned | 1.0.1-rc.1 | unpinned; a release candidate is running in the hot path |
 | gmax | not pinned | 0.26.8 | unpinned |
 | superweb | not pinned | 0.1.0 | unpinned |
@@ -271,13 +317,19 @@ recorded; this table is the live delta.
 | context-mode | 1.0.169 | not on PATH | on-demand only |
 | Ponytail | unversioned skill | not on PATH | measured net negative; do not global-load |
 
-Two honest observations:
+Three honest observations:
 
 - **Only RTK was pinned tightly enough to detect drift**, and it had drifted by
   three minor versions. Everything unpinned above could have drifted without
   anyone noticing, because nothing compares them to a recorded expectation.
 - **`ghmax` auto-installs dependencies on first run.** A tool that mutates its
   own environment when invoked does not belong in a hot path without a budget.
+- **freshdocs makes drift visible for libraries, and inherits it for tools.**
+  Its registry tracks upstream latest, so `--lib` served `uv 0.12.9` and
+  `bun 1.4.0` while `0.11.5` and `1.3.14` were installed here. That is not a
+  freshdocs defect — a registry *should* know the latest release — but it means
+  a `--lib` answer is upstream truth, not local truth. Only `--project` gives
+  local truth, and only for declared dependencies.
 
 Re-check with one command each: `rtk --version`, `tilth --version`,
 `synx --version`. If a number here is stale, that is the drift this table exists
