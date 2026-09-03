@@ -14,10 +14,17 @@ Contract:
   * full raw output is kept on disk and its path is printed
   * stdlib only, no third-party filter required
 
+When RTK is installed its per-tool filter is offered as a second projection of
+the *already captured* output (`rtk pipe`, stdin only -- the command is never
+re-run).  RTK is not trusted by assertion: each candidate must carry evidence,
+and the smallest surviving candidate wins.  A filter that drops the failure is
+rejected here rather than in the user's next debugging hour.
+
 Usage:
   ats-verify -- uv run pytest -q
   ats-verify --floor 40 -- cargo test
   ats-verify --json -- npm test
+  ats-verify --no-rtk -- ruff check .
 """
 
 from __future__ import annotations
@@ -26,6 +33,7 @@ import argparse
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -47,6 +55,82 @@ VERDICT_RE = re.compile(
     re.IGNORECASE,
 )
 MAX_LINE_CHARS = 400
+
+# Tool -> RTK `pipe --filter` name, for RTK 0.46.  Only stdin filters appear
+# here: the wrapper subcommands (`rtk pytest ...`) would re-execute the command.
+# A name absent from the installed RTK is detected at runtime, never assumed.
+RTK_PIPE_FILTERS = {
+    "pytest": "pytest",
+    "cargo": "cargo-test",
+    "tsc": "tsc",
+    "vitest": "vitest",
+    "ruff": "ruff-check",
+    "mypy": "mypy",
+    "go": "go-test",
+    "prettier": "prettier",
+}
+# Runners that only wrap the real tool; the output shape is the inner tool's.
+RUNNER_PREFIXES = {
+    "uv",
+    "uvx",
+    "poetry",
+    "pdm",
+    "hatch",
+    "npm",
+    "pnpm",
+    "yarn",
+    "bun",
+    "npx",
+    "run",
+    "exec",
+}
+
+
+def detect_tool(command: list[str]) -> str | None:
+    """Name the verification tool, seeing through runners like `uv run pytest`."""
+    for token in command:
+        name = Path(token).name
+        if name in RUNNER_PREFIXES or name.startswith("-"):
+            continue
+        if name in RTK_PIPE_FILTERS:
+            return name
+        # `python -m pytest` and friends: keep scanning past the interpreter.
+        if name.startswith("python"):
+            continue
+        return None
+    return None
+
+
+def rtk_projection(raw: str, tool: str, timeout: float = 10.0) -> list[str] | None:
+    """Project already-captured output through RTK. None when unavailable."""
+    rtk = shutil.which("rtk")
+    if not rtk or not raw.strip():
+        return None
+    try:
+        proc = subprocess.run(
+            [rtk, "pipe", "--filter", RTK_PIPE_FILTERS[tool]],
+            input=raw,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    # RTK reports an unknown filter on stderr with a non-zero status; an older
+    # RTK simply lacks the name.  Either way: no candidate, no complaint.
+    if proc.returncode != 0 or not proc.stdout.strip():
+        return None
+    return [line.rstrip() for line in proc.stdout.splitlines() if line.strip()]
+
+
+def carries_evidence(candidate: list[str], failed: bool) -> bool:
+    """A red projection must still name a reason; a green one must say something."""
+    if not candidate:
+        return False
+    if not failed:
+        return True
+    return any(SIGNAL_RE.search(line) for line in candidate)
 
 
 def project(lines: list[str], pattern: re.Pattern[str], limit: int) -> list[tuple[int, str, int]]:
@@ -114,6 +198,8 @@ def main() -> int:
     parser.add_argument("--floor", type=int, default=8, help="minimum evidence lines when red")
     parser.add_argument("--limit", type=int, default=40, help="maximum signal lines when red")
     parser.add_argument("--json", action="store_true", help="emit one machine-readable object")
+    parser.add_argument("--no-rtk", action="store_true", help="skip the RTK per-tool projection")
+    parser.add_argument("--tool", help="override tool detection for the RTK filter")
     parser.add_argument("command", nargs=argparse.REMAINDER)
     args = parser.parse_args()
 
@@ -135,12 +221,24 @@ def main() -> int:
         return 127
     elapsed_ms = round((time.perf_counter() - started) * 1000)
 
-    lines = raw.read_text(encoding="utf-8", errors="replace").splitlines()
+    raw_text = raw.read_text(encoding="utf-8", errors="replace")
+    lines = raw_text.splitlines()
     failed = code != 0
-    shown = render(lines, failed, args.floor, args.limit)
+
+    # Two candidate projections, one rule: keep evidence, then take the smaller.
+    own = render(lines, failed, args.floor, args.limit)
+    shown, projector = own, "builtin"
+    tool = args.tool or detect_tool(command)
+    if tool and not args.no_rtk and tool in RTK_PIPE_FILTERS:
+        candidate = rtk_projection(raw_text, tool)
+        if candidate and carries_evidence(candidate, failed):
+            if sum(map(len, candidate)) < sum(map(len, own)):
+                shown, projector = candidate, f"rtk:{RTK_PIPE_FILTERS[tool]}"
+
     status = "red" if failed else "green"
     footer = (
-        f"ats-verify: {status} exit={code} {elapsed_ms}ms lines={len(shown)}/{len(lines)} raw={raw}"
+        f"ats-verify: {status} exit={code} {elapsed_ms}ms via={projector} "
+        f"lines={len(shown)}/{len(lines)} raw={raw}"
     )
 
     if args.json:
@@ -151,6 +249,8 @@ def main() -> int:
                 "elapsed_ms": elapsed_ms,
                 "shown_lines": shown,
                 "total_lines": len(lines),
+                "projector": projector,
+                "tool": tool,
                 "raw_log": str(raw),
             },
             sys.stdout,

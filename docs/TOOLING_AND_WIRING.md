@@ -10,6 +10,7 @@ updates a third-party tool.
 | Deterministic projection | yes | retain decisive lines before model context |
 | Skill routing | prompt-gated | select zero or one relevant skill |
 | RTK | Claude hook or explicit CLI | project noisy shell output |
+| Verification wrapper | `ats-verify` | compact on green, complete on red; owns the exit code |
 | Structural source read | explicit/bounded | inspect code without a broad index |
 | Ledger and audit | installed CLI | reconcile provider usage and visible layers |
 | Graph, browser, remote fan-out | explicit session/spike | solve a concrete need, then leave |
@@ -32,6 +33,27 @@ hook must not launch a maintenance scan, broad index, browser or remote model.
 2. Install one tested update at a time.
 3. Run the host smoke, `agent-token-saver doctor --profile teams --json`, and
    the repository checks.
+
+## Verification path
+
+`ats-verify` runs one check, once, and passes its exit code through. It keeps
+the full raw log on disk and prints a projection: a few lines when green, every
+decisive line when red with a raw-tail floor so a red result is never empty.
+
+When RTK is installed, its per-tool `pipe` filter is offered as a *second*
+candidate projection of the already-captured output — the command is never
+re-executed. Adoption is per run and by measurement: a candidate must still
+contain a signal line, and the smallest surviving candidate wins. RTK's
+`pytest`, `mypy`, `cargo-test` and `tsc` filters win on this machine;
+`ruff-check` does not and is silently not used.
+
+This ordering is deliberate. RTK's `pytest` **wrapper** was observed printing
+zero bytes for a failing test while returning exit 1, so no filter is trusted
+to own execution or to be the sole source of evidence.
+
+The Stop guard counts `ats-verify` as a verification command and reads its
+`ats-verify: red exit=N` verdict line, so wrapped checks still reach the
+outcome ledger.
 
 `doctor` validates installer-owned files, hooks and the exact managed default
 blocks. It does not claim that an optional CLI, private lane or credential is

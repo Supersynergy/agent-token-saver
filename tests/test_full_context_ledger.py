@@ -474,3 +474,44 @@ def test_pending_verify_calls_stay_bounded(tmp_path: Path) -> None:
     accumulator = inspect_usage_accumulator(usage)
     assert len(accumulator["pending_verify_calls"]) == full_context_ledger.MAX_PENDING_VERIFY
     assert accumulator["metadata"]["verify_calls"] == 0
+
+
+def test_ats_verify_runs_are_tracked_by_the_outcome_ledger(tmp_path: Path) -> None:
+    """A check wrapped in ats-verify is still a check, and its verdict is readable."""
+    usage = tmp_path / "codex.jsonl"
+    records = [
+        {"usage": {"input_tokens": 10, "output_tokens": 2}},
+        _codex_call("v1", "ats-verify -- some-inhouse-gate --strict"),
+        {
+            "type": "response_item",
+            "payload": {
+                "type": "function_call_output",
+                "call_id": "v1",
+                "output": "boom\nats-verify: red exit=2 41ms via=builtin lines=1/9 raw=/tmp/x.log",
+            },
+        },
+    ]
+    usage.write_text("\n".join(json.dumps(record) for record in records) + "\n")
+
+    metadata = inspect_usage_accumulator(usage)["metadata"]
+    assert metadata["verify_calls"] == 1
+    assert metadata["verify_failures"] == 1
+    guard = build_session_guard(load_usage(usage), [{"metadata": metadata}])
+    assert guard["observed"]["verify_status"] == "red"
+    assert "last_verification_failed" in guard["warnings"]
+
+
+def test_ruff_format_and_bare_tsc_count_as_verification(tmp_path: Path) -> None:
+    usage = tmp_path / "codex.jsonl"
+    records = [
+        {"usage": {"input_tokens": 10, "output_tokens": 2}},
+        _codex_call("f1", "uv run ruff format --check ."),
+        _codex_output("f1", 0),
+        _codex_call("t1", "npx tsc --noEmit"),
+        _codex_output("t1", 0),
+    ]
+    usage.write_text("\n".join(json.dumps(record) for record in records) + "\n")
+
+    metadata = inspect_usage_accumulator(usage)["metadata"]
+    assert metadata["verify_calls"] == 2
+    assert metadata["verify_failures"] == 0

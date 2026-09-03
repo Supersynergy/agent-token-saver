@@ -34,11 +34,16 @@ EXEC_CALL_RE = re.compile(r"\bexec_command\s*\(")
 RTK_CALL_RE = re.compile(r"(?<![\w-])rtk(?:\s|[\"'])")
 # Commands whose exit status is a task oracle: tests, type checks, linters, project gates.
 VERIFY_CMD_RE = re.compile(
-    r"(?<![\w/.-])(?:pytest|cargo\s+(?:test|check|clippy)|go\s+(?:test|vet)|"
+    r"(?<![\w/.-])(?:ats-verify|pytest|cargo\s+(?:test|check|clippy)|go\s+(?:test|vet)|"
     r"(?:npm|pnpm|yarn|bun)\s+(?:run\s+)?(?:test|check|lint|typecheck)|vitest|"
-    r"(?:just|make)\s+(?:test|check|lint|verify)|ruff\s+check|mypy|pyright|tsc)(?![\w-])"
+    r"(?:just|make)\s+(?:test|check|lint|verify)|ruff\s+(?:check|format)|mypy|pyright|tsc)"
+    r"(?![\w-])"
 )
-EXIT_CODE_RE = re.compile(r"(?:Process exited with code|Exit code:|\"exit_code\":)\s*(\d+)")
+# `ats-verify` prints its own verdict, so a wrapped run stays readable even when
+# the host transcript carries no separate exit-status line.
+EXIT_CODE_RE = re.compile(
+    r"(?:Process exited with code|Exit code:|\"exit_code\":|ats-verify: \w+ exit=)\s*(\d+)"
+)
 MAX_PENDING_VERIFY = 16
 DEFAULT_GUARD_THRESHOLDS = {
     "warn_total_tokens": 10_000_000,

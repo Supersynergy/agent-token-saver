@@ -32,7 +32,7 @@ The strongest repeated community pattern is progressive tool/schema disclosure. 
 
 | Tool | Local | Upstream | Decision |
 |---|---|---|---|
-| RTK | 0.43.0 | 0.43.0 | current |
+| RTK | 0.46.0 | 0.46.0 | current (was 0.43.0 at snapshot; see the 2026-09-03 addendum) |
 | context-mode | 1.0.169 runtime; older Codex cache | 1.0.169 | runtime current; keep on demand |
 | Headroom | 0.31.0 | 0.31.0 | optional provider/proxy; not Lean-default and never MCP |
 | Tilth | 0.9.0 | 0.9.0 release | current release |
@@ -41,6 +41,38 @@ The strongest repeated community pattern is progressive tool/schema disclosure. 
 | Ponytail | local unversioned skill | 4.8.4 | do not global-load; measured net negative |
 
 No new candidate was installed merely because it was new or popular.
+
+## Addendum 2026-09-03 — RTK 0.43.0 to 0.46.0
+
+The table above is a snapshot and stays as recorded. This addendum carries the
+drift found when the pin was re-checked against the installed binary.
+
+RTK 0.46 adds per-tool `pipe` filters that project **already captured** output
+from stdin, so a wrapper can use them without re-running the command:
+
+`cargo-test, pytest, go-test, go-build, tsc, vitest, mypy, ruff-check,
+ruff-format, prettier, grep, rg, find, fd, git-log, git-diff, git-status, log,
+phpunit, pest, paratest, php-test, ecs, phpstan, pint`
+
+Measured on this machine, not adopted on the strength of the version number:
+
+| Filter | Green | Red | Verdict |
+|---|---|---|---|
+| `pytest` | 2,425 B to 18 B | keeps assertion, file and line | adopt |
+| `mypy` | summary only | regroups to file header plus `L31:`; keeps code and reason | adopt |
+| `cargo-test` | summary only | keeps failing test, panic site | adopt |
+| `tsc` | summary only | keeps `TS####`, file and position | adopt |
+| `ruff-check` | passthrough | passthrough | no win; builtin projection used |
+
+Two findings drove the wiring:
+
+- The `rtk pytest` **wrapper** printed zero bytes on a failing test while
+  returning exit 1. A red result with no evidence is the worst possible output,
+  so `ats-verify` never delegates execution to a filter; it captures the run
+  itself and offers the output to `rtk pipe` as one candidate projection.
+- A filter is adopted per run, by measurement: every candidate must still carry
+  a signal line, and the smallest surviving candidate wins. `ruff-check` loses
+  that comparison here and is simply not used, without special-casing.
 
 ## Graphify query measurement
 

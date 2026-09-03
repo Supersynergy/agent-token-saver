@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+- RTK pin corrected 0.43.0 to 0.46.0, and its new per-tool `pipe` filters are
+  wired into the verification path. `ats-verify` now offers `rtk pipe --filter`
+  as a second projection of the *already captured* output, so the command is
+  still executed exactly once. Adoption is per run and by measurement: every
+  candidate must still contain a signal line, and the smallest survivor wins.
+  Measured here: `pytest` (2,425 B to 18 B, keeps assertion/file/line), `mypy`,
+  `cargo-test` and `tsc` win; `ruff-check` is passthrough and loses to the
+  builtin projection, with no special-casing needed. A stub filter that returns
+  a cheerful "ok" for a failing run is rejected — that case is a test.
+- The Stop guard counts `ats-verify` as a verification command and parses its
+  `ats-verify: red exit=N` verdict, so wrapped checks reach the outcome ledger.
+  `ruff format --check` now counts as verification too.
 - New `ats-verify`: run one check, keep the failure. A filter that shrinks a
   *failing* test run to nothing is worse than no filter — a red result with no
   evidence is indistinguishable from a broken wrapper, and observed today:
