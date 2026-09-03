@@ -360,6 +360,7 @@ def install_files(dry_run: bool) -> None:
         / "bin"
         / "codex-heavy-context",
         ROOT / "integration" / "cli" / "kimi-worker": INSTALL_HOME / "bin" / "kimi-worker",
+        ROOT / "integration" / "cli" / "ats-verify": INSTALL_HOME / "bin" / "ats-verify",
     }
     for source, target in copies.items():
         install_copy(source, target, dry_run, executable=True)
@@ -392,6 +393,14 @@ def install_files(dry_run: bool) -> None:
         cache_launcher.unlink(missing_ok=True)
         cache_launcher.symlink_to(cache_target)
         print(f"linked {cache_launcher}")
+    verify_launcher = HOME / ".local" / "bin" / "ats-verify"
+    verify_target = copies[ROOT / "integration" / "cli" / "ats-verify"]
+    if dry_run:
+        print(f"would link {verify_launcher} -> {verify_target}")
+    else:
+        verify_launcher.unlink(missing_ok=True)
+        verify_launcher.symlink_to(verify_target)
+        print(f"linked {verify_launcher}")
     audit_launcher = HOME / ".local" / "bin" / "agent-token-audit"
     audit_target = copies[ROOT / "scripts" / "external_usage_gate.py"]
     if dry_run:

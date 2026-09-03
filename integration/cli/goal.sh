@@ -348,7 +348,15 @@ EOF
   else
     exit_code=$?
     echo "ORACLE: FAIL (exit $exit_code)"
-    tail -5 "$GOAL_ORACLE_LOG" 2>/dev/null
+    # A blind tail can miss the decisive line entirely. ats-verify projects the
+    # signal lines in source order and falls back to the raw tail; without it
+    # installed the old behaviour still applies.
+    if _goal_have ats-verify; then
+      ats-verify --floor 8 -- bash -c "cat \"$GOAL_ORACLE_LOG\"; exit $exit_code" 2>&1 \
+        | grep -v '^ats-verify: ' || true
+    else
+      tail -5 "$GOAL_ORACLE_LOG" 2>/dev/null
+    fi
     local bottleneck
     bottleneck=$(grep -iE 'error|fail|not found|missing|panic' "$GOAL_ORACLE_LOG" 2>/dev/null | head -1)
     echo "BOTTLENECK: ${bottleneck:-unknown — inspect $GOAL_ORACLE_LOG}"

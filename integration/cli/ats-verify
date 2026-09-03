@@ -1,0 +1,169 @@
+#!/usr/bin/env python3
+"""ats-verify — run one verification command compactly, but never lose the failure.
+
+A filter that shrinks a *failing* test run to nothing is worse than no filter:
+a red result with no evidence is indistinguishable from a broken wrapper, and
+the agent's next move is a guess.  So this wrapper is asymmetric on purpose.
+
+    green -> a few lines (that is the saving)
+    red   -> the decisive lines, always, with a guaranteed non-empty floor
+
+Contract:
+  * the command runs exactly once (tests are expensive and rarely idempotent)
+  * the exit code is passed through unchanged
+  * full raw output is kept on disk and its path is printed
+  * stdlib only, no third-party filter required
+
+Usage:
+  ats-verify -- uv run pytest -q
+  ats-verify --floor 40 -- cargo test
+  ats-verify --json -- npm test
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+import tempfile
+import time
+from pathlib import Path
+
+# Lines that carry the reason a verification run went red.
+SIGNAL_RE = re.compile(
+    r"(?:^|\s|\[)(?:FAILED|FAIL|ERROR|error(?:\[[A-Za-z0-9]+\])?:|error\s+TS\d+|"
+    r"Error:|Exception|Traceback|panic:|assert(?:ion)?\b|SyntaxError|"
+    r"\d+\s+(?:failed|failing|error|errors|problems)|cannot find|not found|"
+    r"undefined reference|Segmentation fault)",
+    re.IGNORECASE,
+)
+# Short trailing verdict lines worth keeping even on a green run.
+VERDICT_RE = re.compile(
+    r"(?:\d+\s+(?:passed|ok|tests?|files?|checks?)|All checks passed|Success|"
+    r"Finished|Compiling|no issues|OK\b)",
+    re.IGNORECASE,
+)
+MAX_LINE_CHARS = 400
+
+
+def project(lines: list[str], pattern: re.Pattern[str], limit: int) -> list[tuple[int, str, int]]:
+    """Return matching (index, line, repeats) triples, collapsing exact repeats."""
+    kept: list[tuple[int, str]] = []
+    seen: dict[str, int] = {}
+    for index, line in enumerate(lines):
+        text = line.rstrip()
+        if not text or not pattern.search(text):
+            continue
+        if len(text) > MAX_LINE_CHARS:
+            text = text[:MAX_LINE_CHARS] + " …"
+        if text in seen:
+            seen[text] += 1
+            continue
+        seen[text] = 1
+        kept.append((index, text))
+        if len(kept) >= limit:
+            break
+    return [
+        (index, text if seen[text] == 1 else f"{text}  (x{seen[text]})", seen[text])
+        for index, text in kept
+    ]
+
+
+def tail(lines: list[str], count: int) -> list[tuple[int, str, int]]:
+    body = [(index, line.rstrip(), 1) for index, line in enumerate(lines) if line.strip()]
+    return body[-count:]
+
+
+def render(lines: list[str], failed: bool, floor: int, limit: int) -> list[str]:
+    """Compact on green; on red, guarantee at least `floor` lines of evidence.
+
+    Evidence is always emitted in the order it was produced: a reordered
+    failure log costs the reader more than the few tokens it saves.
+    """
+    if not failed:
+        picked = project(lines, VERDICT_RE, 5) or tail(lines, 3)
+    else:
+        picked = project(lines, SIGNAL_RE, limit)
+        # Coverage counts the raw lines the projection stands for, so a log of
+        # 30 identical errors collapsed to one line is already full evidence
+        # and must not be padded back out with duplicates.
+        if sum(repeats for _, _, repeats in picked) < floor:
+            # The filter found too little. Raw tail is the honest fallback.
+            indices = {index for index, _, _ in picked}
+            picked = picked + [item for item in tail(lines, floor) if item[0] not in indices]
+    ordered = [text for _, text, _ in sorted(picked, key=lambda item: item[0])]
+    return ordered or ["(command produced no output; see the raw log)"]
+
+
+def log_path() -> Path:
+    root = Path(
+        os.environ.get("ATS_VERIFY_LOG_DIR")
+        or Path(tempfile.gettempdir()) / f"ats-verify-{os.getuid()}"
+    )
+    root.mkdir(parents=True, exist_ok=True, mode=0o700)
+    return root / f"verify-{int(time.time())}-{os.getpid()}.log"
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        prog="ats-verify", description="Run a check compactly; never hide a failure."
+    )
+    parser.add_argument("--floor", type=int, default=8, help="minimum evidence lines when red")
+    parser.add_argument("--limit", type=int, default=40, help="maximum signal lines when red")
+    parser.add_argument("--json", action="store_true", help="emit one machine-readable object")
+    parser.add_argument("command", nargs=argparse.REMAINDER)
+    args = parser.parse_args()
+
+    command = args.command[1:] if args.command[:1] == ["--"] else args.command
+    if not command:
+        parser.error("no command given (use: ats-verify -- uv run pytest -q)")
+    if args.floor < 0 or args.limit < 1:
+        parser.error("--floor must be >= 0 and --limit >= 1")
+
+    raw = log_path()
+    started = time.perf_counter()
+    try:
+        with raw.open("w", encoding="utf-8", errors="replace") as handle:
+            proc = subprocess.run(command, stdout=handle, stderr=subprocess.STDOUT, check=False)
+        code = proc.returncode
+    except OSError as error:
+        # A command that cannot start is a red result with a real reason.
+        print(f"ats-verify: cannot run {command[0]!r}: {error}", file=sys.stderr)
+        return 127
+    elapsed_ms = round((time.perf_counter() - started) * 1000)
+
+    lines = raw.read_text(encoding="utf-8", errors="replace").splitlines()
+    failed = code != 0
+    shown = render(lines, failed, args.floor, args.limit)
+    status = "red" if failed else "green"
+    footer = (
+        f"ats-verify: {status} exit={code} {elapsed_ms}ms lines={len(shown)}/{len(lines)} raw={raw}"
+    )
+
+    if args.json:
+        json.dump(
+            {
+                "status": status,
+                "exit_code": code,
+                "elapsed_ms": elapsed_ms,
+                "shown_lines": shown,
+                "total_lines": len(lines),
+                "raw_log": str(raw),
+            },
+            sys.stdout,
+            ensure_ascii=False,
+        )
+        sys.stdout.write("\n")
+    else:
+        stream = sys.stderr if failed else sys.stdout
+        for line in shown:
+            print(line, file=stream)
+        print(footer, file=stream)
+    return code
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

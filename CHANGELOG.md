@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+- New `ats-verify`: run one check, keep the failure. A filter that shrinks a
+  *failing* test run to nothing is worse than no filter — a red result with no
+  evidence is indistinguishable from a broken wrapper, and observed today:
+  `rtk pytest` on a failing test printed zero bytes and exit 1. `ats-verify` is
+  asymmetric on purpose: compact on green (288-test run: 35 lines to 3), every
+  decisive line in source order on red, with a raw-tail floor so red is never
+  empty. One execution, exit code passed through, full log kept on disk,
+  stdlib only. `goal-check` now projects a failed oracle through it instead of
+  a blind `tail -5`, which could drop the one line that named the failure.
 - The Stop hook now tracks outcome, not only cost. The ledger records the exit
   status of verification commands (pytest, cargo test, go test, npm/bun test,
   just/make check, ruff, mypy, tsc) from Codex and Claude transcripts, keeping

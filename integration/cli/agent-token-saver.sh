@@ -1010,6 +1010,7 @@ ats-recon-doctor() {
 ats-doctor() {
   echo "=== Agent Token-Saver Doctor ==="
   echo "rtk: $(command -v rtk || echo 'MISSING (fail-open pass-through)')"
+  echo "ats-verify: $(command -v ats-verify || echo 'MISSING (checks run raw)')"
   echo "si:  $(command -v si || echo 'MISSING (skill routing skipped)')"
   echo "agent-token-ledger: $(command -v agent-token-ledger || echo 'MISSING (post-session ledger unavailable)')"
   echo "agent-token-saver:  $(command -v agent-token-saver || echo 'MISSING (doctor unavailable)')"
