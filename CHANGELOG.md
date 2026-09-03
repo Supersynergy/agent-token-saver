@@ -2,15 +2,27 @@
 
 ## [Unreleased]
 
+- New `docs/PLAYBOOK.md`: the universal path in eight phases (recall, contract,
+  locate, fresh docs, build, verify, account, learn), one worked example each,
+  every command executed while writing it. Two of those examples are corrections
+  the page earned by running its own advice: `goal-init` rejected the open-verb
+  title first tried, and the RTK filter is `ruff-check`, not `ruff`. The page
+  also carries a live version-drift table — only RTK was pinned tightly enough
+  for drift to be detectable, and it had drifted three minor versions.
 - RTK pin corrected 0.43.0 to 0.46.0, and its new per-tool `pipe` filters are
   wired into the verification path. `ats-verify` now offers `rtk pipe --filter`
   as a second projection of the *already captured* output, so the command is
   still executed exactly once. Adoption is per run and by measurement: every
   candidate must still contain a signal line, and the smallest survivor wins.
-  Measured here: `pytest` (2,425 B to 18 B, keeps assertion/file/line), `mypy`,
-  `cargo-test` and `tsc` win; `ruff-check` is passthrough and loses to the
-  builtin projection, with no special-casing needed. A stub filter that returns
-  a cheerful "ok" for a failing run is rejected — that case is a test.
+  There is no fixed winner, and the first draft of this note overstated one:
+  measurement shows selection depends on the *shape* of the log, not the tool.
+  `cargo-test` is the only filter that wins at every size (3,060 B to 323 B on a
+  long red log). `pytest` wins on short red logs and on green ones (the full
+  suite goes 2,425 B to 18 B) but loses to the builtin on a long red log.
+  `mypy`, `tsc` and `ruff-check` lose on the shapes measured. A red `mypy`/`tsc`
+  run consequently saves almost nothing — when every line is a diagnostic,
+  completeness beats compactness on purpose. A stub filter that returns a
+  cheerful "ok" for a failing run is rejected; that case is a test.
 - The Stop guard counts `ats-verify` as a verification command and parses its
   `ats-verify: red exit=N` verdict, so wrapped checks reach the outcome ledger.
   `ruff format --check` now counts as verification too.

@@ -43,9 +43,14 @@ decisive line when red with a raw-tail floor so a red result is never empty.
 When RTK is installed, its per-tool `pipe` filter is offered as a *second*
 candidate projection of the already-captured output — the command is never
 re-executed. Adoption is per run and by measurement: a candidate must still
-contain a signal line, and the smallest surviving candidate wins. RTK's
-`pytest`, `mypy`, `cargo-test` and `tsc` filters win on this machine;
-`ruff-check` does not and is silently not used.
+contain a signal line, and the smallest surviving candidate wins.
+
+No filter is adopted globally, because none wins globally. On this machine
+`cargo-test` wins at every size, `pytest` wins on green runs and short red ones,
+and `mypy`, `tsc` and `ruff-check` lose to the builtin on the shapes measured.
+A red `mypy`/`tsc` run saves almost nothing by design: when every line is a
+diagnostic, completeness beats compactness. See the addendum in
+`TOKEN_SAVER_RESEARCH_2026-07-13.md` for the byte counts.
 
 This ordering is deliberate. RTK's `pytest` **wrapper** was observed printing
 zero bytes for a failing test while returning exit 1, so no filter is trusted

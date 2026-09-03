@@ -39,6 +39,7 @@ active configuration with the doctor; files on disk are not proof.
 ## References
 
 - [README](README.md): install and user-facing contract.
+- [playbook](docs/PLAYBOOK.md): phase-by-phase usage path and version drift.
 - [hooks](docs/HOOKS_AND_AGENTS.md): host matrix.
 - [tooling](docs/TOOLING_AND_WIRING.md): default versus optional layers.
 - [measurement](docs/FULL_CONTEXT_MEASUREMENT.md): method and limits.

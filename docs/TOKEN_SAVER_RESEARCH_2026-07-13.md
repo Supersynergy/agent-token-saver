@@ -54,15 +54,37 @@ from stdin, so a wrapper can use them without re-running the command:
 ruff-format, prettier, grep, rg, find, fd, git-log, git-diff, git-status, log,
 phpunit, pest, paratest, php-test, ecs, phpstan, pint`
 
-Measured on this machine, not adopted on the strength of the version number:
+Measured on this machine, not adopted on the strength of the version number.
+There is no fixed winner: selection happens **per run**, and which projector is
+smaller depends on the shape of the log rather than on the tool.
 
-| Filter | Green | Red | Verdict |
+Red-log measurement, bytes shown by the selected projector:
+
+| Filter | Short red log | Long red log | Selected |
 |---|---|---|---|
-| `pytest` | 2,425 B to 18 B | keeps assertion, file and line | adopt |
-| `mypy` | summary only | regroups to file header plus `L31:`; keeps code and reason | adopt |
-| `cargo-test` | summary only | keeps failing test, panic site | adopt |
-| `tsc` | summary only | keeps `TS####`, file and position | adopt |
-| `ruff-check` | passthrough | passthrough | no win; builtin projection used |
+| `cargo-test` | 76 B to 39 B | 3,060 B to 323 B | RTK both times |
+| `pytest` | 76 B to 26 B | 3,132 B to 957 B (RTK offered 1,264 B) | RTK short, builtin long |
+| `mypy` | 71 B to 70 B | 2,125 B to 2,124 B | builtin both times |
+| `tsc` | 75 B to 74 B | 2,529 B to 2,528 B | builtin both times |
+| `ruff-check` | 58 B to 57 B | 2,677 B to 110 B | builtin both times |
+
+Green runs are where the saving is largest and least contested: the full local
+suite goes from 2,425 B to 18 B (`Pytest: 328 passed`) through the RTK filter.
+
+Reading the table honestly:
+
+- **Only `cargo-test` wins consistently.** Its output is repetitive enough that
+  grouping beats line selection at every size.
+- **The builtin wins on short logs**, because a handful of diagnostic lines
+  cannot be compressed below themselves once a filter adds a header.
+- **`mypy` and `tsc` stay with the builtin even on long logs.** RTK's mypy
+  filter was passthrough for the shape tested here (2,125 B in, 2,125 B out),
+  although it does regroup other layouts. That format sensitivity is the whole
+  argument for measuring per run instead of pinning a winner in a table.
+- **A red `mypy`/`tsc` run therefore saves almost nothing, by design.** When
+  every line is already a diagnostic, "complete on red" and "compact" are in
+  direct conflict, and completeness wins. The saving for those tools comes from
+  their green runs, not their red ones.
 
 Two findings drove the wiring:
 
@@ -71,8 +93,9 @@ Two findings drove the wiring:
   so `ats-verify` never delegates execution to a filter; it captures the run
   itself and offers the output to `rtk pipe` as one candidate projection.
 - A filter is adopted per run, by measurement: every candidate must still carry
-  a signal line, and the smallest surviving candidate wins. `ruff-check` loses
-  that comparison here and is simply not used, without special-casing.
+  a signal line, and the smallest surviving candidate wins. `ruff-check`,
+  `mypy` and `tsc` lose that comparison on the shapes measured here and are
+  simply not used, without special-casing. Nothing is marked "adopted" globally.
 
 ## Graphify query measurement
 

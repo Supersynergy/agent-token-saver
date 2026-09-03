@@ -315,6 +315,9 @@ agent-token-saver doctor --profile teams --json
 
 ## Documentation
 
+- [Playbook — the universal path](docs/PLAYBOOK.md): which tool at which phase,
+  `ats-verify` as the oracle wrapper, current-docs lookup instead of memory,
+  and where installed tool versions differ from what the docs pin
 - [Tooling and wiring](docs/TOOLING_AND_WIRING.md)
 - [Hooks and agents](docs/HOOKS_AND_AGENTS.md)
 - [AgentMaster protocol](docs/AGENTMASTER_PROTOCOL.md)
