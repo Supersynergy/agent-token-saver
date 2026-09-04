@@ -497,6 +497,13 @@ def test_bootstrap_script_picks_a_qualifying_python_over_a_stale_python3(tmp_pat
     stale.chmod(stale.stat().st_mode | stat.S_IXUSR)
     real = bin_dir / "python3.12"
     real.symlink_to(sys.executable)
+    # The script needs a few coreutils. Link exactly those, and nothing else,
+    # so a system python3.X in /usr/bin cannot leak into the search -- it did
+    # on the Ubuntu CI runner, which ships /usr/bin/python3.12.
+    for tool in ("dirname", "mktemp", "rm", "cat", "git"):
+        found = shutil.which(tool)
+        if found:
+            (bin_dir / tool).symlink_to(found)
     # A stand-in installer that reports which interpreter ran it.
     probe_root = tmp_path / "repo" / "scripts"
     probe_root.mkdir(parents=True)
@@ -506,10 +513,10 @@ def test_bootstrap_script_picks_a_qualifying_python_over_a_stale_python3(tmp_pat
     shutil.copy(INSTALLER.parents[1] / "install-universal.sh", tmp_path / "repo" / "install-universal.sh")
 
     result = subprocess.run(
-        ["bash", str(tmp_path / "repo" / "install-universal.sh"), "--dry-run"],
+        [shutil.which("bash") or "/bin/bash", str(tmp_path / "repo" / "install-universal.sh"), "--dry-run"],
         capture_output=True,
         text=True,
-        env={"PATH": f"{bin_dir}:/usr/bin:/bin", "HOME": str(tmp_path)},
+        env={"PATH": str(bin_dir), "HOME": str(tmp_path)},
         check=False,
     )
 
@@ -520,10 +527,10 @@ def test_bootstrap_script_picks_a_qualifying_python_over_a_stale_python3(tmp_pat
     # With only the stale one, the message names what was found and how to fix it.
     real.unlink()
     result = subprocess.run(
-        ["bash", str(tmp_path / "repo" / "install-universal.sh"), "--dry-run"],
+        [shutil.which("bash") or "/bin/bash", str(tmp_path / "repo" / "install-universal.sh"), "--dry-run"],
         capture_output=True,
         text=True,
-        env={"PATH": f"{bin_dir}:/usr/bin:/bin", "HOME": str(tmp_path)},
+        env={"PATH": str(bin_dir), "HOME": str(tmp_path)},
         check=False,
     )
     assert result.returncode == 1
