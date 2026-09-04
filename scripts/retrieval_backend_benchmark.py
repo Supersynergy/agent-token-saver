@@ -121,7 +121,9 @@ def snapshot(path: Path) -> dict[str, tuple[int, int]]:
     return result
 
 
-def changed_paths(before: dict[str, tuple[int, int]], after: dict[str, tuple[int, int]]) -> list[str]:
+def changed_paths(
+    before: dict[str, tuple[int, int]], after: dict[str, tuple[int, int]]
+) -> list[str]:
     return sorted(name for name in set(before) | set(after) if before.get(name) != after.get(name))
 
 
@@ -230,9 +232,15 @@ def render(payload: dict[str, Any]) -> str:
         first_wall = samples[0]["wall_ms"]
         warm_wall = median([sample["wall_ms"] for sample in samples[1:] or samples])
         tokens = median([sample["visible_output_tokens_estimate"] for sample in samples])
-        peak = median([int(sample["time_lp"].get("peak memory footprint", 0)) for sample in samples])
-        reads = median([int(sample["time_lp"].get("block input operations", 0)) for sample in samples])
-        writes = median([int(sample["time_lp"].get("block output operations", 0)) for sample in samples])
+        peak = median(
+            [int(sample["time_lp"].get("peak memory footprint", 0)) for sample in samples]
+        )
+        reads = median(
+            [int(sample["time_lp"].get("block input operations", 0)) for sample in samples]
+        )
+        writes = median(
+            [int(sample["time_lp"].get("block output operations", 0)) for sample in samples]
+        )
         mutations = sum(bool(sample["gmax_state_changed_paths"]) for sample in samples)
         accepted = all(sample["accepted"] for sample in samples)
         lines.append(

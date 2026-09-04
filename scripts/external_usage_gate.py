@@ -168,9 +168,7 @@ NORMALIZERS = {
 }
 
 
-def compare_usage(
-    expected: dict[str, int], observed: dict[str, int | None]
-) -> dict[str, Any]:
+def compare_usage(expected: dict[str, int], observed: dict[str, int | None]) -> dict[str, Any]:
     deltas: dict[str, int | None] = {}
     for field in (*CORE_FIELDS, "cache_write", "reasoning"):
         value = observed.get(field)
@@ -347,9 +345,7 @@ def run_candidate(
             raise ValueError(f"{name} did not emit JSON: {error}") from error
         stdout_bytes = len(result.stdout.encode())
     warm = samples[1:] or samples
-    display_command = [
-        "$ATS_FIXTURE_HOME" if token == str(home) else token for token in invocation
-    ]
+    display_command = ["$ATS_FIXTURE_HOME" if token == str(home) else token for token in invocation]
     return data, {
         "command": display_command,
         "version": first_line(base, env, timeout),

@@ -13,6 +13,7 @@ quality of each answer on a 1-5 scale (self-jury).
 Usage:
   python3 ats-jury-bench.py --iter 1 --out /tmp/ats_jury_bench.json
 """
+
 from __future__ import annotations
 
 import argparse
@@ -39,8 +40,7 @@ QUESTIONS: list[dict[str, Any]] = [
     {
         "id": "github_recon",
         "question": "What does the README of this repo say about token routing?",
-        "baseline_cmd": ["gh", "api", f"repos/{REPO_GH}/contents/README.md",
-                         "--jq", ".content"],
+        "baseline_cmd": ["gh", "api", f"repos/{REPO_GH}/contents/README.md", "--jq", ".content"],
         "ats_recon_cmd": ["ghx", "read", f"{REPO_GH}", "README.md"],
         "cwd": REPO,
     },
@@ -48,8 +48,7 @@ QUESTIONS: list[dict[str, Any]] = [
         "id": "web_scrape",
         "question": "What is the main heading of example.com?",
         "baseline_cmd": ["curl", "-sL", "https://example.com"],
-        "ats_recon_cmd": ["supacrawl", "scrape", "https://example.com",
-                          "--format", "markdown"],
+        "ats_recon_cmd": ["supacrawl", "scrape", "https://example.com", "--format", "markdown"],
         "cwd": REPO,
     },
 ]
@@ -83,8 +82,12 @@ def run_tool(probe: dict[str, Any], path: str) -> tuple[str, float, int]:
     t0 = time.time()
     try:
         proc = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=60,
-            cwd=cwd, check=False,
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=60,
+            cwd=cwd,
+            check=False,
         )
         wall = time.time() - t0
         out = proc.stdout
@@ -102,8 +105,13 @@ def ask_agent(agent_cmd: list[str], question: str, context: str) -> tuple[str, f
     t0 = time.time()
     try:
         proc = subprocess.run(
-            agent_cmd, input=prompt, capture_output=True, text=True,
-            timeout=120, cwd="/tmp", check=False,
+            agent_cmd,
+            input=prompt,
+            capture_output=True,
+            text=True,
+            timeout=120,
+            cwd="/tmp",
+            check=False,
         )
         wall = time.time() - t0
         out = proc.stdout.strip()
@@ -120,8 +128,10 @@ def main() -> int:
     args = ap.parse_args()
 
     results: list[JuryResult] = []
-    print(f"Jury: {len(AGENTS)} agents x {len(QUESTIONS)} questions x 2 paths x {args.iter} iter",
-          file=sys.stderr)
+    print(
+        f"Jury: {len(AGENTS)} agents x {len(QUESTIONS)} questions x 2 paths x {args.iter} iter",
+        file=sys.stderr,
+    )
 
     for i in range(args.iter):
         for agent_name, agent_cmd in AGENTS:
@@ -130,8 +140,7 @@ def main() -> int:
                     key = f"{path}_cmd"
                     if key not in probe:
                         continue
-                    print(f"  [{i+1}] {agent_name} / {probe['id']} / {path}...",
-                          file=sys.stderr)
+                    print(f"  [{i + 1}] {agent_name} / {probe['id']} / {path}...", file=sys.stderr)
                     tool_out, tool_wall, tool_chars = run_tool(probe, path)
                     agent_out, agent_wall, agent_chars = ask_agent(
                         agent_cmd, probe["question"], tool_out
@@ -149,8 +158,10 @@ def main() -> int:
                         sample=agent_out[:200].replace("\n", " "),
                     )
                     results.append(r)
-                    print(f"    -> tool={tool_chars}c, agent={agent_chars}c, "
-                          f"total={r.wall_s}s", file=sys.stderr)
+                    print(
+                        f"    -> tool={tool_chars}c, agent={agent_chars}c, total={r.wall_s}s",
+                        file=sys.stderr,
+                    )
 
     # Aggregate: per question_id, compare baseline vs ats_recon token usage
     agg: dict[str, dict[str, Any]] = {}
@@ -166,7 +177,11 @@ def main() -> int:
             "wall_s_mean": round(sum(r.wall_s for r in rs) / len(rs), 3) if rs else 0,
             "tool_tokens_mean": int(sum(r.tool_tokens_est for r in rs) / len(rs)) if rs else 0,
             "agent_tokens_mean": int(sum(r.agent_tokens_est for r in rs) / len(rs)) if rs else 0,
-            "total_tokens_mean": int(sum(r.tool_tokens_est + r.agent_tokens_est for r in rs) / len(rs)) if rs else 0,
+            "total_tokens_mean": int(
+                sum(r.tool_tokens_est + r.agent_tokens_est for r in rs) / len(rs)
+            )
+            if rs
+            else 0,
         }
 
     # Compute savings per question
@@ -177,19 +192,26 @@ def main() -> int:
         if b and a and b["total_tokens_mean"] > 0:
             saved = b["total_tokens_mean"] - a["total_tokens_mean"]
             pct = round(100 * saved / b["total_tokens_mean"], 1)
-            savings.append({
-                "question_id": q["id"],
-                "baseline_tokens": b["total_tokens_mean"],
-                "ats_recon_tokens": a["total_tokens_mean"],
-                "saved_tokens": saved,
-                "saved_pct": pct,
-            })
+            savings.append(
+                {
+                    "question_id": q["id"],
+                    "baseline_tokens": b["total_tokens_mean"],
+                    "ats_recon_tokens": a["total_tokens_mean"],
+                    "saved_tokens": saved,
+                    "saved_pct": pct,
+                }
+            )
 
-    Path(args.out).write_text(json.dumps({
-        "results": [asdict(r) for r in results],
-        "aggregate": agg,
-        "savings": savings,
-    }, indent=2))
+    Path(args.out).write_text(
+        json.dumps(
+            {
+                "results": [asdict(r) for r in results],
+                "aggregate": agg,
+                "savings": savings,
+            },
+            indent=2,
+        )
+    )
 
     # Markdown
     lines = [
@@ -220,8 +242,10 @@ def main() -> int:
 
     print("\n=== Savings ===")
     for s in savings:
-        print(f"  {s['question_id']}: {s['baseline_tokens']} -> {s['ats_recon_tokens']} "
-              f"({s['saved_pct']}% saved)")
+        print(
+            f"  {s['question_id']}: {s['baseline_tokens']} -> {s['ats_recon_tokens']} "
+            f"({s['saved_pct']}% saved)"
+        )
     print(f"\nWrote: {args.out} + {args.md}")
     return 0
 

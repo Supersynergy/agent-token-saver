@@ -113,9 +113,7 @@ class RunResult:
 
 def kimi_cli_version() -> str:
     try:
-        out = subprocess.run(
-            ["kimi", "--version"], capture_output=True, text=True, timeout=15
-        )
+        out = subprocess.run(["kimi", "--version"], capture_output=True, text=True, timeout=15)
         return out.stdout.strip().replace("kimi, version ", "")
     except (OSError, subprocess.TimeoutExpired):
         return "unknown"
@@ -227,8 +225,7 @@ def run_swarm(packet: str, model: str, state_root: Path, name: str) -> RunResult
     try:
         start = time.monotonic()
         proc = subprocess.run(
-            ["kimi-cli", "--quiet", "-y", "--skills-dir", skills_dir,
-             "-m", model, "-p", packet],
+            ["kimi-cli", "--quiet", "-y", "--skills-dir", skills_dir, "-m", model, "-p", packet],
             capture_output=True,
             text=True,
             env=env,
@@ -297,10 +294,7 @@ def arm_team(model: str, fixture: Path, state: Path) -> dict:
     """Three simultaneous workers on the disjoint fixture thirds."""
     import concurrent.futures
 
-    packets = [
-        SLICE_PACKET.format(fixture=fixture, total=TOTAL_LINES, a=a, b=b)
-        for a, b in SLICES
-    ]
+    packets = [SLICE_PACKET.format(fixture=fixture, total=TOTAL_LINES, a=a, b=b) for a, b in SLICES]
     start = time.monotonic()
     with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
         results = list(
@@ -355,9 +349,7 @@ def arm_swarm(model: str, fixture: Path, state: Path) -> dict:
 ARMS = {
     "k27-single": lambda f, s: arm_single(MODEL_K27, f, s, tag="-k27"),
     "k3-single": lambda f, s: arm_single(MODEL_K3, f, s),
-    "k3-single-nothink": lambda f, s: arm_single(
-        MODEL_K3, f, s, no_thinking=True, tag="-nothink"
-    ),
+    "k3-single-nothink": lambda f, s: arm_single(MODEL_K3, f, s, no_thinking=True, tag="-nothink"),
     "k3-team": lambda f, s: arm_team(MODEL_K3, f, s),
     "k3-swarm": lambda f, s: arm_swarm(MODEL_K3, f, s),
 }
@@ -371,28 +363,37 @@ def savings(arms: dict[str, dict]) -> dict[str, str]:
     out: dict[str, str] = {}
     k27, k3 = arms.get("k27-single"), arms.get("k3-single")
     if k27 and k3:
-        out["k3_vs_k27_single_gross"] = pct(
-            (k3["gross_input"] - k27["gross_input"]) / k27["gross_input"] * 100
-        ) + f" ({k27['gross_input']:,} -> {k3['gross_input']:,})"
+        out["k3_vs_k27_single_gross"] = (
+            pct((k3["gross_input"] - k27["gross_input"]) / k27["gross_input"] * 100)
+            + f" ({k27['gross_input']:,} -> {k3['gross_input']:,})"
+        )
     team, swarm = arms.get("k3-team"), arms.get("k3-swarm")
     if team and swarm:
-        out["k3_team_vs_k3_swarm_gross"] = pct(
-            (team["gross_input"] - swarm["gross_input"]) / swarm["gross_input"] * 100
-        ) + f" ({swarm['gross_input']:,} -> {team['gross_input']:,})"
+        out["k3_team_vs_k3_swarm_gross"] = (
+            pct((team["gross_input"] - swarm["gross_input"]) / swarm["gross_input"] * 100)
+            + f" ({swarm['gross_input']:,} -> {team['gross_input']:,})"
+        )
     if team:
-        out["k3_team_vs_claude_team_0719"] = pct(
-            (team["gross_input"] - BASELINE_0719["claude_team_gross"])
-            / BASELINE_0719["claude_team_gross"] * 100
-        ) + f" ({BASELINE_0719['claude_team_gross']:,} -> {team['gross_input']:,})"
+        out["k3_team_vs_claude_team_0719"] = (
+            pct(
+                (team["gross_input"] - BASELINE_0719["claude_team_gross"])
+                / BASELINE_0719["claude_team_gross"]
+                * 100
+            )
+            + f" ({BASELINE_0719['claude_team_gross']:,} -> {team['gross_input']:,})"
+        )
     think = arms.get("k3-single-nothink")
     if k3 and think:
-        out["k3_nothink_vs_think_output"] = pct(
-            (think["output"] - k3["output"]) / max(k3["output"], 1) * 100
-        ) + f" output ({k3['output']:,} -> {think['output']:,})"
+        out["k3_nothink_vs_think_output"] = (
+            pct((think["output"] - k3["output"]) / max(k3["output"], 1) * 100)
+            + f" output ({k3['output']:,} -> {think['output']:,})"
+        )
     if k27:
-        drift = (k27["gross_input"] - BASELINE_0719["k27_single_gross"]) / BASELINE_0719[
-            "k27_single_gross"
-        ] * 100
+        drift = (
+            (k27["gross_input"] - BASELINE_0719["k27_single_gross"])
+            / BASELINE_0719["k27_single_gross"]
+            * 100
+        )
         out["k27_single_drift_vs_0719"] = pct(drift) + (
             f" ({BASELINE_0719['k27_single_gross']:,} -> {k27['gross_input']:,})"
         )

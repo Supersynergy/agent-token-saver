@@ -263,13 +263,9 @@ def main() -> int:
             executable = fixture.command.split()[0]
             make_fake_command(bin_dir, executable, source, fixture.exit_code)
 
-            results.append(
-                evaluate(fixture, "raw", raw, fixture.exit_code, 0, raw_tokens)
-            )
+            results.append(evaluate(fixture, "raw", raw, fixture.exit_code, 0, raw_tokens))
 
-            rc, output, elapsed = run(
-                [sys.executable, str(wrapper), fixture.command], env
-            )
+            rc, output, elapsed = run([sys.executable, str(wrapper), fixture.command], env)
             results.append(
                 evaluate(fixture, "ppgranger/token-saver", output, rc, elapsed, raw_tokens)
             )

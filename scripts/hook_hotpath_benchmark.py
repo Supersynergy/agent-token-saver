@@ -21,9 +21,7 @@ PROMPT_HOOK = Path("integration/hooks/token-stack-prompt.py")
 WORKER_HOOK = Path("integration/hooks/agent-worker-capsule.py")
 PROMPT_CASES = {
     "trivial": {"prompt": "danke"},
-    "token_saver_fast_route": {
-        "prompt": "Optimize token and context budget for this large log."
-    },
+    "token_saver_fast_route": {"prompt": "Optimize token and context budget for this large log."},
     "generic_router_miss": {
         "prompt": "Inspect the specified local state and report the exact result without edits."
     },
@@ -191,8 +189,7 @@ def make_report(baseline_ref: str, runs: int) -> dict[str, Any]:
         for arm in (case["baseline"], case["candidate"])
     )
     acceptance["no_forbidden_maintenance_call"] = all(
-        "synx doctor" not in source
-        for source in (prompt_candidate, worker_candidate)
+        "synx doctor" not in source for source in (prompt_candidate, worker_candidate)
     )
     return {
         "schema_version": 1,

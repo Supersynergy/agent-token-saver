@@ -103,12 +103,10 @@ def make_report(agentmaster: str) -> dict[str, Any]:
     )
     capsules = {name: precontracted_prompt(prompt) for name, prompt in CASES.items()}
     full_contracts = {
-        name: worker_context(f"{name}-full", capsules[name], compact=False)
-        for name in CASES
+        name: worker_context(f"{name}-full", capsules[name], compact=False) for name in CASES
     }
     compact_deltas = {
-        name: worker_context(f"{name}-compact", capsules[name], compact=True)
-        for name in CASES
+        name: worker_context(f"{name}-compact", capsules[name], compact=True) for name in CASES
     }
     registry_tokens = est_tokens(registry_text)
     capsule_tokens = sum(est_tokens(prompt) for prompt in capsules.values())
@@ -147,9 +145,7 @@ def make_report(agentmaster: str) -> dict[str, Any]:
             "routed_capsules_plus_full_hook": routed_full,
             "routed_capsules_plus_compact_hook": routed_compact,
             "routed_full_reduction_vs_naive": reduction_percent(naive, routed_full),
-            "routed_compact_reduction_vs_naive": reduction_percent(
-                naive, routed_compact
-            ),
+            "routed_compact_reduction_vs_naive": reduction_percent(naive, routed_compact),
             "capsule_dedup_avoided_tokens": routed_full - routed_compact,
             "capsule_dedup_packet_reduction_percent": reduction_percent(
                 routed_full, routed_compact

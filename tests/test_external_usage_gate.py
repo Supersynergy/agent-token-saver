@@ -136,9 +136,7 @@ def test_package_runners_require_exact_versions() -> None:
         raise AssertionError("latest package command must be rejected")
 
 
-def test_candidate_environment_does_not_inherit_credentials(
-    monkeypatch, tmp_path
-) -> None:
+def test_candidate_environment_does_not_inherit_credentials(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("PATH", "/test/bin")
     monkeypatch.setenv("OPENAI_API_KEY", "secret")
     monkeypatch.setenv("GITHUB_TOKEN", "secret")

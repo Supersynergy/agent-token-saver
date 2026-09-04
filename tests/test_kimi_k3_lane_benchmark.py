@@ -36,9 +36,7 @@ def test_fixture_subcount_is_pinned():
 
 
 def test_oracle_single_accepts_exact_match():
-    assert bench.oracle_single(
-        {"total_errors": 100, "marker_line": 3777, "errors_2001_4000": 44}
-    )
+    assert bench.oracle_single({"total_errors": 100, "marker_line": 3777, "errors_2001_4000": 44})
 
 
 def test_oracle_single_rejects_lazy_or_wrong():
@@ -88,10 +86,8 @@ def test_parse_wire_usage_sums_newest_wire_log(tmp_path):
     wire_dir = tmp_path / "sessions" / "proj" / "sess"
     wire_dir.mkdir(parents=True)
     rows = [
-        {"input_other": 100, "output": 7, "input_cache_read": 900,
-         "input_cache_creation": 0},
-        {"input_other": 40, "output": 5, "input_cache_read": 1000,
-         "input_cache_creation": 0},
+        {"input_other": 100, "output": 7, "input_cache_read": 900, "input_cache_creation": 0},
+        {"input_other": 40, "output": 5, "input_cache_read": 1000, "input_cache_creation": 0},
     ]
     (wire_dir / "wire.jsonl").write_text(
         "".join(json.dumps({"token_usage": row}) + "\n" for row in rows)
@@ -117,8 +113,7 @@ def test_parse_wire_usage_includes_subagent_wires(tmp_path):
     parent = tmp_path / "sessions" / "proj" / "sess"
     child = parent / "subagents" / "agent-1"
     child.mkdir(parents=True)
-    row = {"input_other": 10, "output": 1, "input_cache_read": 0,
-           "input_cache_creation": 0}
+    row = {"input_other": 10, "output": 1, "input_cache_read": 0, "input_cache_creation": 0}
     (parent / "wire.jsonl").write_text(json.dumps({"token_usage": row}) + "\n")
     (child / "wire.jsonl").write_text(json.dumps({"token_usage": row}) + "\n")
     total, requests = bench.parse_wire_usage(tmp_path)
@@ -127,8 +122,12 @@ def test_parse_wire_usage_includes_subagent_wires(tmp_path):
 
 
 def test_list_price_estimate_uses_k3_list_prices():
-    usage = {"input_other": 1_000_000, "input_cache_read": 1_000_000,
-             "input_cache_creation": 0, "output": 100_000}
+    usage = {
+        "input_other": 1_000_000,
+        "input_cache_read": 1_000_000,
+        "input_cache_creation": 0,
+        "output": 100_000,
+    }
     assert bench.list_price_estimate(usage) == 3.0 + 0.30 + 1.5
 
 
@@ -185,10 +184,7 @@ def test_arm_single_with_stubbed_worker(tmp_path, monkeypatch):
         )
 
         class Proc:
-            stdout = (
-                '{"total_errors": 100, "marker_line": 3777, '
-                '"errors_2001_4000": 44}'
-            )
+            stdout = '{"total_errors": 100, "marker_line": 3777, "errors_2001_4000": 44}'
             returncode = 0
 
         return Proc()

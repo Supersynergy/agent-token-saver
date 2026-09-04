@@ -48,9 +48,7 @@ def test_openai_convention_treats_cached_as_subset():
 
 def test_ledger_subset_field_name_is_accepted():
     """full_context_ledger renames the subset field; honour that spelling."""
-    usage = ce.normalize_usage(
-        {"input_tokens": 10_000, "cached_input_tokens_subset": 4_000}
-    )
+    usage = ce.normalize_usage({"input_tokens": 10_000, "cached_input_tokens_subset": 4_000})
     assert usage["cache_read_tokens"] == 4_000
     assert usage["uncached_input_tokens"] == 6_000
 
@@ -237,9 +235,7 @@ def test_cli_compares_two_files(tmp_path: Path):
     baseline = tmp_path / "baseline.json"
     candidate = tmp_path / "candidate.json"
     baseline.write_text(json.dumps({"input_tokens": 10_000}))
-    candidate.write_text(
-        json.dumps({"input_tokens": 1_000, "cache_read_input_tokens": 9_000})
-    )
+    candidate.write_text(json.dumps({"input_tokens": 1_000, "cache_read_input_tokens": 9_000}))
     result = _run([str(candidate), "--against", str(baseline), "--format", "json"])
     assert result.returncode == 0
     assert json.loads(result.stdout)["weighted_input_saved_percent"] > 0
@@ -336,8 +332,6 @@ def test_codex_cache_write_counter_is_not_invisible() -> None:
 def test_codex_write_counter_is_a_subset_not_an_extra_class() -> None:
     """Codex counts writes inside input_tokens; Anthropic bills them beside it."""
     subset = ce.build({"input_tokens": 20_000, "cache_write_input_tokens": 19_967}, "anthropic")
-    disjoint = ce.build(
-        {"input_tokens": 33, "cache_creation_input_tokens": 19_967}, "anthropic"
-    )
+    disjoint = ce.build({"input_tokens": 33, "cache_creation_input_tokens": 19_967}, "anthropic")
     assert subset["total_input_tokens"] == 20_000
     assert disjoint["total_input_tokens"] == 20_000

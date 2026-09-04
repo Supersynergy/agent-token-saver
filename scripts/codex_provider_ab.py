@@ -312,12 +312,8 @@ def weighted_delta(
         "baseline_cache_hit_rate_percent": base["cache_hit_rate_percent"],
         "lean_cache_hit_rate_percent": cand["cache_hit_rate_percent"],
         "cache_hit_rate_delta": comparison["cache_hit_rate_delta"],
-        "input_saved_percent": (
-            comparison["weighted_input_saved_percent"] if accepted else None
-        ),
-        "total_saved_percent": (
-            comparison["weighted_total_saved_percent"] if accepted else None
-        ),
+        "input_saved_percent": (comparison["weighted_input_saved_percent"] if accepted else None),
+        "total_saved_percent": (comparison["weighted_total_saved_percent"] if accepted else None),
         "profile": comparison["profile"],
         "basis": WEIGHTED_BASIS,
     }
@@ -341,14 +337,10 @@ def summarize_pair(task: Task, arms: dict[str, dict[str, Any]]) -> dict[str, Any
             "output_tokens": lean["output_tokens"] - baseline["output_tokens"],
             "total_tokens": lean["total_tokens"] - baseline["total_tokens"],
             "input_saved_percent": (
-                percent_saved(baseline["input_tokens"], lean["input_tokens"])
-                if accepted
-                else None
+                percent_saved(baseline["input_tokens"], lean["input_tokens"]) if accepted else None
             ),
             "total_saved_percent": (
-                percent_saved(baseline["total_tokens"], lean["total_tokens"])
-                if accepted
-                else None
+                percent_saved(baseline["total_tokens"], lean["total_tokens"]) if accepted else None
             ),
         },
         "weighted_delta": weighted_delta(baseline, lean, accepted),
@@ -359,12 +351,15 @@ def aggregate(tasks: list[dict[str, Any]]) -> dict[str, Any]:
     accepted = all(task["accepted"] for task in tasks)
     baseline = {
         key: sum(task["arms"]["baseline"]["usage"][key] for task in tasks)
-        for key in ("input_tokens", "cached_input_tokens", "uncached_input_tokens", "output_tokens", "total_tokens")
+        for key in (
+            "input_tokens",
+            "cached_input_tokens",
+            "uncached_input_tokens",
+            "output_tokens",
+            "total_tokens",
+        )
     }
-    lean = {
-        key: sum(task["arms"]["lean"]["usage"][key] for task in tasks)
-        for key in baseline
-    }
+    lean = {key: sum(task["arms"]["lean"]["usage"][key] for task in tasks) for key in baseline}
     weighted = weighted_delta(baseline, lean, accepted)
     return {
         "accepted": accepted,
@@ -372,8 +367,12 @@ def aggregate(tasks: list[dict[str, Any]]) -> dict[str, Any]:
         "lean": lean,
         "weighted": weighted,
         "provider_savings_claim_valid": accepted,
-        "input_saved_percent": percent_saved(baseline["input_tokens"], lean["input_tokens"]) if accepted else None,
-        "total_saved_percent": percent_saved(baseline["total_tokens"], lean["total_tokens"]) if accepted else None,
+        "input_saved_percent": percent_saved(baseline["input_tokens"], lean["input_tokens"])
+        if accepted
+        else None,
+        "total_saved_percent": percent_saved(baseline["total_tokens"], lean["total_tokens"])
+        if accepted
+        else None,
         "ninety_nine_percent_provider_saving": (
             accepted
             and percent_saved(baseline["total_tokens"], lean["total_tokens"]) is not None
@@ -450,7 +449,9 @@ def render_markdown(payload: dict[str, Any]) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--live", action="store_true", help="required acknowledgement for provider calls")
+    parser.add_argument(
+        "--live", action="store_true", help="required acknowledgement for provider calls"
+    )
     parser.add_argument("--model", required=True)
     parser.add_argument("--auth", type=Path, default=Path.home() / ".codex" / "auth.json")
     parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT)

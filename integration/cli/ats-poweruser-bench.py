@@ -13,6 +13,7 @@ Reproducibility: cases reference the author's repo layout. Set
 ATS_BENCH_BASE to point at your own projects directory to adapt the
 cases; the agent-token-saver cases auto-detect from this script's path.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -42,8 +43,13 @@ CASES: list[dict[str, Any]] = [
     {
         "id": "02_superweb_readme",
         "question": "What does the superweb README say about PGO?",
-        "baseline_cmd": ["gh", "api", "repos/Supersynergy/superweb/contents/README.md",
-                         "--jq", ".content"],
+        "baseline_cmd": [
+            "gh",
+            "api",
+            "repos/Supersynergy/superweb/contents/README.md",
+            "--jq",
+            ".content",
+        ],
         "ats_recon_cmd": ["ghx", "read", "Supersynergy/superweb", "README.md"],
         "cwd": f"{_BASE}/superweb",
     },
@@ -57,8 +63,12 @@ CASES: list[dict[str, Any]] = [
     {
         "id": "04_synapse_fts5",
         "question": "Where is FTS5 search implemented in synapse-memory?",
-        "baseline_cmd": ["grep", "-rn", r"FTS5|fts5|ultra_search",
-                         f"{_BASE}/synapse-memory/crates"],
+        "baseline_cmd": [
+            "grep",
+            "-rn",
+            r"FTS5|fts5|ultra_search",
+            f"{_BASE}/synapse-memory/crates",
+        ],
         "ats_recon_cmd": ["gmax", "Where is FTS5 search implemented", "--agent"],
         "cwd": f"{_BASE}/synapse-memory",
     },
@@ -94,15 +104,18 @@ CASES: list[dict[str, Any]] = [
         "id": "09_example_scrape",
         "question": "What is the main heading of example.com?",
         "baseline_cmd": ["curl", "-sL", "https://example.com"],
-        "ats_recon_cmd": ["supacrawl", "scrape", "https://example.com",
-                          "--format", "markdown"],
+        "ats_recon_cmd": ["supacrawl", "scrape", "https://example.com", "--format", "markdown"],
         "cwd": "/tmp",
     },
     {
         "id": "10_ats_recon_router",
         "question": "How does ats-recon auto-route between gmax/ghx/supacrawl?",
-        "baseline_cmd": ["grep", "-n", r"ats-recon|ats_auto|route",
-                         f"{_BASE}/agent-token-saver/integration/cli/agent-token-saver.sh"],
+        "baseline_cmd": [
+            "grep",
+            "-n",
+            r"ats-recon|ats_auto|route",
+            f"{_BASE}/agent-token-saver/integration/cli/agent-token-saver.sh",
+        ],
         "ats_recon_cmd": ["gmax", "How does ats-recon auto-route between tools", "--agent"],
         "cwd": f"{_BASE}/agent-token-saver",
     },
@@ -114,17 +127,17 @@ AGENTS: list[tuple[str, list[str], str]] = [
     ("codex", ["codex", "exec", "--skip-git-repo-check", "-"], "stdin"),
     ("kimi", ["kimi", "--quiet", "--input-format", "text"], "stdin"),
     ("claude", ["claude", "-p", "__PROMPT__"], "arg"),
-    ("hermes_luna", ["hermes", "-z", "__PROMPT__", "-m",
-                     "openai/gpt-5.6-luna", "--cli"], "arg"),
-    ("hermes_terra", ["hermes", "-z", "__PROMPT__", "-m",
-                      "openai/gpt-5.6-terra", "--cli"], "arg"),
+    ("hermes_luna", ["hermes", "-z", "__PROMPT__", "-m", "openai/gpt-5.6-luna", "--cli"], "arg"),
+    ("hermes_terra", ["hermes", "-z", "__PROMPT__", "-m", "openai/gpt-5.6-terra", "--cli"], "arg"),
     ("ollama_gemma4", ["ollama", "run", "gemma4-31b-fast", "__PROMPT__"], "arg"),
     ("ollama_qwen36", ["ollama", "run", "qwen36-nothink", "__PROMPT__"], "arg"),
     ("ollama_phi4", ["ollama", "run", "phi4-reasoning:plus", "__PROMPT__"], "arg"),
     ("ollama_dolphin3", ["ollama", "run", "dolphin3:8b", "__PROMPT__"], "arg"),
-    ("ollama_daredevil", ["ollama", "run",
-                          "richardyoung/qwen3.6-27b-abliterated:latest",
-                          "__PROMPT__"], "arg"),
+    (
+        "ollama_daredevil",
+        ["ollama", "run", "richardyoung/qwen3.6-27b-abliterated:latest", "__PROMPT__"],
+        "arg",
+    ),
 ]
 
 
@@ -150,8 +163,12 @@ def run_tool(probe: dict[str, Any], path: str) -> tuple[str, float, int, bool]:
     t0 = time.time()
     try:
         proc = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=60,
-            cwd=cwd, check=False,
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=60,
+            cwd=cwd,
+            check=False,
         )
         wall = time.time() - t0
         out = proc.stdout
@@ -161,8 +178,9 @@ def run_tool(probe: dict[str, Any], path: str) -> tuple[str, float, int, bool]:
         return f"<error: {e}>", 0.0, 0, False
 
 
-def ask_agent(agent_spec: tuple[str, list[str], str], question: str,
-              context: str) -> tuple[str, float, int, bool]:
+def ask_agent(
+    agent_spec: tuple[str, list[str], str], question: str, context: str
+) -> tuple[str, float, int, bool]:
     agent_name, base_cmd, input_mode = agent_spec
     prompt = (
         f"Question: {question}\n\n"
@@ -174,14 +192,23 @@ def ask_agent(agent_spec: tuple[str, list[str], str], question: str,
         if input_mode == "stdin":
             cmd = base_cmd
             proc = subprocess.run(
-                cmd, input=prompt, capture_output=True, text=True,
-                timeout=180, cwd="/tmp", check=False,
+                cmd,
+                input=prompt,
+                capture_output=True,
+                text=True,
+                timeout=180,
+                cwd="/tmp",
+                check=False,
             )
         else:  # arg mode — substitute __PROMPT__ placeholder
             cmd = [prompt if a == "__PROMPT__" else a for a in base_cmd]
             proc = subprocess.run(
-                cmd, capture_output=True, text=True,
-                timeout=180, cwd="/tmp", check=False,
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=180,
+                cwd="/tmp",
+                check=False,
             )
         wall = time.time() - t0
         out = proc.stdout.strip()
@@ -206,16 +233,17 @@ def main() -> int:
                 os.environ["KIMI_API_KEY"] = line.split("=", 1)[1].strip()
 
     results: list[Result] = []
-    print(f"Poweruser bench: {len(AGENTS)} agents x {len(CASES)} cases x 2 paths "
-          f"x {args.iter} iter", file=sys.stderr)
+    print(
+        f"Poweruser bench: {len(AGENTS)} agents x {len(CASES)} cases x 2 paths x {args.iter} iter",
+        file=sys.stderr,
+    )
 
     for i in range(args.iter):
         for agent_spec in AGENTS:
             agent_name = agent_spec[0]
             for probe in CASES:
                 for path in ("baseline", "ats_recon"):
-                    print(f"  [{i+1}] {agent_name} / {probe['id']} / {path}...",
-                          file=sys.stderr)
+                    print(f"  [{i + 1}] {agent_name} / {probe['id']} / {path}...", file=sys.stderr)
                     tool_out, tool_wall, tool_chars, tool_ok = run_tool(probe, path)
                     agent_out, agent_wall, agent_chars, agent_ok = ask_agent(
                         agent_spec, probe["question"], tool_out
@@ -237,9 +265,12 @@ def main() -> int:
                         sample=agent_out[:200].replace("\n", " "),
                     )
                     results.append(r)
-                    print(f"    -> tool={tool_tok}t, agent={agent_tok}t, "
-                          f"total={total}t, wall={r.wall_s}s "
-                          f"({'OK' if r.success else 'FAIL'})", file=sys.stderr)
+                    print(
+                        f"    -> tool={tool_tok}t, agent={agent_tok}t, "
+                        f"total={total}t, wall={r.wall_s}s "
+                        f"({'OK' if r.success else 'FAIL'})",
+                        file=sys.stderr,
+                    )
 
     # Aggregate per case
     agg: dict[str, dict[str, Any]] = {}
@@ -266,16 +297,18 @@ def main() -> int:
         if b and a and b["total_tokens_mean"] > 0:
             saved = b["total_tokens_mean"] - a["total_tokens_mean"]
             pct = round(100 * saved / b["total_tokens_mean"], 1)
-            savings.append({
-                "case_id": c["id"],
-                "question": c["question"],
-                "baseline_tokens": b["total_tokens_mean"],
-                "ats_recon_tokens": a["total_tokens_mean"],
-                "saved_tokens": saved,
-                "saved_pct": pct,
-                "baseline_wall_s": b["wall_s_mean"],
-                "ats_recon_wall_s": a["wall_s_mean"],
-            })
+            savings.append(
+                {
+                    "case_id": c["id"],
+                    "question": c["question"],
+                    "baseline_tokens": b["total_tokens_mean"],
+                    "ats_recon_tokens": a["total_tokens_mean"],
+                    "saved_tokens": saved,
+                    "saved_pct": pct,
+                    "baseline_wall_s": b["wall_s_mean"],
+                    "ats_recon_wall_s": a["wall_s_mean"],
+                }
+            )
 
     # Per-agent savings
     per_agent: dict[str, dict[str, Any]] = {}
@@ -293,12 +326,17 @@ def main() -> int:
             "saved_pct": round(100 * (b_tok - a_tok) / b_tok, 1) if b_tok > 0 else 0,
         }
 
-    Path(args.out).write_text(json.dumps({
-        "results": [asdict(r) for r in results],
-        "aggregate": agg,
-        "savings": savings,
-        "per_agent": per_agent,
-    }, indent=2))
+    Path(args.out).write_text(
+        json.dumps(
+            {
+                "results": [asdict(r) for r in results],
+                "aggregate": agg,
+                "savings": savings,
+                "per_agent": per_agent,
+            },
+            indent=2,
+        )
+    )
 
     # Markdown
     lines = [
@@ -340,12 +378,16 @@ def main() -> int:
 
     print("\n=== Per-case savings ===")
     for s in savings:
-        print(f"  {s['case_id']}: {s['baseline_tokens']} -> {s['ats_recon_tokens']} "
-              f"({s['saved_pct']}% saved, {s['ats_recon_wall_s']}s vs {s['baseline_wall_s']}s)")
+        print(
+            f"  {s['case_id']}: {s['baseline_tokens']} -> {s['ats_recon_tokens']} "
+            f"({s['saved_pct']}% saved, {s['ats_recon_wall_s']}s vs {s['baseline_wall_s']}s)"
+        )
     print("\n=== Per-agent totals ===")
     for agent_name, stats in per_agent.items():
-        print(f"  {agent_name}: {stats['baseline_total_tokens']} -> "
-              f"{stats['ats_recon_total_tokens']} ({stats['saved_pct']}% saved)")
+        print(
+            f"  {agent_name}: {stats['baseline_total_tokens']} -> "
+            f"{stats['ats_recon_total_tokens']} ({stats['saved_pct']}% saved)"
+        )
     print(f"\nWrote: {args.out} + {args.md}")
     return 0
 

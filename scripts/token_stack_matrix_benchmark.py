@@ -32,8 +32,7 @@ ROUTER = next(
         for path in (
             HOME / ".local/bin/si",
             HOME / ".local/bin/agent-skill-route",
-            HOME
-            / ".codex/skills/agent-token-saver-skill-router/scripts/agent_token_saver.py",
+            HOME / ".codex/skills/agent-token-saver-skill-router/scripts/agent_token_saver.py",
         )
         if path.is_file()
     ),
@@ -261,9 +260,7 @@ def headroom_codex_savings() -> dict[str, Any]:
     response = connection.getresponse()
     stats = json.loads(response.read())
     connection.close()
-    codex = next(
-        agent for agent in stats["agent_usage"]["agents"] if agent["agent"] == "codex"
-    )
+    codex = next(agent for agent in stats["agent_usage"]["agents"] if agent["agent"] == "codex")
     tool_search = stats["savings"]["by_layer"]["tool_search"]
     return {
         "requests": codex["requests"],
@@ -296,9 +293,7 @@ def parse_codex_jsonl(stdout: str) -> tuple[str, dict[str, int]]:
 def assess_answer(answer: str, task: dict[str, Any]) -> list[str]:
     lowered = answer.lower()
     return [
-        "|".join(group)
-        for group in task["required"]
-        if not any(term in lowered for term in group)
+        "|".join(group) for group in task["required"] if not any(term in lowered for term in group)
     ]
 
 
@@ -473,9 +468,8 @@ def main() -> int:
         native_summary = f"errors={len(errors)}\n" + "\n".join(errors[-10:]) + "\n"
         native_ms = round((time.perf_counter() - started) * 1000)
         native_tokens = est_tokens(native_summary)
-        native_ok = (
-            f"errors={len(expected_ids)}" in native_summary
-            and all(event_id in native_summary for event_id in expected_ids[-10:])
+        native_ok = f"errors={len(expected_ids)}" in native_summary and all(
+            event_id in native_summary for event_id in expected_ids[-10:]
         )
 
         js_code = (
@@ -597,9 +591,17 @@ def main() -> int:
     raw_catalog = components[0].baseline_tokens
     routed_catalog = components[0].optimized_tokens
     raw_total = raw_catalog + ps_raw_tokens + document_raw_tokens + log_raw_tokens
-    current_input = hook_tokens + ps_rtk_tokens + document_tilth_tokens + native_tokens + tilth_schema_tokens
+    current_input = (
+        hook_tokens + ps_rtk_tokens + document_tilth_tokens + native_tokens + tilth_schema_tokens
+    )
     cli_input = routed_catalog + ps_rtk_tokens + document_tilth_tokens + native_tokens
-    context_input = routed_catalog + ps_rtk_tokens + document_tilth_tokens + context_tokens + context_schema_tokens
+    context_input = (
+        routed_catalog
+        + ps_rtk_tokens
+        + document_tilth_tokens
+        + context_tokens
+        + context_schema_tokens
+    )
     max_input = (
         hook_tokens
         + ps_rtk_tokens
@@ -659,9 +661,7 @@ def main() -> int:
     ]
     none_total = matrix[0]["combined_payload_tokens"] or 1
     for row in matrix:
-        row["payload_index_vs_none"] = round(
-            row["combined_payload_tokens"] / none_total * 100, 2
-        )
+        row["payload_index_vs_none"] = round(row["combined_payload_tokens"] / none_total * 100, 2)
     accepted_matrix = sorted(
         (row for row in matrix if row["accepted"]),
         key=lambda row: row["combined_payload_tokens"],
@@ -683,7 +683,12 @@ def main() -> int:
         },
         "headroom_codex_observed": headroom,
         "schemas": {
-            "tilth": {"tools": len(tilth_tools), "tokens": tilth_schema_tokens, "ms": tilth_schema_ms, "error": tilth_schema_error},
+            "tilth": {
+                "tools": len(tilth_tools),
+                "tokens": tilth_schema_tokens,
+                "ms": tilth_schema_ms,
+                "error": tilth_schema_error,
+            },
             "context_mode": {"tools": len(ctx_tools), "tokens": context_schema_tokens},
         },
         "ponytail": {
@@ -695,8 +700,7 @@ def main() -> int:
             "ponytail_avg_output_tokens": ponytail_output_tokens,
         },
         "components": [
-            {**asdict(component), "saved_pct": component.saved_pct}
-            for component in components
+            {**asdict(component), "saved_pct": component.saved_pct} for component in components
         ],
         "matrix": matrix,
         "top3": [row["name"] for row in accepted_matrix[:3]],
@@ -755,7 +759,19 @@ def main() -> int:
     lines.extend(f"- **{row['name']}**: {row['note']}" for row in matrix)
     OUT_MD.write_text("\n".join(lines) + "\n")
     print(OUT_MD)
-    print(json.dumps({"top3": payload["top3"], "matrix": matrix, "schemas": payload["schemas"], "headroom": headroom, "ponytail": payload["ponytail"]}, ensure_ascii=False, indent=2))
+    print(
+        json.dumps(
+            {
+                "top3": payload["top3"],
+                "matrix": matrix,
+                "schemas": payload["schemas"],
+                "headroom": headroom,
+                "ponytail": payload["ponytail"],
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
     return 0 if accepted_matrix else 1
 
 

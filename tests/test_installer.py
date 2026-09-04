@@ -489,11 +489,7 @@ def test_bootstrap_script_picks_a_qualifying_python_over_a_stale_python3(tmp_pat
     bin_dir.mkdir()
     # A `python3` that reports 3.9, and a `python3.12` that is the real thing.
     stale = bin_dir / "python3"
-    stale.write_text(
-        "#!/bin/sh\n"
-        'case "$1" in --version) echo "Python 3.9.6";; esac\n'
-        "exit 1\n"
-    )
+    stale.write_text('#!/bin/sh\ncase "$1" in --version) echo "Python 3.9.6";; esac\nexit 1\n')
     stale.chmod(stale.stat().st_mode | stat.S_IXUSR)
     real = bin_dir / "python3.12"
     real.symlink_to(sys.executable)
@@ -510,10 +506,16 @@ def test_bootstrap_script_picks_a_qualifying_python_over_a_stale_python3(tmp_pat
     (probe_root / "install_agent_token_saver.py").write_text(
         "import sys; print('RAN_WITH', sys.executable)\n"
     )
-    shutil.copy(INSTALLER.parents[1] / "install-universal.sh", tmp_path / "repo" / "install-universal.sh")
+    shutil.copy(
+        INSTALLER.parents[1] / "install-universal.sh", tmp_path / "repo" / "install-universal.sh"
+    )
 
     result = subprocess.run(
-        [shutil.which("bash") or "/bin/bash", str(tmp_path / "repo" / "install-universal.sh"), "--dry-run"],
+        [
+            shutil.which("bash") or "/bin/bash",
+            str(tmp_path / "repo" / "install-universal.sh"),
+            "--dry-run",
+        ],
         capture_output=True,
         text=True,
         env={"PATH": str(bin_dir), "HOME": str(tmp_path)},
@@ -527,7 +529,11 @@ def test_bootstrap_script_picks_a_qualifying_python_over_a_stale_python3(tmp_pat
     # With only the stale one, the message names what was found and how to fix it.
     real.unlink()
     result = subprocess.run(
-        [shutil.which("bash") or "/bin/bash", str(tmp_path / "repo" / "install-universal.sh"), "--dry-run"],
+        [
+            shutil.which("bash") or "/bin/bash",
+            str(tmp_path / "repo" / "install-universal.sh"),
+            "--dry-run",
+        ],
         capture_output=True,
         text=True,
         env={"PATH": str(bin_dir), "HOME": str(tmp_path)},

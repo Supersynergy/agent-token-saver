@@ -13,6 +13,7 @@ Outputs JSON + Markdown table.
 Usage:
   python3 ats-recon-bench.py --iter 3 --out /tmp/ats_recon_bench.json
 """
+
 from __future__ import annotations
 
 import argparse
@@ -47,8 +48,7 @@ PROBES: list[dict[str, Any]] = [
     },
     {
         "name": "grep_baseline",
-        "cmd": ["grep", "-rn", "usage",
-                f"{Path(__file__).resolve().parents[2]}/integration"],
+        "cmd": ["grep", "-rn", "usage", f"{Path(__file__).resolve().parents[2]}/integration"],
         "cwd": None,
     },
     # --- GitHub repo recon ---
@@ -59,8 +59,12 @@ PROBES: list[dict[str, Any]] = [
     },
     {
         "name": "ghx_inspect",
-        "cmd": ["ghx", "inspect", "Supersynergy/agent-token-saver",
-                "where is usage parsing handled"],
+        "cmd": [
+            "ghx",
+            "inspect",
+            "Supersynergy/agent-token-saver",
+            "where is usage parsing handled",
+        ],
         "cwd": None,
     },
     {
@@ -82,9 +86,15 @@ PROBES: list[dict[str, Any]] = [
     # --- LLM extraction (stdio bridge) ---
     {
         "name": "supacrawl_extract_stdio",
-        "cmd": ["supacrawl", "scrape", "https://example.com",
-                "--format", "json",
-                "--prompt", "Extract the heading and learn-more URL. Return JSON {heading, learn_more_url}"],
+        "cmd": [
+            "supacrawl",
+            "scrape",
+            "https://example.com",
+            "--format",
+            "json",
+            "--prompt",
+            "Extract the heading and learn-more URL. Return JSON {heading, learn_more_url}",
+        ],
         "cwd": None,
         "env": {"SUPACRAWL_LLM_PROVIDER": "stdio", "SUPACRAWL_LLM_MODEL": "active"},
     },
@@ -166,12 +176,11 @@ def markdown_table(agg: dict[str, dict[str, float]]) -> str:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--iter", type=int, default=3, help="iterations per probe")
-    ap.add_argument("--out", type=str, default="/tmp/ats_recon_bench.json",
-                    help="JSON output path")
-    ap.add_argument("--md", type=str, default="/tmp/ats_recon_bench.md",
-                    help="Markdown output path")
-    ap.add_argument("--only", type=str, default=None,
-                    help="filter probe names by substring")
+    ap.add_argument("--out", type=str, default="/tmp/ats_recon_bench.json", help="JSON output path")
+    ap.add_argument(
+        "--md", type=str, default="/tmp/ats_recon_bench.md", help="Markdown output path"
+    )
+    ap.add_argument("--only", type=str, default=None, help="filter probe names by substring")
     args = ap.parse_args()
 
     probes = [p for p in PROBES if args.only is None or args.only in p["name"]]
@@ -179,20 +188,22 @@ def main() -> int:
         print(f"No probes match --only={args.only!r}", file=sys.stderr)
         return 1
 
-    print(f"Running {len(probes)} probes × {args.iter} iter = {len(probes)*args.iter} calls...",
-          file=sys.stderr)
+    print(
+        f"Running {len(probes)} probes × {args.iter} iter = {len(probes) * args.iter} calls...",
+        file=sys.stderr,
+    )
     results: list[ProbeResult] = []
     for i in range(args.iter):
         for p in probes:
-            print(f"  [{i+1}/{args.iter}] {p['name']}...", file=sys.stderr)
+            print(f"  [{i + 1}/{args.iter}] {p['name']}...", file=sys.stderr)
             r = run_probe(p, i)
             results.append(r)
-            print(f"    → {r.wall_s}s, {r.chars} chars, success={r.success}",
-                  file=sys.stderr)
+            print(f"    → {r.wall_s}s, {r.chars} chars, success={r.success}", file=sys.stderr)
 
     agg = aggregate(results)
-    Path(args.out).write_text(json.dumps({"results": [asdict(r) for r in results],
-                                          "aggregate": agg}, indent=2))
+    Path(args.out).write_text(
+        json.dumps({"results": [asdict(r) for r in results], "aggregate": agg}, indent=2)
+    )
     Path(args.md).write_text(markdown_table(agg))
     print("\n=== Aggregate ===")
     print(markdown_table(agg))

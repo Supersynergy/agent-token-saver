@@ -19,10 +19,14 @@ ROOT = Path(__file__).resolve().parents[1]
 ADAPTER = ROOT / "scripts" / "llmadapter.ts"
 PIPE = ROOT / "integration" / "cli" / "ats-pipe"
 
-pytestmark = pytest.mark.skipif(shutil.which("bun") is None, reason="bun is required for llmadapter")
+pytestmark = pytest.mark.skipif(
+    shutil.which("bun") is None, reason="bun is required for llmadapter"
+)
 
 
-def run_adapter(home: Path, *args: str, extra: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
+def run_adapter(
+    home: Path, *args: str, extra: dict[str, str] | None = None
+) -> subprocess.CompletedProcess[str]:
     env = os.environ.copy()
     env.update({"HOME": str(home), "ATS_PII_SHIELD": "0"})  # fixture has no PII
     if extra:
@@ -39,7 +43,7 @@ def run_adapter(home: Path, *args: str, extra: dict[str, str] | None = None) -> 
 def install_probe_lanes(home: Path, probe_dir: Path, count: int = 4) -> list[str]:
     probe = probe_dir / "probe.sh"
     probe.write_text(
-        "#!/bin/sh\nset -eu\nprintf '%s' \"$2\" > \"$ATS_PROBE_DIR/$1.txt\"\nprintf 'STATUS: PASS; EVIDENCE: %s; HANDOFF: none\\n' \"$1\"\n"
+        '#!/bin/sh\nset -eu\nprintf \'%s\' "$2" > "$ATS_PROBE_DIR/$1.txt"\nprintf \'STATUS: PASS; EVIDENCE: %s; HANDOFF: none\\n\' "$1"\n'
     )
     probe.chmod(0o755)
     names = [f"worker-{number}" for number in range(1, count + 1)]

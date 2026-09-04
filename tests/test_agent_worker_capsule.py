@@ -42,7 +42,9 @@ def test_source_worker_gets_one_scoped_tool_hint_and_handoff_contract(tmp_path: 
         {
             "tool_name": "Agent",
             "session_id": "source-route",
-            "tool_input": {"description": "Trace imports for this source function and fix its test."},
+            "tool_input": {
+                "description": "Trace imports for this source function and fix its test."
+            },
         },
     )
 
@@ -102,9 +104,7 @@ def test_incomplete_capsule_keeps_full_contract(tmp_path: Path) -> None:
         {
             "tool_name": "Agent",
             "session_id": "incomplete",
-            "tool_input": {
-                "prompt": "Objective: inspect this source file. Scope: src/parser.py."
-            },
+            "tool_input": {"prompt": "Objective: inspect this source file. Scope: src/parser.py."},
         },
     )
 

@@ -38,12 +38,8 @@ def arm(total_input: int, output: int, accepted: bool, cached: int = 40) -> dict
 
 
 def test_aggregate_claims_only_when_every_oracle_passes():
-    first = summarize_pair(
-        TASKS[0], {"baseline": arm(1_000, 10, True), "lean": arm(500, 10, True)}
-    )
-    failed = summarize_pair(
-        TASKS[1], {"baseline": arm(1_000, 10, True), "lean": arm(1, 1, False)}
-    )
+    first = summarize_pair(TASKS[0], {"baseline": arm(1_000, 10, True), "lean": arm(500, 10, True)})
+    failed = summarize_pair(TASKS[1], {"baseline": arm(1_000, 10, True), "lean": arm(1, 1, False)})
 
     valid = aggregate([first])
     invalid = aggregate([first, failed])
@@ -56,9 +52,7 @@ def test_aggregate_claims_only_when_every_oracle_passes():
 
 
 def test_summarize_pair_reports_weighted_delta_next_to_raw():
-    pair = summarize_pair(
-        TASKS[0], {"baseline": arm(1_000, 10, True), "lean": arm(500, 10, True)}
-    )
+    pair = summarize_pair(TASKS[0], {"baseline": arm(1_000, 10, True), "lean": arm(500, 10, True)})
 
     weighted = pair["weighted_delta"]
     # Raw stays visible; weighted is priced against a no-cache counterfactual.

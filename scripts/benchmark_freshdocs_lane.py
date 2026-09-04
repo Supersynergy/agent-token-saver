@@ -55,7 +55,12 @@ class Probe:
 
 
 PROBES = (
-    Probe("ruff", "how do I configure lint rules", ("uv", "run", "ruff", "--version"), r"(\d+\.\d+\.\d+)"),
+    Probe(
+        "ruff",
+        "how do I configure lint rules",
+        ("uv", "run", "ruff", "--version"),
+        r"(\d+\.\d+\.\d+)",
+    ),
     Probe("uv", "how do I add a dev dependency", ("uv", "--version"), r"(\d+\.\d+\.\d+)"),
     Probe("typescript", "how do I enable strict mode", ("tsc", "--version"), r"(\d+\.\d+\.\d+)"),
     Probe("bun", "how do I run a test file", ("bun", "--version"), r"(\d+\.\d+\.\d+)"),
