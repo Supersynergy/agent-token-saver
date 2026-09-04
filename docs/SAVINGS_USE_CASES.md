@@ -40,6 +40,24 @@ node scripts/ggcoder_runtime_smoke.mjs /path/to/installed/ggcoder /path/to/route
 Run that command from the router repository. It uses a temporary HOME and
 workspace, starts a loopback-only test provider, and removes its test files.
 
+## SuperGG Coder integration
+
+The router now has a separate `sgg` integration that removes large duplicate
+skill descriptions from the system prompt and native skill-tool schema. The
+existing skill tool can search locally with `skill="?task"`; known skill names
+still load their complete content. Small catalogs remain native. Disable with
+`SGG_TOKEN_SAVER=0 sgg`.
+
+The actual SuperGG launcher was tested with 100 fixture skills and a deterministic
+test provider. The first request fell from 81,878 to 35,942 characters. Across
+the fixture, including one additional routing request, request text fell from
+170,551 to 115,853 characters (32.1%). Native output compression retained the
+passing verdict, and a failing command retained exit code 7 and its diagnostic.
+No provider-token or billing reduction was measured.
+
+Install and reproduction instructions are in the router's
+[SuperGG guide](https://github.com/Supersynergy/agent-token-saver-skill-router/blob/main/docs/SUPERGG_CODER.md).
+
 ## When wrapping is a loss
 
 For two already-short smoke results in the audit, ATS's JSON wrapper changed
