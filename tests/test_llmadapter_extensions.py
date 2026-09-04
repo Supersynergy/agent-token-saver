@@ -170,7 +170,21 @@ def test_contract_default_shape_is_frozen_and_extensions_are_opt_in(tmp_path: Pa
     )
     assert set(extended) == CONTRACT_KEYS | {"extensions"}
     assert extended["extensions"]["first_pass"] is True
-    assert extended["extensions"]["opt_in_lanes"] == ["ox-alpha"]
+    # The published list must name every opt-in lane, exactly. It is how a
+    # consumer learns which lanes a class selector will never hand it.
+    assert extended["extensions"]["opt_in_lanes"] == [
+        "ox-alpha",
+        "omniroute",
+        "omniroute-coding",
+    ]
+    # ...and each one must really be opt-in, so the published label cannot drift
+    # away from the lane table it describes.
+    table = subprocess.run(
+        [BUN, str(ADAPTER), "lanes"], capture_output=True, text=True, check=False
+    ).stdout
+    for lane in extended["extensions"]["opt_in_lanes"]:
+        row = next(line for line in table.splitlines() if f" {lane} " in f" {line} ")
+        assert "[opt-in]" in row, f"{lane} is published as opt-in but the table disagrees"
     assert extended["extensions"]["terminal_values_extended"] == ["pruned"]
 
 

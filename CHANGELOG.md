@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+- New opt-in OmniRoute gateway lanes for `llmadapter` (`omniroute`,
+  `omniroute-coding`), with the audit and PRD in
+  `docs/adr/2026-09-03-omniroute-lane.md`. OmniRoute is an OpenAI-compatible
+  gateway fronting many providers, so it reaches free-tier capacity we do not
+  maintain by hand.
+  The audit's decisive finding is about *our* code, not theirs: this repo asks
+  `isLoopbackUrl()` to decide whether a prompt leaves the machine, and that
+  question returns the wrong answer for a forwarding proxy. Modelling OmniRoute
+  the way Ollama is modelled would have marked a `localhost` gateway as local
+  and **silently disabled PII masking on prompts forwarded to third parties**.
+  Gateway lanes therefore keep `kind: "openrouter"`, whose trust branch is
+  unconditionally remote. A test mutating the lane back to the local shape fails
+  seven ways.
+  Their guardrails are documented as fail-open; ours stays fail-closed and runs
+  first. Lanes are opt-in, so no class selector pulls a third-party gateway into
+  a swarm. Non-http schemes and credential-bearing URLs are rejected before any
+  call, and an absent gateway is `omniroute_gateway_unreachable` rather than a
+  generic error — but only for genuine transport failures, so a PII-shield
+  failure can never be misread as "start your gateway".
 - New `scripts/benchmark_freshdocs_lane.py` plus its 2026-09-03 artifact:
   measures the documentation lane against freshdocs 0.2.0 in both retrieval
   modes. Context packs cost **80.8-96.9% fewer tokens** than the upstream

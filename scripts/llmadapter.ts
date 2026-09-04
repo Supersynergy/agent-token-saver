@@ -51,6 +51,15 @@ type Lane = {
   // AgentMaster validates that set; `cheap` lanes are paid lanes that happen to
   // cost a rounding error.
   cheap?: boolean;
+  // OpenAI-compatible endpoint override. A lane without this uses OpenRouter.
+  url?: string;
+  // Marks a lane whose endpoint is a *forwarding proxy*, not a destination.
+  // This exists because loopback stops meaning "local" the moment a hop is
+  // involved: an OmniRoute gateway on 127.0.0.1 still ships the prompt to a
+  // third-party provider. Gateway lanes therefore keep kind "openrouter",
+  // whose trust branch is unconditionally remote, and must never be modelled
+  // on the ollama branch that asks `isLoopbackUrl`.
+  gateway?: "omniroute";
   parse?: (raw: string) => string;
 };
 
@@ -156,6 +165,12 @@ const ggcoderText = (raw: string) =>
     })
     .join("");
 
+// OmniRoute is an OpenAI-compatible gateway fronting many providers. Unset by
+// default: without it the lanes stay visible but unusable, which is the honest
+// state on a machine where no gateway runs.
+const OMNIROUTE_URL = process.env.LLMADAPTER_OMNIROUTE_URL ?? "";
+const OMNIROUTE_DEFAULT_MODEL = process.env.LLMADAPTER_OMNIROUTE_MODEL ?? "auto";
+
 const LANES: Lane[] = [
   ...OR_FREE.map((m): Lane => ({ name: m.split("/")[1].replace(":free", ""), kind: "openrouter", class: "free", model: m, reasoning: orReasoning(m) })),
   ...OR_CHEAP.map(([m, usdOut, name]): Lane => ({ name: name ?? m.split("/")[1], kind: "openrouter", class: "paid", model: m, reasoning: orReasoning(m), usdOut, cheap: true })),
@@ -168,6 +183,30 @@ const LANES: Lane[] = [
     reasoning: orReasoning(OX_ALPHA_MODEL),
     usdOut: 0,
     optIn: true,
+  },
+  // OmniRoute gateway lanes. `kind: "openrouter"` is deliberate, not sloppy:
+  // that branch is unconditionally remote, which is the correct trust answer
+  // for a proxy on loopback. See docs/adr/2026-09-03-omniroute-lane.md.
+  // Opt-in, so no class selector ever pulls a third-party gateway into a swarm.
+  {
+    name: "omniroute",
+    kind: "openrouter",
+    class: "free",
+    model: OMNIROUTE_DEFAULT_MODEL,
+    reasoning: null,
+    usdOut: 0,
+    optIn: true,
+    gateway: "omniroute",
+  },
+  {
+    name: "omniroute-coding",
+    kind: "openrouter",
+    class: "free",
+    model: "auto/coding",
+    reasoning: null,
+    usdOut: 0,
+    optIn: true,
+    gateway: "omniroute",
   },
   { name: "ollama-gemma4", kind: "ollama", class: "local", model: "gemma4-31b-fast" },
   {
@@ -256,6 +295,36 @@ const CACHE_TTL_MS = 24 * 3600 * 1000;
 const KIND_TIMEOUT_MS: Record<Lane["kind"], number> = { openrouter: 90_000, ollama: 120_000, cli: 170_000 };
 const OPENROUTER_URL = process.env.LLMADAPTER_OPENROUTER_URL ?? "https://openrouter.ai/api/v1/chat/completions";
 const OLLAMA_URL = process.env.LLMADAPTER_OLLAMA_URL ?? "http://localhost:11434/api/generate";
+
+/** Reject a gateway endpoint that cannot be a safe OpenAI-compatible target. */
+function assertGatewayUrl(raw: string): string {
+  if (!raw) {
+    throw new Error(
+      "omniroute_gateway_unset — set LLMADAPTER_OMNIROUTE_URL to the gateway's "
+      + "/v1/chat/completions endpoint (default install: http://localhost:20128/v1/chat/completions).",
+    );
+  }
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    throw new Error(`omniroute_gateway_url_invalid — not a URL: ${raw}`);
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    throw new Error(`omniroute_gateway_url_invalid — expected http(s), got ${url.protocol}`);
+  }
+  // Credentials in a URL leak through logs, ledgers and error strings. The
+  // gateway key belongs in a header, which is where we send it.
+  if (url.username || url.password) {
+    throw new Error("omniroute_gateway_url_invalid — credentials must not be embedded in the URL");
+  }
+  return url.toString();
+}
+
+/** The gateway key is optional: a fresh OmniRoute install accepts no-auth calls. */
+function omnirouteKey(): string {
+  return process.env.LLMADAPTER_OMNIROUTE_API_KEY ?? process.env.OMNIROUTE_API_KEY ?? "";
+}
 
 // `ask` is useful for broad, explicit model comparisons. A swarm is different:
 // it is delegated work, so each worker gets a small capsule and the controller
@@ -1377,11 +1446,18 @@ async function runLaneV2(
     let outputTokens: number | null = null;
     let tokenSource: V2TokenSource = "unknown";
     if (lane.kind === "openrouter") {
-      const apiKey = orKey();
+      // A gateway lane targets a local proxy with its own (optional) key.
+      // Trust is unaffected: this branch is remote either way, which is the
+      // whole reason gateway lanes live here and not on the ollama branch.
+      const endpoint = lane.gateway ? assertGatewayUrl(lane.url ?? OMNIROUTE_URL) : OPENROUTER_URL;
+      const apiKey = lane.gateway ? omnirouteKey() : orKey();
       callStarted = true;
       const request: RequestInit = {
         method: "POST",
-        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        headers: {
+          ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           model: lane.model,
           max_tokens: maxTokens,
@@ -1393,7 +1469,7 @@ async function runLaneV2(
       let json: any;
       for (let attempt = 0; ; attempt++) {
         try {
-          ({ response: res, json } = await fetchJsonBounded(OPENROUTER_URL, request, deadlineAt, options.signal));
+          ({ response: res, json } = await fetchJsonBounded(endpoint, request, deadlineAt, options.signal));
           break;
         } catch (error: any) {
           // One bounded retry for a dropped socket, and only while the
@@ -1613,6 +1689,32 @@ async function runLaneV2(
         maxTokens,
         "output_limit",
         "http_body_limit",
+        Date.now() - t0,
+        callStarted,
+      );
+    }
+    // A misconfigured or absent gateway is a named, actionable state. Reporting
+    // it as a generic lane_error would make "you never started OmniRoute" look
+    // identical to "the network blipped", sending the reader to the wrong layer.
+    const message = String(error?.message ?? error);
+    const gatewayReason = lane.gateway && /^omniroute_gateway_\w+/.exec(message)?.[0];
+    if (gatewayReason) {
+      return v2Failure(lane, maxTokens, "failed", gatewayReason, Date.now() - t0, callStarted);
+    }
+    // Only a genuine transport failure is "unreachable". Everything else --
+    // above all a PII-shield failure, which throws before any call -- must keep
+    // its own identity, or this branch becomes the misdiagnosis it exists to
+    // prevent: "start your gateway" when the real fix is "install the shield".
+    // Bun reports a refused connection only in `error.code`, not in the message,
+    // so matching text alone silently misses the most common gateway failure.
+    const connectionRefused = /^(?:ConnectionRefused|ECONNREFUSED|ENOTFOUND|EHOSTUNREACH)$/i
+      .test(String(error?.code ?? ""));
+    if (lane.gateway && (connectionRefused || isRetryableTransport(message))) {
+      return v2Failure(
+        lane,
+        maxTokens,
+        "failed",
+        "omniroute_gateway_unreachable",
         Date.now() - t0,
         callStarted,
       );
