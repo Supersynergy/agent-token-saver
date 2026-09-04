@@ -227,6 +227,47 @@ def emit_low_cost_recon_route() -> None:
     )
 
 
+DEDUPE_WINDOW_SECONDS = 2
+
+
+def recently_handled(prompt: str, session: str) -> bool:
+    """True when this session already routed this exact prompt two seconds ago.
+
+    Hosts that merge the Claude and Codex hook files fire this hook twice per
+    prompt: the route log showed the same intent hash twice in the same second
+    for about one prompt in ten. Each duplicate re-ran the router and, on a
+    hit, injected the skill_route context a second time -- twice the tokens
+    for the same instruction.
+
+    The session id is part of the key on purpose. Without one there is no
+    proof the two calls belong together, so nothing is suppressed; the hook
+    stays a pure function of its input, which the cache-hygiene tests rely
+    on. Only a digest is stored, never the prompt or the session id.
+    """
+    if not session:
+        return False
+    import hashlib
+
+    digest = hashlib.sha256(f"{session}\n{prompt}".encode()).hexdigest()[:16]
+    try:
+        state = Path.home() / ".local" / "state" / "agent-token-saver"
+        state.mkdir(parents=True, exist_ok=True, mode=0o700)
+        marker = state / "last-prompt-route"
+        now = time.time()
+        try:
+            previous, stamp = marker.read_text(encoding="utf-8").split()
+            if previous == digest and now - float(stamp) < DEDUPE_WINDOW_SECONDS:
+                audit("route_skipped", "duplicate_prompt")
+                return True
+        except (OSError, ValueError):
+            pass
+        marker.write_text(f"{digest} {now:.3f}\n", encoding="utf-8")
+        marker.chmod(0o600)
+    except OSError:
+        pass
+    return False
+
+
 def main() -> int:
     try:
         event = json.load(sys.stdin)
@@ -234,6 +275,8 @@ def main() -> int:
         return 0
     prompt = str(event.get("prompt") or "").strip()
     if len(prompt) < 10 or TRIVIAL.fullmatch(prompt):
+        return 0
+    if recently_handled(prompt, str(event.get("session_id") or "")):
         return 0
     explicit_skill = bool(EXPLICIT_SKILL.search(prompt))
     explicit_token_saver = bool(re.search(r"\$agent-token-saver\b", prompt, re.IGNORECASE))

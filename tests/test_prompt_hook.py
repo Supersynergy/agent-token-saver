@@ -349,3 +349,56 @@ def test_injected_context_is_byte_identical_across_runs(tmp_path: Path) -> None:
     assert first, "expected the gate to inject context for this prompt"
     for _ in range(3):
         assert run_hook(tmp_path, prompt) == first
+
+
+def run_hook_event(home: Path, event: dict) -> str:
+    env = os.environ.copy()
+    env["HOME"] = str(home)
+    env["ATS_SKILL_ROOTS"] = str(home)
+    env.pop("ATS_ROUTER", None)
+    result = subprocess.run(
+        [sys.executable, str(HOOK)],
+        input=json.dumps(event),
+        text=True,
+        capture_output=True,
+        env=env,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    return result.stdout
+
+
+def test_same_session_repeating_a_prompt_within_two_seconds_is_suppressed(tmp_path: Path) -> None:
+    """Hosts that merge two hook files fire this hook twice per prompt.
+
+    The second fire must not re-run the router or inject the context again;
+    that was one prompt in ten paying double for the same instruction.
+    """
+    skill = tmp_path / ".agent-token-saver" / "skills" / "agent-token-saver" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text("---\nname: agent-token-saver\n---\n")
+    event = {"prompt": "Compress this noisy log without wasting context tokens", "session_id": "s1"}
+
+    first = run_hook_event(tmp_path, event)
+    second = run_hook_event(tmp_path, event)
+
+    assert first != ""
+    assert second == ""
+    marker = tmp_path / ".local" / "state" / "agent-token-saver" / "last-prompt-route"
+    assert "s1" not in marker.read_text()
+    assert "noisy log" not in marker.read_text()
+
+
+def test_different_sessions_or_no_session_are_never_deduplicated(tmp_path: Path) -> None:
+    """Without proof the calls belong together, the hook stays a pure function."""
+    skill = tmp_path / ".agent-token-saver" / "skills" / "agent-token-saver" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text("---\nname: agent-token-saver\n---\n")
+    prompt = "Compress this noisy log without wasting context tokens"
+
+    a = run_hook_event(tmp_path, {"prompt": prompt, "session_id": "s1"})
+    b = run_hook_event(tmp_path, {"prompt": prompt, "session_id": "s2"})
+    c = run_hook_event(tmp_path, {"prompt": prompt})
+    d = run_hook_event(tmp_path, {"prompt": prompt})
+
+    assert a == b == c == d != ""

@@ -348,11 +348,24 @@ def inspect_llmadapter(home: Path, *, allow_probe: bool) -> dict[str, Any]:
 
 
 def command_is_exact_file(command: str, target: Path | None) -> bool:
+    """Accept `<hook>` or `<interpreter> <hook>`; anything else is not ours.
+
+    The installer pins a real interpreter in front of each hook so no call
+    pays a version-manager shim. That interpreter must still exist: a pinned
+    binary that was removed with a Python upgrade fails silently in the host,
+    which is the one failure a fail-open hook cannot report by itself.
+    """
     if target is None:
         return False
     try:
         parts = shlex.split(command)
-        resolved = Path(parts[0]).expanduser().resolve(strict=True) if len(parts) == 1 else None
+        if len(parts) == 1:
+            script = parts[0]
+        elif len(parts) == 2 and Path(parts[0]).expanduser().is_file():
+            script = parts[1]
+        else:
+            return False
+        resolved = Path(script).expanduser().resolve(strict=True)
         expected = target.expanduser().resolve(strict=True)
     except (OSError, ValueError):
         return False

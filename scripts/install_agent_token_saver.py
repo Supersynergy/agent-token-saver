@@ -172,6 +172,62 @@ def load_json(path: Path) -> dict[str, Any]:
     return value
 
 
+def hook_interpreter() -> str:
+    """A real python3 for the hook commands: never a shim, never a project venv.
+
+    The hooks used to rely on `#!/usr/bin/env python3`. On a machine with a
+    version manager that resolves to a shim, and the shim alone measured 160 ms
+    before the first line of the hook ran -- paid twice per prompt, because the
+    prompt hook launches the router as a subprocess. Pinning the binary the
+    shim would exec removes that: 280 ms became 135 ms end to end.
+
+    A project virtualenv is skipped on purpose: it can be deleted with the
+    checkout, and a hook that dies with the venv is worse than a slow one.
+    `doctor` checks that the pinned interpreter still exists.
+    """
+    in_venv = sys.prefix != sys.base_prefix
+
+    def usable(candidate: str) -> bool:
+        path = Path(candidate)
+        if not path.is_file() or "shims" in path.parts or ".venv" in path.parts:
+            return False
+        return not (in_venv and path.is_relative_to(sys.prefix))
+
+    venv = os.environ.get("VIRTUAL_ENV", "")
+    search = os.pathsep.join(
+        entry
+        for entry in os.environ.get("PATH", "").split(os.pathsep)
+        if entry and not (venv and entry.startswith(venv)) and ".venv" not in entry
+    )
+    found = shutil.which("python3", path=search)
+    if found and "shims" in Path(found).parts:
+        # `pyenv which` is asked, not trusted: under a foreign HOME it has been
+        # observed answering with the active venv's interpreter.
+        with suppress(OSError, subprocess.SubprocessError):
+            real = subprocess.run(
+                ["pyenv", "which", "python3"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+                check=False,
+            ).stdout.strip()
+            if real and usable(real):
+                return real
+    if found and usable(found):
+        return found
+    if in_venv:
+        # Running inside a virtualenv: pin the interpreter behind it, which
+        # outlives the venv directory.
+        base = Path(sys.base_prefix) / "bin" / "python3"
+        if base.is_file():
+            return str(base)
+    return sys.executable
+
+
+def hook_command(script: Path) -> str:
+    return f"{hook_interpreter()} {script}"
+
+
 def hook_entry(matcher: str | None, command: str, timeout: int) -> dict[str, Any]:
     entry: dict[str, Any] = {"hooks": [{"type": "command", "command": command, "timeout": timeout}]}
     if matcher:
@@ -277,9 +333,9 @@ def merge_hooks(path: Path, agent: str, profile: str, dry_run: bool) -> None:
     pre = hooks.setdefault("PreToolUse", [])
     prompt = hooks.setdefault("UserPromptSubmit", [])
     stop = hooks.setdefault("Stop", [])
-    prompt_command = str(INSTALL_HOME / "hooks" / "token-stack-prompt.py")
-    guard_command = str(INSTALL_HOME / "hooks" / "token-session-guard.py")
-    worker_command = str(INSTALL_HOME / "hooks" / "agent-worker-capsule.py")
+    prompt_command = hook_command(INSTALL_HOME / "hooks" / "token-stack-prompt.py")
+    guard_command = hook_command(INSTALL_HOME / "hooks" / "token-session-guard.py")
+    worker_command = hook_command(INSTALL_HOME / "hooks" / "agent-worker-capsule.py")
     matcher = (
         "Bash"
         if agent == "claude"

@@ -24,6 +24,7 @@ that happening.
 |---|---|---|---|
 | 1 | Recall | Did we already solve this? | `ats-recall` |
 | 2 | Contract | What counts as done? | `goal-init` |
+| 2b | Route | Which one skill applies? | `si route --max 1` |
 | 3 | Locate | Where is the code? | `rg`, `code_nav`, Tilth |
 | 4 | Fresh docs | What is the API *in the version I have*? | `freshdocs`, `--version` |
 | 5 | Build | Smallest reversible slice | your editor |
@@ -91,6 +92,45 @@ A good oracle names a **behaviour**, never a size. `output is smaller` is not an
 oracle. `red run still names the failing file and line` is.
 
 ---
+
+## 2b. Route — one skill, named by the indexer, before the first edit
+
+`si` indexes ~985 skills across every agent home on this machine and names
+**one** for a task, or none. It is silent on doubt (`selected: []`), so an empty
+answer is a result, not a failure.
+
+```bash
+si route "review my diff before merge" --max 1 --json
+```
+
+Measured 2026-09-04: 100 ms, 604 tokens of router output, then the one
+SKILL.md it names (3,420 tokens for `code-review-excellence`). The honest
+baseline is not "every skill" — nobody loads 2,137 files — but the 1,870
+name+description lines a router-free system prompt would carry: **133k tokens
+against 4k, 33x.**
+
+The prompt hook already does this on every non-trivial prompt. Two things it
+did not do until 2026-09-04, both found by reading the route log rather than
+the docs:
+
+- **The loop was open.** `si stats` reported a 3.5% apply rate — 7,090 routes,
+  245 applied — and that number measured a telemetry gap, not the agents:
+  `applied` was read only from GG Coder and Hermes sidecar files, while Claude
+  Code and Codex, which produce nearly every route, reported nothing. The
+  observer now also watches file reads and shell `cat`/`sed` of a `SKILL.md`,
+  so a routed skill that is actually opened counts, and the adaptive ranking
+  finally learns from the hosts that use it.
+- **Every hook paid a shim tax.** `#!/usr/bin/env python3` resolved to a pyenv
+  shim that cost 160 ms before the first line ran — twice per prompt, because
+  the prompt hook launches the router as a subprocess. The installers now pin
+  the real interpreter and the `si` launcher is a stub that imports a cached
+  module with a pre-import fast path. Prompt hook: 280 ms to 120 ms. Observer
+  on a non-skill Read, the most frequent hook event: 200 ms to 10 ms.
+
+Hosts that merge the Claude and Codex hook files fired the prompt hook twice
+per prompt (one in ten in the log). A same-session, same-prompt call within two
+seconds is now suppressed; without a session id nothing is suppressed, so the
+hook stays a pure function of its input.
 
 ## 3. Locate — exact before semantic, narrow before broad
 
@@ -306,6 +346,7 @@ recorded; this table is the live delta.
 | RTK | 0.43.0 | **0.46.0** | **corrected** in the research addendum; 25 `pipe` filters now |
 | Tilth | 0.9.0 | 0.9.0 | matches |
 | freshdocs | not pinned | 0.2.0 | unpinned; 35 libs indexed, all synced 2026-09-03 |
+| `si` (skill router) | not pinned | repo HEAD | **was stale**: installed copy lacked the repo's negation handling; reinstalled 2026-09-04 |
 | Synapse (`synx`) | not pinned | 1.0.1-rc.1 | unpinned; a release candidate is running in the hot path |
 | gmax | not pinned | 0.26.8 | unpinned |
 | superweb | not pinned | 0.1.0 | unpinned |

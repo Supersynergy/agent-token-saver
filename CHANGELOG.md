@@ -2,6 +2,22 @@
 
 ## [Unreleased]
 
+- Hook commands are registered as `<interpreter> <hook>` with a real python3
+  pinned by the installer — never a version-manager shim, never a project venv
+  (`pyenv which` is asked, then validated: under a foreign HOME it answered
+  with the venv interpreter). The shim alone cost 160 ms before the first line
+  of a hook ran, paid twice per prompt. Measured: prompt hook 280 ms to 120 ms,
+  Stop hook to 30 ms. `doctor` accepts the new shape only while the pinned
+  interpreter still exists, so a Python upgrade that removes it is an error,
+  not a silently dead hook.
+- The prompt hook suppresses a same-session repeat of the same prompt within
+  two seconds. Hosts that merge the Claude and Codex hook files fired it twice
+  per prompt (one in ten in the route log), re-running the router and injecting
+  the skill route twice. Without a session id nothing is suppressed; the hook
+  stays a pure function of its input for the cache-hygiene tests.
+- Playbook gains phase 2b (skill routing) with the measured 33x figure on the
+  honest baseline, and records that the installed `si` had drifted behind its
+  repo.
 - New opt-in OmniRoute gateway lanes for `llmadapter` (`omniroute`,
   `omniroute-coding`), with the audit and PRD in
   `docs/adr/2026-09-03-omniroute-lane.md`. OmniRoute is an OpenAI-compatible

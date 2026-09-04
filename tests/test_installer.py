@@ -380,7 +380,14 @@ def test_claude_prompt_merge_preserves_shared_user_hook_and_stays_idempotent(
     entries = json.loads(settings_path.read_text())["hooks"]["UserPromptSubmit"]
     commands = [hook["command"] for entry in entries for hook in entry["hooks"]]
     assert commands.count("~/bin/user-prompt-audit") == 1
-    assert commands.count(managed_hook) == 1
+    # Exactly one managed entry, in the `<interpreter> <hook>` shape: the
+    # interpreter must be a real file and never a shim or a project venv.
+    managed = [c for c in commands if c.endswith(f" {managed_hook}")]
+    assert len(managed) == 1, commands
+    interpreter = Path(managed[0].split(" ", 1)[0])
+    assert interpreter.is_file()
+    assert "shims" not in interpreter.parts
+    assert ".venv" not in interpreter.parts
 
 
 def test_minimal_profile_has_no_visible_skills_or_prompt_hooks(tmp_path: Path) -> None:
@@ -425,7 +432,10 @@ def test_teams_profile_registers_worker_capsule_once_for_claude(tmp_path: Path) 
     ]
     assert len(entries) == 1
     command = entries[0]["hooks"][0]["command"]
-    assert Path(command).is_file()
+    interpreter, script = command.split(" ", 1)
+    assert Path(interpreter).is_file()
+    assert "shims" not in Path(interpreter).parts
+    assert Path(script).is_file()
 
 
 def test_switching_to_minimal_removes_only_managed_visible_skills(tmp_path: Path) -> None:

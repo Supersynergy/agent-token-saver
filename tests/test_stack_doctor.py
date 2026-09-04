@@ -473,3 +473,21 @@ def test_doctor_stays_quiet_when_codex_has_no_trust_table(tmp_path: Path) -> Non
     home = codex_hook_home(tmp_path, trusted=True)
     (home / ".codex" / "config.toml").write_text("model = 'gpt-5.6'\n")
     assert stack_doctor.inspect_hooks(home)["codex"]["trust"]["status"] == "unknown"
+
+
+def test_command_is_exact_file_accepts_a_pinned_interpreter_that_exists(tmp_path: Path) -> None:
+    """`<interpreter> <hook>` is ours only while the interpreter is still there."""
+    command_is_exact_file = stack_doctor.command_is_exact_file
+
+    hook = tmp_path / "hook.py"
+    hook.write_text("#!/usr/bin/env python3\n")
+    interpreter = tmp_path / "python3"
+    interpreter.write_text("")
+
+    assert command_is_exact_file(str(hook), hook)
+    assert command_is_exact_file(f"{interpreter} {hook}", hook)
+    # A pinned interpreter removed by a Python upgrade is a dead hook.
+    assert not command_is_exact_file(f"{tmp_path / 'gone'} {hook}", hook)
+    # Extra words are not our command shape.
+    assert not command_is_exact_file(f"{interpreter} -X utf8 {hook}", hook)
+    assert not command_is_exact_file(f"{interpreter} {tmp_path / 'other.py'}", hook)
