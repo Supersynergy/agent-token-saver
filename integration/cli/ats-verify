@@ -168,7 +168,10 @@ def render(lines: list[str], failed: bool, floor: int, limit: int) -> list[str]:
     failure log costs the reader more than the few tokens it saves.
     """
     if not failed:
-        picked = project(lines, VERDICT_RE, 5) or tail(lines, 3)
+        # Verbose runners print "ok" for each test; retain the final verdict.
+        recent = project(list(reversed(lines)), VERDICT_RE, 5)
+        picked = [(len(lines) - 1 - index, text, count) for index, text, count in recent]
+        picked = picked or tail(lines, 3)
     else:
         picked = project(lines, SIGNAL_RE, limit)
         # Coverage counts the raw lines the projection stands for, so a log of

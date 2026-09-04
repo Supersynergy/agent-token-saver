@@ -5,7 +5,7 @@
 | Codex CLI | compact block in `~/.codex/AGENTS.md`; `UserPromptSubmit` prompt gate; `Stop` session guard | No transparent shell rewrite claim |
 | Claude Code | compact block in `~/.claude/CLAUDE.md`; RTK for Bash when present; prompt gate; Stop guard; teams worker capsule | Worker hook only for `teams` |
 | Hermes | compact block in an existing `~/.hermes/SOUL.md`; Agent Skill | Never create `SOUL.md` or mutate YAML |
-| GG Coder | compact block in `~/AGENTS.md`; Markdown skill | Uses GG Coder's parent instruction discovery |
+| GG Coder | compact block in `~/AGENTS.md`; Markdown skill; companion router's native observer extension | Tool/skill usage feedback; no Codex/Claude prompt or Stop hook parity |
 | Other agents | repo-local `SKILL.md` plus CLI/JSON | Explicit invocation |
 
 ## Contract
@@ -35,3 +35,9 @@ Verify the active surface, not only copied files:
 ```bash
 agent-token-saver doctor --profile teams --json
 ```
+
+The router's GG extension uses the native extension loader and tool-call event
+bus, tested against GG Coder 5.46.2 with a local deterministic provider. It
+neither rewrites tool output nor injects prompt text. Skill metadata already
+loaded by the host is not removed by the observer. Normal GG sessions load the
+extension at startup; a host launched with extensions disabled does not.

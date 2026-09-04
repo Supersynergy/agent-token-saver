@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+- GG integration documentation now reflects the companion router's native
+  observer extension, verified on GG 5.46.2. Prompt/Stop hook parity is not claimed.
+- A use-case guide distinguishes measured output reduction, conditional cache
+  and retrieval benefits, and monitoring that adds overhead without saving tokens.
+- `just check` and `pre-pr` propagate test and vulnerability-scanner failures.
+- CI checks formatting too; existing format drift is normalized.
+- `ats-verify` retains the final test count and verdict on verbose green runs,
+  instead of keeping only the first five individual test results.
+
 - Fresh-install journey audited on a clean HOME with no version manager and
   fixed where it broke; analysis and plan in
   `docs/adr/2026-09-04-fresh-install-journey.md`.

@@ -37,6 +37,8 @@ jobs:
       - run: uv run pytest
       - name: Lint release surface
         run: uv run ruff check scripts integration tests
+      - name: Check formatting
+        run: uv run ruff format --check .
       - run: >-
           bash -n install-universal.sh integration/cli/codex-heavy-context
           scripts/neutral_install_smoke.sh scripts/remote_bootstrap_smoke.sh

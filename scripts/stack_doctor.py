@@ -103,7 +103,11 @@ def inspect_skill_router(launcher: Path) -> dict[str, Any]:
     it is worth anything: how many skills it can see, and whether the hosts
     report back which ones get opened.
     """
-    detail: dict[str, Any] = {"indexed_skills": None, "observer_hooks": []}
+    detail: dict[str, Any] = {
+        "indexed_skills": None,
+        "observer_hooks": [],
+        "observer_extensions": [],
+    }
     try:
         payload = json.loads(
             subprocess.run(
@@ -136,6 +140,12 @@ def inspect_skill_router(launcher: Path) -> dict[str, Any]:
                     and command.endswith(" observe")
                 ):
                     detail["observer_hooks"].append(host)
+    extension = Path.home() / ".gg/extensions/agent-skill-router.js"
+    try:
+        if extension.read_text().startswith("// agent-skill-router managed GG observer\n"):
+            detail["observer_extensions"].append("ggcoder")
+    except OSError:
+        return detail
     return detail
 
 
@@ -875,7 +885,9 @@ def main() -> int:
                     print(f"         {'':18}   needs {item['needs']}")
             if item["name"] == "skill-router" and item["installed"]:
                 skills = item.get("indexed_skills")
-                observers = item.get("observer_hooks") or []
+                observers = (item.get("observer_hooks") or []) + (
+                    item.get("observer_extensions") or []
+                )
                 seen = f"{skills} skills indexed" if skills is not None else "index unreadable"
                 if skills is not None and skills < 10:
                     seen += " — the router is only as useful as the skills it can see"

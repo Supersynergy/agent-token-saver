@@ -76,6 +76,16 @@ def test_a_silent_failure_still_reports_evidence(tmp_path: Path) -> None:
     assert "ats-verify: red exit=3" in result.stderr
 
 
+def test_verbose_unittest_keeps_final_count_and_verdict(tmp_path: Path) -> None:
+    body = "".join(f"test_case_{index} ... ok\n" for index in range(85))
+    body += "\nRan 85 tests in 0.42s\n\nOK\n"
+    result = run(tmp_path, body, 0, "--json", "--no-rtk")
+    payload = json.loads(result.stdout)
+    assert result.returncode == 0
+    assert payload["shown_lines"][-2:] == ["Ran 85 tests in 0.42s", "OK"]
+    assert len(payload["shown_lines"]) <= 5
+
+
 def test_floor_falls_back_to_raw_tail_when_no_signal_matches(tmp_path: Path) -> None:
     body = "".join(f"opaque line {index}\n" for index in range(50))
     result = run(tmp_path, body, 2, "--floor", "5")

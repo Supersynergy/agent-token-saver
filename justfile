@@ -5,8 +5,8 @@ _default:
 check:
     uv run ruff check .
     uv run ruff format --check .
-    uv run pytest -q || true
+    uv run pytest -q
 
 pre-pr: check
     gitleaks detect --source . --redact
-    osv-scanner scan source -r . || true
+    osv-scanner scan source -r .

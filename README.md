@@ -14,6 +14,8 @@ Works with Codex CLI, Claude Code, Hermes and GG Coder. Requires Python 3.11+
 and `git`; the core is standard library only. No daemon, no build step.
 Uninstall is deleting the installed files.
 
+[What is saved in each use case, and when ATS adds overhead](docs/SAVINGS_USE_CASES.md).
+
 **Measured:** a real Codex A/B on identical tasks used **19.67% fewer**
 provider-reported tokens. [Benchmarks →](#benchmarks)
 
@@ -204,13 +206,15 @@ The installer merges into existing host files and never creates a new Hermes
 installed paths, hooks and the exact managed default blocks. Details:
 [Hooks and agents](docs/HOOKS_AND_AGENTS.md).
 
-**GG Coder has no hook system** (verified against 5.46.2: it loads
-`~/.gg/skills/*.md` into the system prompt and exposes them through a `skill`
-tool, nothing fires around tool calls). So on GG Coder the policy block is the
-whole automatic layer, and the skill router's usage feedback cannot observe
-GG Coder sessions. Subagents defined with a `tools:` allow-list that omits
-`skill` (the bundled `scout`, `researcher`, `verify`) never see the skills at
-all — by that host's design, not ours.
+**GG Coder supports native observer extensions.** The companion router installs
+an extension that listens to tool-call events and reports skill loads and shell
+outcomes. Verified through the actual 5.46.2 session with a local test provider.
+The policy block remains its automatic instruction layer; Codex/Claude JSON
+prompt and Stop hooks are not GG interfaces. Start a new GG session after
+installing the router extension. Subagents defined with a
+`tools:` allow-list that omits `skill` (such as `scout`, `researcher`, `verify`)
+cannot invoke the native skill loader. A role with an allowed file reader can
+still read an explicitly supplied skill path, subject to that role's rules.
 
 ### What you need, per host
 

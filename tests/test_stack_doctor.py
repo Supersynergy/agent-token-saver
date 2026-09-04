@@ -9,6 +9,21 @@ from scripts.stack_doctor import build_report, same_resolved_path
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def test_doctor_distinguishes_registered_gg_extension(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+    launcher = tmp_path / "router"
+    launcher.write_text("#!/bin/sh\nprintf '{\"scanned\":2}'\n")
+    launcher.chmod(0o755)
+    extension = tmp_path / ".gg/extensions/agent-skill-router.js"
+    extension.parent.mkdir(parents=True)
+    extension.write_text("// agent-skill-router managed GG observer\n")
+    report = stack_doctor.inspect_skill_router(launcher)
+    assert report["observer_extensions"] == ["ggcoder"]
+    assert report["observer_hooks"] == []
+    extension.write_text("// unrelated extension\n")
+    assert stack_doctor.inspect_skill_router(launcher)["observer_extensions"] == []
+
+
 def install_fixture(home: Path, *, stale_route: bool = False) -> None:
     install_home = home / ".agent-token-saver"
     canonical = install_home / "skills" / "agent-token-saver" / "SKILL.md"
