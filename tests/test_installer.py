@@ -464,3 +464,69 @@ def test_switching_to_minimal_removes_only_managed_visible_skills(tmp_path: Path
     ):
         assert "AGENT-TOKEN-SAVER-DEFAULT" not in path.read_text()
     assert (tmp_path / "home" / ".hermes" / "SOUL.md").read_text() == "# Hermes fixture\n"
+
+
+def test_hook_interpreter_meets_the_installer_floor_and_is_never_a_shim() -> None:
+    """The fresh-machine failure: a stock 3.9 pinned for hooks the CLI cannot run on."""
+    import sys
+
+    sys.path.insert(0, str(INSTALLER.parent))
+    import install_agent_token_saver as installer
+
+    chosen = installer.hook_interpreter()
+    assert Path(chosen).is_file()
+    assert "shims" not in Path(chosen).parts
+    assert ".venv" not in Path(chosen).parts
+    assert installer.interpreter_meets_floor(chosen)
+
+
+def test_bootstrap_script_picks_a_qualifying_python_over_a_stale_python3(tmp_path: Path) -> None:
+    """A stock macOS resolves `python3` to 3.9 beside a qualifying Homebrew Python."""
+    import shutil
+    import stat
+
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    # A `python3` that reports 3.9, and a `python3.12` that is the real thing.
+    stale = bin_dir / "python3"
+    stale.write_text(
+        "#!/bin/sh\n"
+        'case "$1" in --version) echo "Python 3.9.6";; esac\n'
+        "exit 1\n"
+    )
+    stale.chmod(stale.stat().st_mode | stat.S_IXUSR)
+    real = bin_dir / "python3.12"
+    real.symlink_to(sys.executable)
+    # A stand-in installer that reports which interpreter ran it.
+    probe_root = tmp_path / "repo" / "scripts"
+    probe_root.mkdir(parents=True)
+    (probe_root / "install_agent_token_saver.py").write_text(
+        "import sys; print('RAN_WITH', sys.executable)\n"
+    )
+    shutil.copy(INSTALLER.parents[1] / "install-universal.sh", tmp_path / "repo" / "install-universal.sh")
+
+    result = subprocess.run(
+        ["bash", str(tmp_path / "repo" / "install-universal.sh"), "--dry-run"],
+        capture_output=True,
+        text=True,
+        env={"PATH": f"{bin_dir}:/usr/bin:/bin", "HOME": str(tmp_path)},
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "RAN_WITH" in result.stdout
+    assert "python3.9" not in result.stdout
+
+    # With only the stale one, the message names what was found and how to fix it.
+    real.unlink()
+    result = subprocess.run(
+        ["bash", str(tmp_path / "repo" / "install-universal.sh"), "--dry-run"],
+        capture_output=True,
+        text=True,
+        env={"PATH": f"{bin_dir}:/usr/bin:/bin", "HOME": str(tmp_path)},
+        check=False,
+    )
+    assert result.returncode == 1
+    assert "3.11+" in result.stderr
+    assert "found:" in result.stderr
+    assert "brew install" in result.stderr

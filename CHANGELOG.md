@@ -2,6 +2,30 @@
 
 ## [Unreleased]
 
+- Fresh-install journey audited on a clean HOME with no version manager and
+  fixed where it broke; analysis and plan in
+  `docs/adr/2026-09-04-fresh-install-journey.md`.
+  - `install-universal.sh` picks the newest interpreter that meets the 3.11
+    floor (`python3.14` … `python3`) instead of execing `python3` blindly. A
+    stock macOS resolves `python3` to 3.9 beside a qualifying Homebrew Python,
+    and the README one-liner failed on it with the floor message. With no
+    qualifying interpreter it now names what it found and how to install one.
+  - `hook_interpreter()` enforces the same floor. It had pinned the stock 3.9
+    for the hooks on that machine — they happened to import, but the CLI they
+    launch needs `tomllib`. The doctor accepts a pinned interpreter only while
+    it exists *and* meets the floor.
+  - The doctor prints the install line for every optional layer it cannot
+    find, and what each needs to be useful. The skill router was never in the
+    MISSING list, so a user following "install MISSING lines above" never
+    learned it existed. Once present, the router line reports indexed skills
+    and whether an observer hook is registered.
+  - Hermes reports its real state: `explicit-only: no SOUL.md, the skill loads
+    only when named` instead of a bare `installed`.
+- GG Coder integration verified against 5.46.2 with live subagents: the
+  policy block and both skills reach a full agent and load through its `skill`
+  tool. GG Coder has no hook system, and subagents whose `tools:` allow-list
+  omits `skill` never see skills — documented in the README with a per-host
+  needs table, not papered over.
 - Hook commands are registered as `<interpreter> <hook>` with a real python3
   pinned by the installer — never a version-manager shim, never a project venv
   (`pyenv which` is asked, then validated: under a foreign HOME it answered

@@ -481,13 +481,21 @@ def test_command_is_exact_file_accepts_a_pinned_interpreter_that_exists(tmp_path
 
     hook = tmp_path / "hook.py"
     hook.write_text("#!/usr/bin/env python3\n")
+    import sys
+
     interpreter = tmp_path / "python3"
-    interpreter.write_text("")
+    interpreter.symlink_to(sys.executable)
 
     assert command_is_exact_file(str(hook), hook)
     assert command_is_exact_file(f"{interpreter} {hook}", hook)
     # A pinned interpreter removed by a Python upgrade is a dead hook.
     assert not command_is_exact_file(f"{tmp_path / 'gone'} {hook}", hook)
+    # A pinned interpreter below the floor (the fresh-macOS 3.9 case) is too:
+    # the hook file may import fine, but the CLI it launches will not.
+    stale = tmp_path / "python3.9"
+    stale.write_text("#!/bin/sh\nexit 1\n")
+    stale.chmod(0o755)
+    assert not command_is_exact_file(f"{stale} {hook}", hook)
     # Extra words are not our command shape.
     assert not command_is_exact_file(f"{interpreter} -X utf8 {hook}", hook)
     assert not command_is_exact_file(f"{interpreter} {tmp_path / 'other.py'}", hook)

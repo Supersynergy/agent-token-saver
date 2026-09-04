@@ -2,10 +2,30 @@
   "schema_version": 1,
   "updated": "2026-07-14",
   "profiles": {
-    "minimal": ["native-projection"],
-    "lean": ["native-projection", "skill-router", "rtk", "tilth"],
-    "teams": ["native-projection", "skill-router", "rtk", "tilth"],
-    "heavy": ["native-projection", "skill-router", "rtk", "tilth", "context-mode", "graphify", "codegraph"]
+    "minimal": [
+      "native-projection"
+    ],
+    "lean": [
+      "native-projection",
+      "skill-router",
+      "rtk",
+      "tilth"
+    ],
+    "teams": [
+      "native-projection",
+      "skill-router",
+      "rtk",
+      "tilth"
+    ],
+    "heavy": [
+      "native-projection",
+      "skill-router",
+      "rtk",
+      "tilth",
+      "context-mode",
+      "graphify",
+      "codegraph"
+    ]
   },
   "tools": {
     "native-projection": {
@@ -25,31 +45,41 @@
       ],
       "source": "https://github.com/Supersynergy/agent-token-saver-skill-router",
       "activation": "prompt-gated",
-      "purpose": "Load zero or one primary skill automatically"
+      "purpose": "Load zero or one primary skill automatically",
+      "install": "curl -fsSL https://raw.githubusercontent.com/Supersynergy/agent-token-saver-skill-router/main/install.sh | bash -s -- all",
+      "needs": "a SKILL.md tree to index (~/.claude/skills, ~/.codex/skills, ~/.agents/skills, ...)"
     },
     "rtk": {
       "kind": "command",
       "required": false,
       "command": "rtk",
-      "version_args": ["--version"],
+      "version_args": [
+        "--version"
+      ],
       "source": "https://github.com/rtk-ai/rtk",
       "activation": "native Claude hook or agent-guided CLI",
-      "purpose": "Compress supported noisy shell output"
+      "purpose": "Compress supported noisy shell output",
+      "install": "cargo install rtk  (or a release binary from the source URL)"
     },
     "tilth": {
       "kind": "command",
       "required": false,
       "command": "tilth",
-      "version_args": ["--version"],
+      "version_args": [
+        "--version"
+      ],
       "source": "https://github.com/jahala/tilth",
       "activation": "CLI or one lean MCP",
-      "purpose": "Budgeted structural code retrieval"
+      "purpose": "Budgeted structural code retrieval",
+      "install": "see source URL"
     },
     "context-mode": {
       "kind": "command",
       "required": false,
       "command": "context-mode",
-      "version_args": ["--version"],
+      "version_args": [
+        "--version"
+      ],
       "source": "https://github.com/mksglu/context-mode",
       "activation": "session/on demand",
       "purpose": "Sandbox and search large repeated payloads"
@@ -58,7 +88,9 @@
       "kind": "command",
       "required": false,
       "command": "graphify",
-      "version_args": ["--version"],
+      "version_args": [
+        "--version"
+      ],
       "source": "https://github.com/Graphify-Labs/graphify",
       "activation": "build once, query on demand",
       "purpose": "Persistent corpus graph and relationship paths"
@@ -67,7 +99,9 @@
       "kind": "command",
       "required": false,
       "command": "codegraph",
-      "version_args": ["--version"],
+      "version_args": [
+        "--version"
+      ],
       "source": "https://github.com/colbymchenry/codegraph",
       "activation": "on demand",
       "purpose": "Callers, callees and impact analysis"

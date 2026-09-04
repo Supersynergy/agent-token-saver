@@ -191,18 +191,41 @@ Start with `lean`. Change profiles only for a concrete need.
 
 ## Supported hosts
 
-| Host | Integration |
-|---|---|
-| Codex CLI | compact global default, prompt gate and Stop guard |
-| Claude Code | compact global default, prompt gate, Stop guard, RTK when present, worker capsule |
-| Hermes | compact default in an existing `SOUL.md` plus installed Agent Skill |
-| GG Coder | compact home `AGENTS.md` default plus installed Markdown skill |
-| Other agents | repo-local `SKILL.md` plus CLI/JSON |
+| Host | Integration | Active from the first prompt? |
+|---|---|---|
+| Codex CLI | compact global default, prompt gate and Stop guard | yes |
+| Claude Code | compact global default, prompt gate, Stop guard, RTK when present, worker capsule | yes |
+| Hermes | compact default in an existing `SOUL.md` plus installed Agent Skill | only with a `SOUL.md`; otherwise the skill loads when named |
+| GG Coder | compact home `AGENTS.md` default plus installed Markdown skill | policy yes; skill when the agent invokes it |
+| Other agents | repo-local `SKILL.md` plus CLI/JSON | when named |
 
 The installer merges into existing host files and never creates a new Hermes
 `SOUL.md`. Files on disk are not proof of active wiring; the doctor checks
 installed paths, hooks and the exact managed default blocks. Details:
 [Hooks and agents](docs/HOOKS_AND_AGENTS.md).
+
+**GG Coder has no hook system** (verified against 5.46.2: it loads
+`~/.gg/skills/*.md` into the system prompt and exposes them through a `skill`
+tool, nothing fires around tool calls). So on GG Coder the policy block is the
+whole automatic layer, and the skill router's usage feedback cannot observe
+GG Coder sessions. Subagents defined with a `tools:` allow-list that omits
+`skill` (the bundled `scout`, `researcher`, `verify`) never see the skills at
+all — by that host's design, not ours.
+
+### What you need, per host
+
+| Need | Codex | Claude Code | Hermes | GG Coder |
+|---|---|---|---|---|
+| Python 3.11+ on PATH under any name (`python3.12` counts) | required | required | required | required |
+| `git` | one-line bootstrap only | same | same | same |
+| RTK | optional, agent-guided | optional, **native hook** | optional | optional |
+| skill router | optional | optional | optional | optional |
+| skills to route (any `SKILL.md` tree) | for the router to matter | same | same | same |
+| a `SOUL.md` | — | — | for automatic policy | — |
+| Bun | only for `llmadapter` | same | same | same |
+
+The doctor prints the install line for every optional layer it cannot find,
+and says what each one needs to be useful.
 
 ### Companion: the skill router
 

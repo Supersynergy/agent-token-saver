@@ -172,18 +172,38 @@ def load_json(path: Path) -> dict[str, Any]:
     return value
 
 
+def interpreter_meets_floor(candidate: str) -> bool:
+    """Ask the binary itself; a path name says nothing about the version."""
+    probe = f"import sys; raise SystemExit(0 if sys.version_info >= {MIN_PYTHON!r} else 1)"
+    try:
+        return (
+            subprocess.run(
+                [candidate, "-c", probe], capture_output=True, timeout=10, check=False
+            ).returncode
+            == 0
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
 def hook_interpreter() -> str:
-    """A real python3 for the hook commands: never a shim, never a project venv.
+    """A python3 for the hook commands that meets the floor and is not a shim.
 
-    The hooks used to rely on `#!/usr/bin/env python3`. On a machine with a
-    version manager that resolves to a shim, and the shim alone measured 160 ms
-    before the first line of the hook ran -- paid twice per prompt, because the
-    prompt hook launches the router as a subprocess. Pinning the binary the
-    shim would exec removes that: 280 ms became 135 ms end to end.
+    The hooks used to rely on `#!/usr/bin/env python3`. Two things went wrong
+    with that, on two different machines:
 
-    A project virtualenv is skipped on purpose: it can be deleted with the
-    checkout, and a hook that dies with the venv is worse than a slow one.
-    `doctor` checks that the pinned interpreter still exists.
+    - With a version manager, `python3` is a shim that costs ~160 ms before the
+      first line of the hook runs -- paid twice per prompt, since the prompt
+      hook launches the router as a subprocess. 280 ms became 135 ms once the
+      binary behind the shim was pinned instead.
+    - On a stock macOS, `python3` is 3.9. The installer refuses to run on it,
+      then pinned it for the hooks anyway. Whatever runs the hooks must meet
+      the same floor the installer enforces on itself.
+
+    The interpreter running this installer has by construction already passed
+    the floor check, so it is the first candidate. A project virtualenv is
+    skipped: it can be deleted with the checkout, and a hook that dies with
+    the venv is worse than a slow one. `doctor` re-checks existence and floor.
     """
     in_venv = sys.prefix != sys.base_prefix
 
@@ -191,36 +211,46 @@ def hook_interpreter() -> str:
         path = Path(candidate)
         if not path.is_file() or "shims" in path.parts or ".venv" in path.parts:
             return False
-        return not (in_venv and path.is_relative_to(sys.prefix))
+        if in_venv and path.is_relative_to(sys.prefix):
+            return False
+        return interpreter_meets_floor(candidate)
 
+    candidates: list[str] = []
+    if in_venv:
+        # The interpreter behind the venv outlives the venv directory.
+        candidates.append(str(Path(sys.base_prefix) / "bin" / "python3"))
+    else:
+        candidates.append(sys.executable)
     venv = os.environ.get("VIRTUAL_ENV", "")
     search = os.pathsep.join(
         entry
         for entry in os.environ.get("PATH", "").split(os.pathsep)
         if entry and not (venv and entry.startswith(venv)) and ".venv" not in entry
     )
-    found = shutil.which("python3", path=search)
-    if found and "shims" in Path(found).parts:
-        # `pyenv which` is asked, not trusted: under a foreign HOME it has been
-        # observed answering with the active venv's interpreter.
-        with suppress(OSError, subprocess.SubprocessError):
-            real = subprocess.run(
-                ["pyenv", "which", "python3"],
-                capture_output=True,
-                text=True,
-                timeout=5,
-                check=False,
-            ).stdout.strip()
-            if real and usable(real):
-                return real
-    if found and usable(found):
-        return found
-    if in_venv:
-        # Running inside a virtualenv: pin the interpreter behind it, which
-        # outlives the venv directory.
-        base = Path(sys.base_prefix) / "bin" / "python3"
-        if base.is_file():
-            return str(base)
+    for name in ("python3.14", "python3.13", "python3.12", "python3.11", "python3"):
+        found = shutil.which(name, path=search)
+        if not found:
+            continue
+        if "shims" in Path(found).parts:
+            # `pyenv which` is asked, not trusted: under a foreign HOME it has
+            # been observed answering with the active venv's interpreter.
+            with suppress(OSError, subprocess.SubprocessError):
+                real = subprocess.run(
+                    ["pyenv", "which", name],
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
+                    check=False,
+                ).stdout.strip()
+                if real:
+                    candidates.append(real)
+            continue
+        candidates.append(found)
+    for candidate in candidates:
+        if usable(candidate):
+            return candidate
+    # Nothing better exists; the installer itself is running on this one, so
+    # it meets the floor even if it is a venv or shim path.
     return sys.executable
 
 

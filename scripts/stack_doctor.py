@@ -64,6 +64,8 @@ def inspect_tool(name: str, spec: dict[str, Any]) -> dict[str, Any]:
         "version": None,
         "required": bool(spec.get("required")),
         "activation": spec.get("activation", "on demand"),
+        "install": spec.get("install"),
+        "needs": spec.get("needs"),
     }
     if kind == "builtin":
         result.update(installed=True, location="stdlib", version="builtin")
@@ -74,6 +76,8 @@ def inspect_tool(name: str, spec: dict[str, Any]) -> dict[str, Any]:
             if path.is_file():
                 result.update(installed=True, location=str(path), version="file")
                 break
+        if name == "skill-router" and result["installed"]:
+            result.update(inspect_skill_router(Path(str(result["location"]))))
         return result
     if kind == "command":
         location = shutil.which(str(spec.get("command", name)))
@@ -87,6 +91,52 @@ def inspect_tool(name: str, spec: dict[str, Any]) -> dict[str, Any]:
         )
         return result
     return result
+
+
+def inspect_skill_router(launcher: Path) -> dict[str, Any]:
+    """What the router can actually do here, not merely whether it exists.
+
+    A fresh machine had the router installed and routing over two skills --
+    both ours -- with no observer hook registered, because the router's own
+    installer writes files and leaves `install-hooks` as a second step nobody
+    is told about. "installed" was true and useless. Two facts decide whether
+    it is worth anything: how many skills it can see, and whether the hosts
+    report back which ones get opened.
+    """
+    detail: dict[str, Any] = {"indexed_skills": None, "observer_hooks": []}
+    try:
+        payload = json.loads(
+            subprocess.run(
+                [str(launcher), "route", "doctor probe", "--max", "1", "--json"],
+                capture_output=True,
+                text=True,
+                timeout=20,
+                check=False,
+            ).stdout
+            or "{}"
+        )
+        if isinstance(payload.get("scanned"), int):
+            detail["indexed_skills"] = payload["scanned"]
+    except (OSError, subprocess.SubprocessError, ValueError):
+        pass
+    for host, path in (
+        ("codex", Path.home() / ".codex" / "hooks.json"),
+        ("claude", Path.home() / ".claude" / "settings.json"),
+    ):
+        try:
+            hooks = json.loads(path.read_text()).get("hooks", {})
+        except (OSError, ValueError, AttributeError):
+            continue
+        for entry in hooks.get("PostToolUse", []) if isinstance(hooks, dict) else []:
+            for hook in entry.get("hooks", []) if isinstance(entry, dict) else []:
+                command = str(hook.get("command", "")) if isinstance(hook, dict) else ""
+                if (
+                    command.split()[-2:-1]
+                    and command.split()[-2].endswith("/si")
+                    and command.endswith(" observe")
+                ):
+                    detail["observer_hooks"].append(host)
+    return detail
 
 
 RECON_SIDECARS = (
@@ -347,13 +397,32 @@ def inspect_llmadapter(home: Path, *, allow_probe: bool) -> dict[str, Any]:
     return report
 
 
+# The floor the installer enforces on itself. A pinned hook interpreter below
+# it is a hook that will die on the first 3.11-only construct it meets.
+HOOK_PYTHON_FLOOR = (3, 11)
+
+
+def interpreter_meets_floor(candidate: Path) -> bool:
+    probe = f"import sys; raise SystemExit(0 if sys.version_info >= {HOOK_PYTHON_FLOOR!r} else 1)"
+    try:
+        return (
+            subprocess.run(
+                [str(candidate), "-c", probe], capture_output=True, timeout=10, check=False
+            ).returncode
+            == 0
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
 def command_is_exact_file(command: str, target: Path | None) -> bool:
     """Accept `<hook>` or `<interpreter> <hook>`; anything else is not ours.
 
     The installer pins a real interpreter in front of each hook so no call
-    pays a version-manager shim. That interpreter must still exist: a pinned
-    binary that was removed with a Python upgrade fails silently in the host,
-    which is the one failure a fail-open hook cannot report by itself.
+    pays a version-manager shim. That interpreter must still exist and still
+    meet the floor: a binary removed by a Python upgrade, or a stock 3.9 pinned
+    on a machine where the installer ran under something newer, fails silently
+    in the host -- the one failure a fail-open hook cannot report by itself.
     """
     if target is None:
         return False
@@ -361,7 +430,10 @@ def command_is_exact_file(command: str, target: Path | None) -> bool:
         parts = shlex.split(command)
         if len(parts) == 1:
             script = parts[0]
-        elif len(parts) == 2 and Path(parts[0]).expanduser().is_file():
+        elif len(parts) == 2:
+            interpreter = Path(parts[0]).expanduser()
+            if not interpreter.is_file() or not interpreter_meets_floor(interpreter):
+                return False
             script = parts[1]
         else:
             return False
@@ -797,6 +869,22 @@ def main() -> int:
             marker = "ok" if item["installed"] else ("MISSING" if item["required"] else "optional")
             version = f" | {item['version']}" if item["version"] else ""
             print(f"{marker:8} {item['name']:18} {item['activation']}{version}")
+            if not item["installed"] and item.get("install"):
+                print(f"         {'':18} → {item['install']}")
+                if item.get("needs"):
+                    print(f"         {'':18}   needs {item['needs']}")
+            if item["name"] == "skill-router" and item["installed"]:
+                skills = item.get("indexed_skills")
+                observers = item.get("observer_hooks") or []
+                seen = f"{skills} skills indexed" if skills is not None else "index unreadable"
+                if skills is not None and skills < 10:
+                    seen += " — the router is only as useful as the skills it can see"
+                heard = (
+                    f"observer on {','.join(observers)}"
+                    if observers
+                    else "no observer hook → run: si install-hooks --target all"
+                )
+                print(f"         {'':18} {seen}; {heard}")
         for item in report["recon"]:
             if item["installed"]:
                 print(f"recon    {item['name']:18} ok | {item['location']}")
@@ -805,7 +893,15 @@ def main() -> int:
         for agent, hook in report["hooks"].items():
             if hook.get("integration") == "skill":
                 marker = "installed" if hook["exists"] else "optional"
-                print(f"skill    {agent:18} {marker}")
+                note = ""
+                if agent == "hermes" and hook["exists"]:
+                    soul = Path.home() / ".hermes" / "SOUL.md"
+                    note = (
+                        " · policy active via SOUL.md"
+                        if soul.is_file()
+                        else " · explicit-only: no SOUL.md, the skill loads only when named"
+                    )
+                print(f"skill    {agent:18} {marker}{note}")
             else:
                 trust = hook.get("trust", {})
                 suffix = ""
@@ -814,8 +910,7 @@ def main() -> int:
                 elif trust.get("status") == "ok":
                     suffix = f" · {trust['trusted']} trusted"
                 print(
-                    f"hooks    {agent:18} {len(hook['commands'])} "
-                    f"agent-token-saver entries{suffix}"
+                    f"hooks    {agent:18} {len(hook['commands'])} agent-token-saver entries{suffix}"
                 )
         default_policy = report["integrity"]["default_policy"]
         print(
