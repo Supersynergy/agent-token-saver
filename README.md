@@ -208,10 +208,14 @@ installed paths, hooks and the exact managed default blocks. Details:
 
 **GG Coder supports native observer extensions.** The companion router installs
 an extension that listens to tool-call events and reports skill loads and shell
-outcomes. Verified through the actual 5.46.2 session with a local test provider.
+outcomes. Verified through the actual 5.46.2 session and packaged SuperGG/GG
+desktop sidecars with local test providers. The desktop test covers the native
+HTTP/SSE backend; the CLI's compact-catalog helper does not apply to the app.
+See the router's [desktop guide](https://github.com/Supersynergy/agent-token-saver-skill-router/blob/main/docs/GG_DESKTOP.md).
 The policy block remains its automatic instruction layer; Codex/Claude JSON
-prompt and Stop hooks are not GG interfaces. Start a new GG session after
-installing the router extension. Subagents defined with a
+prompt and Stop hooks are not GG interfaces. Start a new CLI process after
+installation; restart the desktop app after updating a loaded extension.
+Subagents defined with a
 `tools:` allow-list that omits `skill` (such as `scout`, `researcher`, `verify`)
 cannot invoke the native skill loader. A role with an allowed file reader can
 still read an explicitly supplied skill path, subject to that role's rules.
