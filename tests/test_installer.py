@@ -75,6 +75,7 @@ def test_all_agents_install_without_overwriting_existing_settings(tmp_path: Path
     assert (project / ".agents" / "skills" / "agent-token-saver" / "SKILL.md").is_file()
     assert (home / ".local" / "bin" / "agent-token-ledger").is_symlink()
     assert (home / ".local" / "bin" / "agent-token-audit").is_symlink()
+    assert (home / ".local" / "bin" / "ats-workflow-policy").is_symlink()
     assert (home / ".local" / "bin" / "llmadapter").is_symlink()
     config = json.loads((home / ".agent-token-saver" / "config.json").read_text())
     assert config["schema_version"] == 3
@@ -113,6 +114,7 @@ def test_all_agents_install_without_overwriting_existing_settings(tmp_path: Path
         "doctor",
         "ledger",
         "cache_economics",
+        "workflow_policy",
         "audit",
         "llmadapter",
         "prompt_hook",
@@ -197,6 +199,21 @@ def test_cache_pricer_is_callable_from_path(tmp_path: Path) -> None:
     )
     assert result.returncode == 0, result.stderr
     assert "cache 90.00% hit" in result.stdout
+
+
+def test_workflow_policy_is_callable_from_installed_path(tmp_path: Path) -> None:
+    assert run_installer(tmp_path, "--agent", "codex").returncode == 0
+    launcher = tmp_path / "home" / ".local" / "bin" / "ats-workflow-policy"
+
+    result = subprocess.run(
+        [sys.executable, str(launcher), "--help"],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "--prompt-bench" in result.stdout
 
 
 def test_repeated_install_deduplicates_hooks(tmp_path: Path) -> None:

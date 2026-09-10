@@ -1,6 +1,7 @@
 {
-  "schema_version": 1,
-  "updated": "2026-07-14",
+  "schema_version": 2,
+  "updated": "2026-09-10",
+  "installer": "scripts/install_stack_tools.sh",
   "profiles": {
     "minimal": [
       "native-projection"
@@ -47,6 +48,7 @@
       "activation": "prompt-gated",
       "purpose": "Load zero or one primary skill automatically",
       "install": "curl -fsSL https://raw.githubusercontent.com/Supersynergy/agent-token-saver-skill-router/main/install.sh | bash -s -- all",
+      "install_method": "curl",
       "needs": "a SKILL.md tree to index (~/.claude/skills, ~/.codex/skills, ~/.agents/skills, ...)"
     },
     "rtk": {
@@ -59,7 +61,12 @@
       "source": "https://github.com/rtk-ai/rtk",
       "activation": "native Claude hook or agent-guided CLI",
       "purpose": "Compress supported noisy shell output",
-      "install": "cargo install rtk  (or a release binary from the source URL)"
+      "install": "brew install rtk (macOS) or cargo install rtk --locked (Linux)",
+      "install_method": "brew_or_cargo",
+      "host_wiring": {
+        "claude": "PreToolUse Bash -> rtk hook claude",
+        "codex": "PreToolUse Bash -> rtk hook codex (if supported)"
+      }
     },
     "tilth": {
       "kind": "command",
@@ -70,19 +77,25 @@
       ],
       "source": "https://github.com/jahala/tilth",
       "activation": "CLI or one lean MCP",
-      "purpose": "Budgeted structural code retrieval",
-      "install": "see source URL"
+      "purpose": "Budgeted structural code retrieval (AST, 16 tree-sitter languages)",
+      "install": "cargo install tilth --locked --force",
+      "install_method": "cargo"
     },
     "context-mode": {
       "kind": "command",
       "required": false,
       "command": "context-mode",
       "version_args": [
-        "--version"
+        "doctor"
       ],
       "source": "https://github.com/mksglu/context-mode",
       "activation": "session/on demand",
-      "purpose": "Sandbox and search large repeated payloads"
+      "purpose": "Sandbox and search large repeated payloads (FTS5)",
+      "install": "npm install -g context-mode (or bun install -g context-mode)",
+      "install_method": "npm_or_bun",
+      "host_wiring": {
+        "claude": "Claude Code plugin cache (~/.claude/plugins/cache/context-mode/)"
+      }
     },
     "graphify": {
       "kind": "command",
@@ -93,18 +106,34 @@
       ],
       "source": "https://github.com/Graphify-Labs/graphify",
       "activation": "build once, query on demand",
-      "purpose": "Persistent corpus graph and relationship paths"
+      "purpose": "Persistent corpus graph and relationship paths",
+      "install": "uv tool install graphifyy (or pip install --user graphifyy)",
+      "install_method": "uv_or_pip",
+      "post_install": "graphify install --platform {claude,codex,hermes,opencode}",
+      "host_wiring": {
+        "claude": "graphify install --platform claude",
+        "codex": "graphify install --platform codex",
+        "hermes": "graphify install --platform hermes",
+        "opencode": "graphify install --platform opencode"
+      }
     },
     "codegraph": {
       "kind": "command",
       "required": false,
       "command": "codegraph",
       "version_args": [
-        "--version"
+        "version"
       ],
       "source": "https://github.com/colbymchenry/codegraph",
       "activation": "on demand",
-      "purpose": "Callers, callees and impact analysis"
+      "purpose": "Callers, callees and impact analysis (MCP server)",
+      "install": "curl -fsSL https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.sh | sh",
+      "install_method": "curl_script",
+      "post_install": "codegraph install --platform {claude,codex} --yes",
+      "host_wiring": {
+        "claude": "codegraph install --platform claude --yes",
+        "codex": "codegraph install --platform codex --yes"
+      }
     }
   }
 }

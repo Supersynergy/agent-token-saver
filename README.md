@@ -276,6 +276,31 @@ Keep the model, task, fixture and acceptance oracle fixed for a credible
 before/after. Never translate a local payload estimate directly into money
 saved.
 
+### Derive a workflow policy without changing defaults
+
+The source checkout includes a deterministic component/multi-operation matrix.
+The installed policy command then combines that matrix with one or more
+schema-v4 GG prompt-bench runs and an optional redacted adaptive-history audit:
+
+```bash
+python scripts/workflow_matrix_benchmark.py --out-dir /tmp/ats-workflow --samples 11 --live-local
+
+ats-workflow-policy \
+  --matrix /tmp/ats-workflow/workflow_matrix_benchmark.json \
+  --prompt-bench prompt-run-n5.json \
+  --adaptive-audit adaptive-audit.json \
+  --out-json workflow-policy.json \
+  --out-md workflow-policy.md
+```
+
+The command is report-only. It may recommend an exact deterministic projection
+or exact-fingerprint recall after their executable oracles pass. Prompt/model
+changes need at least 10 trials per cell and three independent tasks by default;
+adaptive routing also needs pre-treatment features, logged arms and
+propensities, deterministic quality labels, and a chronological 30-train/10-test
+holdout per arm. Missing evidence keeps the current full prompt and blocks
+activation. Raw prompts are never accepted as training rows.
+
 ### Price the cache, don't just count tokens
 
 Raw token sums misprice a cached prefix. Moving fresh input into cache reads

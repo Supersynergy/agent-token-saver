@@ -95,6 +95,110 @@ def test_codex_jsonl_prefers_cumulative_total_over_last_request(tmp_path: Path) 
     assert parsed["cached_input_tokens_subset"] == 1_806_848
 
 
+def test_supergg_turn_metrics_are_summed_per_turn(tmp_path: Path) -> None:
+    usage = tmp_path / "supergg.jsonl"
+    records = [
+        {
+            "type": "custom",
+            "kind": "turn_metric",
+            "data": {
+                "usage": {
+                    "inputTokens": 100,
+                    "outputTokens": 20,
+                    "cacheRead": 300,
+                    "cacheWrite": 40,
+                    "reasoningTokens": 5,
+                }
+            },
+        },
+        {
+            "type": "custom",
+            "kind": "turn_metric",
+            "data": {
+                "usage": {
+                    "inputTokens": 10,
+                    "outputTokens": 7,
+                    "cacheRead": 500,
+                    "cacheWrite": 2,
+                    "reasoningTokens": 3,
+                }
+            },
+        },
+    ]
+    usage.write_text("\n".join(json.dumps(record) for record in records) + "\n")
+
+    total, sources = load_usage_sources([f"supergg={usage}"])
+
+    assert total == {
+        "input_tokens": 110,
+        "cache_creation_input_tokens": 42,
+        "cache_read_input_tokens": 800,
+        "cached_input_tokens_subset": 0,
+        "cache_write_input_tokens": 0,
+        "total_input_tokens": 952,
+        "output_tokens": 27,
+        "reasoning_output_tokens_subset": 8,
+        "reported_total_tokens": 979,
+    }
+    assert sources[0]["metadata"]["turn_metric_records"] == 2
+
+
+def test_supergg_zero_turn_metric_is_valid_usage(tmp_path: Path) -> None:
+    usage = tmp_path / "supergg-zero.jsonl"
+    usage.write_text(
+        json.dumps(
+            {
+                "type": "custom",
+                "kind": "turn_metric",
+                "data": {
+                    "usage": {
+                        "inputTokens": 0,
+                        "outputTokens": 0,
+                        "cacheRead": 0,
+                        "cacheWrite": 0,
+                        "reasoningTokens": 0,
+                    }
+                },
+            }
+        )
+        + "\n"
+    )
+
+    assert load_usage(usage)["reported_total_tokens"] == 0
+
+
+def test_supergg_invalid_turn_metric_does_not_silently_become_zero(tmp_path: Path) -> None:
+    usage = tmp_path / "supergg-invalid.jsonl"
+    usage.write_text(
+        json.dumps(
+            {
+                "type": "custom",
+                "kind": "turn_metric",
+                "data": {"usage": {"inputTokens": "unknown", "outputTokens": 0}},
+            }
+        )
+        + "\n"
+    )
+
+    with pytest.raises(ValueError, match="invalid turn_metric usage value: inputTokens"):
+        load_usage(usage)
+
+
+def test_snake_case_usage_records_remain_last_cumulative_value(tmp_path: Path) -> None:
+    usage = tmp_path / "cumulative.jsonl"
+    usage.write_text(
+        "\n".join(
+            [
+                json.dumps({"usage": {"input_tokens": 100, "output_tokens": 10}}),
+                json.dumps({"usage": {"input_tokens": 125, "output_tokens": 12}}),
+            ]
+        )
+        + "\n"
+    )
+
+    assert load_usage(usage)["reported_total_tokens"] == 137
+
+
 def test_incremental_suffix_matches_full_replay(tmp_path: Path) -> None:
     usage = tmp_path / "codex.jsonl"
     first = {
@@ -120,6 +224,35 @@ def test_incremental_suffix_matches_full_replay(tmp_path: Path) -> None:
     full = inspect_usage_accumulator(usage)
     assert cursor == usage.stat().st_size
     assert incremental == full
+
+
+def test_supergg_incremental_suffix_matches_additive_full_replay(tmp_path: Path) -> None:
+    usage = tmp_path / "supergg.jsonl"
+    first = {
+        "type": "custom",
+        "kind": "turn_metric",
+        "data": {"usage": {"inputTokens": 10, "outputTokens": 2, "cacheRead": 20}},
+    }
+    second = {
+        "type": "custom",
+        "kind": "turn_metric",
+        "data": {
+            "usage": {"inputTokens": 3, "outputTokens": 1, "cacheWrite": 30},
+        },
+    }
+    usage.write_text(json.dumps(first) + "\n")
+    accumulator = inspect_usage_accumulator(usage)
+    offset = usage.stat().st_size
+    with usage.open("a") as handle:
+        handle.write(json.dumps(second) + "\n")
+
+    result = inspect_usage_suffix(usage, offset, accumulator)
+
+    assert result is not None
+    incremental, cursor = result
+    assert cursor == usage.stat().st_size
+    assert incremental == inspect_usage_accumulator(usage)
+    assert incremental["turn_metric_total"]["total_input_tokens"] == 63
 
 
 def test_incremental_suffix_rejects_partial_line(tmp_path: Path) -> None:

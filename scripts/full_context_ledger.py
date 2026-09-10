@@ -29,6 +29,24 @@ USAGE_KEYS = {
     "reasoning_output_tokens",
     "total_tokens",
 }
+TURN_METRIC_USAGE_KEYS = {
+    "inputTokens",
+    "outputTokens",
+    "cacheRead",
+    "cacheWrite",
+    "reasoningTokens",
+}
+NORMALIZED_USAGE_KEYS = {
+    "input_tokens",
+    "cache_creation_input_tokens",
+    "cache_read_input_tokens",
+    "cached_input_tokens_subset",
+    "cache_write_input_tokens",
+    "total_input_tokens",
+    "output_tokens",
+    "reasoning_output_tokens_subset",
+    "reported_total_tokens",
+}
 SPAWN_CALL_RE = re.compile(r"\bspawn_agent\s*\(")
 EXEC_CALL_RE = re.compile(r"\bexec_command\s*\(")
 RTK_CALL_RE = re.compile(r"(?<![\w-])rtk(?:\s|[\"'])")
@@ -176,6 +194,38 @@ def _normalize_usage(usage: dict[str, Any]) -> dict[str, int]:
     }
 
 
+def _turn_metric_usage(record: dict[str, Any]) -> dict[str, int] | None:
+    """Normalize one GG/SuperGG per-turn metric without cumulative semantics."""
+    if record.get("kind") != "turn_metric":
+        return None
+    data = record.get("data")
+    usage = data.get("usage") if isinstance(data, dict) else None
+    if not isinstance(usage, dict) or not TURN_METRIC_USAGE_KEYS.intersection(usage):
+        return None
+    counts: dict[str, int] = {}
+    for key in TURN_METRIC_USAGE_KEYS:
+        value = usage.get(key, 0)
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            raise ValueError(f"invalid turn_metric usage value: {key}")
+        counts[key] = value
+    total_input = counts["inputTokens"] + counts["cacheWrite"] + counts["cacheRead"]
+    return {
+        "input_tokens": counts["inputTokens"],
+        "cache_creation_input_tokens": counts["cacheWrite"],
+        "cache_read_input_tokens": counts["cacheRead"],
+        "cached_input_tokens_subset": 0,
+        "cache_write_input_tokens": 0,
+        "total_input_tokens": total_input,
+        "output_tokens": counts["outputTokens"],
+        "reasoning_output_tokens_subset": counts["reasoningTokens"],
+        "reported_total_tokens": total_input + counts["outputTokens"],
+    }
+
+
+def _add_normalized_usage(left: dict[str, int], right: dict[str, int]) -> dict[str, int]:
+    return {key: left[key] + right[key] for key in NORMALIZED_USAGE_KEYS}
+
+
 def _payload_text(value: Any) -> str:
     if isinstance(value, str):
         return value
@@ -287,9 +337,11 @@ def new_usage_accumulator() -> dict[str, Any]:
     return {
         "latest_codex_total": None,
         "last_usage_candidate": None,
+        "turn_metric_total": None,
         "pending_verify_calls": [],
         "metadata": {
             "records": 0,
+            "turn_metric_records": 0,
             "token_count_events": 0,
             "compactions": 0,
             "tool_output_bytes": 0,
@@ -311,6 +363,7 @@ def _accumulator_metadata(value: Any) -> dict[str, int] | None:
         return None
     required = {
         "records",
+        "turn_metric_records",
         "token_count_events",
         "compactions",
         "tool_output_bytes",
@@ -332,22 +385,11 @@ def _accumulator_metadata(value: Any) -> dict[str, int] | None:
         or any(not isinstance(item, str) for item in pending)
     ):
         return None
-    for key in ("latest_codex_total", "last_usage_candidate"):
+    for key in ("latest_codex_total", "last_usage_candidate", "turn_metric_total"):
         candidate = value.get(key)
         if candidate is not None and (
             not isinstance(candidate, dict)
-            or set(candidate)
-            != {
-                "input_tokens",
-                "cache_creation_input_tokens",
-                "cache_read_input_tokens",
-                "cached_input_tokens_subset",
-                "cache_write_input_tokens",
-                "total_input_tokens",
-                "output_tokens",
-                "reasoning_output_tokens_subset",
-                "reported_total_tokens",
-            }
+            or set(candidate) != NORMALIZED_USAGE_KEYS
             or any(not isinstance(item, int) or item < 0 for item in candidate.values())
         ):
             return None
@@ -363,6 +405,16 @@ def update_usage_accumulator(record: Any, accumulator: dict[str, Any]) -> None:
     if not isinstance(record, dict):
         return
     _update_verification(record, accumulator)
+    turn_metric = _turn_metric_usage(record)
+    if turn_metric is not None:
+        metadata["turn_metric_records"] += 1
+        current = accumulator.get("turn_metric_total")
+        accumulator["turn_metric_total"] = (
+            _add_normalized_usage(current, turn_metric)
+            if isinstance(current, dict)
+            else turn_metric
+        )
+        return
     payload = record.get("payload")
     if (
         record.get("type") == "event_msg"
@@ -380,7 +432,11 @@ def usage_from_accumulator(accumulator: dict[str, Any]) -> tuple[dict[str, int],
     metadata = _accumulator_metadata(accumulator)
     if metadata is None:
         raise ValueError("invalid usage accumulator")
-    usage = accumulator.get("latest_codex_total") or accumulator.get("last_usage_candidate")
+    usage = (
+        accumulator.get("turn_metric_total")
+        or accumulator.get("latest_codex_total")
+        or accumulator.get("last_usage_candidate")
+    )
     if not isinstance(usage, dict):
         raise ValueError("no provider usage object found")
     return dict(usage), dict(metadata)

@@ -427,6 +427,7 @@ def install_files(dry_run: bool) -> None:
         # Sibling of the installed ledger: full_context_ledger loads it by path
         # to price the cached prefix, and degrades quietly when it is absent.
         ROOT / "scripts" / "cache_economics.py": INSTALL_HOME / "bin" / "cache_economics.py",
+        ROOT / "scripts" / "workflow_policy.py": INSTALL_HOME / "bin" / "ats-workflow-policy",
         ROOT / "scripts" / "external_usage_gate.py": INSTALL_HOME / "bin" / "agent-token-audit",
         ROOT / "scripts" / "llmadapter.ts": INSTALL_HOME / "bin" / "llmadapter",
         ROOT / "integration" / "hooks" / "token-stack-prompt.py": INSTALL_HOME
@@ -447,6 +448,10 @@ def install_files(dry_run: bool) -> None:
         / "codex-heavy-context",
         ROOT / "integration" / "cli" / "kimi-worker": INSTALL_HOME / "bin" / "kimi-worker",
         ROOT / "integration" / "cli" / "ats-verify": INSTALL_HOME / "bin" / "ats-verify",
+        ROOT / "scripts" / "install_stack_tools.py": INSTALL_HOME / "bin" / "install-stack-tools",
+        ROOT / "scripts" / "install_stack_tools.sh": INSTALL_HOME
+        / "bin"
+        / "install-stack-tools.sh",
     }
     for source, target in copies.items():
         install_copy(source, target, dry_run, executable=True)
@@ -479,6 +484,14 @@ def install_files(dry_run: bool) -> None:
         cache_launcher.unlink(missing_ok=True)
         cache_launcher.symlink_to(cache_target)
         print(f"linked {cache_launcher}")
+    workflow_launcher = HOME / ".local" / "bin" / "ats-workflow-policy"
+    workflow_target = copies[ROOT / "scripts" / "workflow_policy.py"]
+    if dry_run:
+        print(f"would link {workflow_launcher} -> {workflow_target}")
+    else:
+        workflow_launcher.unlink(missing_ok=True)
+        workflow_launcher.symlink_to(workflow_target)
+        print(f"linked {workflow_launcher}")
     verify_launcher = HOME / ".local" / "bin" / "ats-verify"
     verify_target = copies[ROOT / "integration" / "cli" / "ats-verify"]
     if dry_run:
@@ -647,6 +660,7 @@ def write_config(
         "doctor": ROOT / "scripts" / "stack_doctor.py",
         "ledger": ROOT / "scripts" / "full_context_ledger.py",
         "cache_economics": ROOT / "scripts" / "cache_economics.py",
+        "workflow_policy": ROOT / "scripts" / "workflow_policy.py",
         "audit": ROOT / "scripts" / "external_usage_gate.py",
         "llmadapter": ROOT / "scripts" / "llmadapter.ts",
         "prompt_hook": ROOT / "integration" / "hooks" / "token-stack-prompt.py",
@@ -658,6 +672,7 @@ def write_config(
         "doctor": INSTALL_HOME / "bin" / "agent-token-saver",
         "ledger": INSTALL_HOME / "bin" / "agent-token-ledger",
         "cache_economics": INSTALL_HOME / "bin" / "cache_economics.py",
+        "workflow_policy": INSTALL_HOME / "bin" / "ats-workflow-policy",
         "audit": INSTALL_HOME / "bin" / "agent-token-audit",
         "llmadapter": INSTALL_HOME / "bin" / "llmadapter",
         "prompt_hook": INSTALL_HOME / "hooks" / "token-stack-prompt.py",
@@ -708,6 +723,11 @@ def main() -> int:
     )
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument(
+        "--install-tools",
+        action="store_true",
+        help="install optional stack tools (rtk, tilth, graphify, codegraph, context-mode, si)",
+    )
+    parser.add_argument(
         "--no-update", action="store_true", help="skip the git fast-forward self-update"
     )
     args = parser.parse_args()
@@ -743,6 +763,17 @@ def main() -> int:
         print("== onboarding check ==")
         sys.stdout.flush()
         subprocess.run([sys.executable, str(doctor), "doctor"], timeout=120)
+    if args.install_tools:
+        stack_installer = INSTALL_HOME / "bin" / "install-stack-tools"
+        if stack_installer.exists():
+            print("== stack tools ==")
+            sys.stdout.flush()
+            cmd = [sys.executable, str(stack_installer)]
+            if args.dry_run:
+                cmd.append("--dry-run")
+            subprocess.run(cmd, timeout=600)
+        else:
+            print("stack tools installer not found, skipping")
     return 0
 
 

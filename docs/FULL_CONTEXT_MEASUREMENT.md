@@ -65,6 +65,13 @@ OpenAI-style usage fields. Codex `cached_input_tokens` is treated as a subset of
 input. Claude `cache_creation_input_tokens` and `cache_read_input_tokens` are
 separate input classes and are added.
 
+GG and SuperGG `custom` JSONL records with `kind: "turn_metric"` are summed as
+per-turn measurements. Their camel-case `inputTokens`, `cacheRead`,
+`cacheWrite`, `outputTokens` and `reasoningTokens` counters remain separate in
+the normalized ledger; the usage-source metadata reports the number of
+recognized `turn_metric` records. Invalid or negative counters fail closed
+instead of being reported as a zero-token run.
+
 For Codex JSONL, the parser prefers the newest cumulative
 `payload.info.total_token_usage` over `last_token_usage`. Other formats use the
 last recognized provider usage object. Repeat `--usage` for every parent,
@@ -121,6 +128,22 @@ difference end-to-end savings.
 
 The release gate is simple: no optimization becomes a default unless task
 success stays equal and full provider tokens improve on the same workload.
+
+## Offline workflow-policy gate
+
+`ats-workflow-policy` consumes the component/multi-operation matrix plus one or
+more schema-v4 GG prompt-bench files. It keeps provider input, cache read, cache
+write, output, turns and provider duration separate, then applies the selected
+cache price profile. Its default gates are 10 trials per cell and three
+independent tasks before a prompt variant can leave the current full default.
+
+SuperML or AutoLearn is an optional later phase, not a substitute for labels.
+Activation remains blocked until the history contains redacted pre-treatment
+features, mutually exclusive workflow arms, logged propensities, deterministic
+quality outcomes and a chronological holdout with at least 30 training and 10
+test observations per arm. Even a positive holdout result is only a shadow
+candidate until independent review; the command never changes a runtime
+selector.
 
 The 2026-07-15 three-task Codex probe is an example of that boundary. The
 compact automatic policy saved 19.67% provider total in aggregate while one

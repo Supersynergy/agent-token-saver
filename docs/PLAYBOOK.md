@@ -310,6 +310,8 @@ The Stop guard reads `ats-verify`'s verdict line, so a red check surfaces as
 ```bash
 agent-token-ledger --usage parent=<session.jsonl> --provider codex --format markdown
 ats-cache --profile anthropic --format line <usage.json>
+ats-workflow-policy --matrix <matrix.json> --prompt-bench <run.json> \
+  --out-json <policy.json> --out-md <policy.md>
 ```
 
 Two traps worth naming:
@@ -319,6 +321,10 @@ Two traps worth naming:
   or do not claim a saving.
 - **A mid-wave tool load or a compaction voids the prefix** from the first
   changed token. Count that re-write against the saving it claims.
+- **A short prompt is not an adaptive policy.** The workflow report keeps the
+  full default until the quality, sample and independent-task gates pass. It
+  blocks SuperML/AutoLearn when arms, propensities, safe labels or chronological
+  holdout evidence are missing.
 
 **Worked example.** On a 125 MB Codex transcript the ledger replayed in 1.3 s and
 reported 43 verification runs, all green — an outcome number, not just a cost
