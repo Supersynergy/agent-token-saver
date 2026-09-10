@@ -268,6 +268,41 @@ def recently_handled(prompt: str, session: str) -> bool:
     return False
 
 
+def emit_freshdocs_context(prompt: str, cwd: str) -> bool:
+    """Call freshdocs hook for API/docs-relevant prompts. Fail-open."""
+    freshdocs_bin = Path.home() / ".local" / "bin" / "freshdocs"
+    if not freshdocs_bin.exists():
+        return False
+    import subprocess
+
+    try:
+        result = subprocess.run(
+            [str(freshdocs_bin), "hook", "--client", "claude", "--limit", "3"],
+            input=json.dumps({"prompt": prompt, "cwd": cwd}),
+            capture_output=True,
+            text=True,
+            timeout=8,
+            check=False,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            payload = json.loads(result.stdout)
+            context = payload.get("additionalContext", "")
+            if context:
+                emit(f"<freshdocs_context>{context}</freshdocs_context>")
+                return True
+    except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError) as error:
+        audit("freshdocs_failed", type(error).__name__)
+    return False
+
+
+FRESHDOCS_TRIGGER = re.compile(
+    r"\b(?:api|sdk|framework|library|package|dependency|version|migration|"
+    r"deprecated|deprecation|breaking|changelog|docs|documentation|"
+    r"aktuell|neueste|bibliothek|paket|abhängigkeit|upgrade|update)\b",
+    re.IGNORECASE,
+)
+
+
 def main() -> int:
     try:
         event = json.load(sys.stdin)
@@ -332,6 +367,10 @@ def main() -> int:
         emit_token_saver_fallback()
     elif RECON_TRIGGER.search(prompt) and not explicit_skill:
         emit_low_cost_recon_route()
+    # Freshdocs context for API/docs-relevant prompts (fail-open, after skill routing)
+    if FRESHDOCS_TRIGGER.search(prompt) and not explicit_skill:
+        cwd = str(event.get("cwd") or os.getcwd())
+        emit_freshdocs_context(prompt, cwd)
     return 0
 
 
