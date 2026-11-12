@@ -2,8 +2,7 @@ node_modules/
 .DS_Store
 .apu/
 .ats/
-.sis/*.db*
-.sis/*.sqlite*
+.sis/
 rtk-report/
 probe-home/
 work/

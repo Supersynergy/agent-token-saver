@@ -1,102 +1,78 @@
-# Wann RTK hilft und wann die Kürzung Arbeit macht
+# When RTK helps, and when it removes the answer
 
-Stand: 12. November 2026. Lokal geprüft mit RTK 1.2.0 und Bun 1.4.4.
-Die Fixtures sind synthetisch. Pro Aufgabe lief ein Filterprozess; echte
-Projektprüfungen und Anbieteraufrufe waren nicht beteiligt.
+Reviewed November 12, 2026 with RTK 1.2.0 and Bun 1.4.4. Eight synthetic tasks,
+one filter process per task. No provider calls or real project builds.
 
-Eine frühe Version unseres Ansatzes stellte die gesparten Ausgabebytes in den
-Vordergrund. Damit ließ sich ein großer Effekt zeigen, ohne zu beantworten,
-ob der Agent anschließend noch richtig handeln konnte. Der neue Vergleich
-stellt zuerst die Frage und legt danach die benötigten Belege fest.
-
-## Das Ergebnis dieser acht Fragen
-
-| Aufgabe | Rohtext | RTK-Kandidat | Ausgewählt | Befund |
+| Question | Raw | RTK candidate | Selected | Result |
 |---|---:|---:|---:|---|
-| kurze Erfolgsmeldung lesen | 19 B | 19 B | 19 B | kein Bytegewinn |
-| TypeScript-Fehler lokalisieren | 7.630 B | 230 B | 230 B | benötigte Dateinamen und Fehlercodes erhalten |
-| alle 180 Routentreffer liefern | 10.510 B | 10.510 B | 10.510 B | kein Bytegewinn |
-| einen Routentreffer liefern | 10.510 B | 10.510 B | 10.510 B | kein Bytegewinn; gezielte Auswahl braucht 59 B |
-| alle 240 Dateipfade liefern | 6.720 B | 220 B | 6.720 B | alle vollständigen Pfadbelege fehlen im Kandidaten |
-| letzte fünf Commitbetreffe lesen | 6.880 B | 169 B | 6.880 B | drei verlangte Betreffe fehlen |
-| Testfehler mit Ort und Soll-/Ist-Werten lesen | 592 B | 51 B | 592 B | verlangte Detailbelege fehlen |
-| ungewöhnlichen Fehler lesen | 7.506 B | 32 B | 7.506 B | Fehlerkennung und Wiederholungswert fehlen |
+| Read a short success message | 19 B | 19 B | 19 B | no byte gain |
+| Locate TypeScript errors | 7,630 B | 230 B | 230 B | required filenames and codes retained |
+| Return all 180 route matches | 10,510 B | 10,510 B | 10,510 B | no byte gain |
+| Return one route match | 10,510 B | 10,510 B | 10,510 B | no gain; exact selection needs 59 B |
+| Return all 240 paths | 6,720 B | 220 B | 6,720 B | all exact path literals absent |
+| Read the latest five commit subjects | 6,880 B | 169 B | 6,880 B | three required subjects absent |
+| Read failure location and expected/actual values | 592 B | 51 B | 592 B | five required detail literals absent |
+| Read an unusual failure | 7,506 B | 32 B | 7,506 B | error ID and retry value absent |
 
-Ein Kandidat wurde angenommen, drei brachten keine Byteersparnis und vier
-verloren festgelegte Belege. Bei den sieben verworfenen Kandidaten blieb der
-Rohtext ausgewählt. Eine riskante Kürzung zählt nicht als Gewinn.
-[Maschinenlesbarer Bericht](../data/benchmarks/rtk-2026-11-12.json) und
-[Messprotokoll](../data/benchmarks/rtk-2026-11-12.md).
+One candidate was accepted, three saved no bytes and four lost required evidence.
+The seven rejected candidates kept raw output. Risky removal earns no saving.
+[JSON](../data/benchmarks/rtk-2026-11-12.json) ·
+[measurement record](../data/benchmarks/rtk-2026-11-12.md).
 
-Die TypeScript-Aufgabe hatte daneben eine gezielte Referenzansicht von 153 Bytes.
-Sie wurde eigens für diese Frage geschrieben. Das ist kein allgemeiner
-Kompressor und kein fairer Geschwindigkeitsgegner für einen neuen RTK-Prozess.
-Es zeigt, warum die genaue Frage vor dem Werkzeug stehen sollte.
+## Ask the question before choosing the filter
 
-## Was daraus folgt
+The TypeScript fixture also had a 153-byte exact reference tailored to that
+question. It is not a general compressor or a fair latency rival for a new RTK
+process. It shows why selecting the needed information can beat another layer.
 
-Eine bereits kurze Meldung braucht selten einen weiteren Filter. Wenn der Filter
-nichts entfernt, bleiben zumindest sein Aufruf und seine Wartung übrig. Diese
-Kosten sind real, auch wenn die Bytezahl gleich bleibt.
+A complete path list must remain complete. A grouped tree can answer an overview
+question and still fail a parser that requires every path. Patch bytes and
+pipeline inputs have the same consumer contract.
 
-Eine vollständige Liste muss vollständig bleiben. Bei einer Baumübersicht dürfen
-Dateinamen gruppiert werden; ein nachgeschalteter Parser braucht dagegen die
-verlangten Pfade. Dasselbe gilt für einen Patch. Entscheidend ist der Vertrag
-mit dem nächsten Verbraucher.
+The accepted TypeScript candidate retained its declared literals. That does not
+prove every relationship between a file, line and error code remained correct.
+A stronger parser or a completed fix needs a stronger oracle.
 
-Für TypeScript-Diagnosen kann eine passende Gruppierung nützlich sein. In dieser
-Fixture blieben die geforderten Literale erhalten. Ob jede inhaltliche Beziehung
-zwischen Dateiname, Zeile und Fehlercode erhalten ist, prüft der Literal-Oracle
-nicht. Dafür braucht es einen stärkeren Parser oder eine echte Fehlerbehebung.
+Unknown error formats need attention. A filter trained on familiar patterns can
+miss another format. `verify` therefore saves raw files before showing a short
+view and never substitutes a filter's exit for the original check's exit.
 
-Ungewöhnliche Fehler brauchen besondere Aufmerksamkeit. Ein Filter, der bekannte
-Fehlermuster extrahiert, kann fremde Muster übersehen. Deshalb bewahrt `verify`
-seine Rohdateien vor jeder gekürzten Darstellung und übernimmt keine
-Filterentscheidung als Exitcode des ursprünglichen Checks.
+## What these results do not establish
 
-## Was diese Messung nicht zeigt
+The tasks deliberately exercise different contracts. They are not a representative
+sample of all RTK calls. Seven rejected cases here do not imply an 87.5% failure
+rate for RTK. A `pipe` filter result does not establish how every specialized
+RTK command behaves on a real project.
 
-Die acht Aufgaben sind absichtlich auf unterschiedliche Verträge zugeschnitten.
-Sie sind keine repräsentative Verteilung aller RTK-Aufrufe. „Sieben von acht
-hier verworfen“ bedeutet deshalb nicht „RTK ist zu 87,5 Prozent nutzlos“.
-Auch die Reduktion eines `pipe`-Filters beweist nicht, wie sich jeder spezialisierte
-RTK-Befehl auf einem echten Projekt verhält.
+Filter times were roughly 4–7 ms in this run, including process startup. There
+were no latency repetitions or confidence intervals. No general speed factor
+or provider-bill reduction follows from those times.
 
-Die erfassten Filterzeiten liegen in diesem Lauf ungefähr zwischen 4 und 7 ms.
-Jede Zeit enthält Prozessstart und Filterarbeit. Es gab keine Wiederholungen für
-Latenzintervalle. Die Auswahl des nächsten Werkzeugs darf daraus keinen
-allgemeinen Geschwindigkeitsfaktor ableiten.
+A missing required literal proves failure of that declared contract. Keeping all
+literals proves only that weaker condition, not semantic equivalence or a solved
+task. Provider usage and prices require their own measurements.
 
-Ein Literal-Oracle kann Informationsverlust nachweisen, wenn ein verlangter
-Beleg fehlt. Bestehen alle Literalprüfungen, folgt daraus nur diese begrenzte
-Aussage. Semantische Gleichwertigkeit, korrekte Fehlerbehebung und geringere
-Anbieterkosten brauchen eigene Prüfungen.
+## Compare with current upstream guidance
 
-## Aktuelle RTK-Dokumentation richtig lesen
+RTK describes `gain` as estimated shell-output reduction and distinguishes it
+from provider billing. [Official explanation](https://github.com/rtk-ai/rtk/blob/develop/docs/usage/FEATURES.md#about-bash-output-reduction).
 
-RTK selbst beschreibt `gain` als Schätzung entfernter Shell-Ausgabe und trennt
-diese von der Anbieterrechnung. Das stützt die Trennung unserer Messgrößen.
-[Offizielle Erklärung](https://github.com/rtk-ai/rtk/blob/develop/docs/usage/FEATURES.md#about-bash-output-reduction).
+Its technical documentation keeps pipeline producers and intermediate stages
+raw and limits automatic rewriting. A parser must not receive an altered
+preview in place of its required input. Upstream documentation describes its
+own revision; it does not prove another installed version's behavior.
+[Technical source](https://github.com/rtk-ai/rtk/blob/develop/docs/contributing/TECHNICAL.md#32-command-rewriting).
 
-Die aktuelle technische Beschreibung hält Eingaben und Zwischenstufen einer
-Pipeline roh und begrenzt automatische Umschreibungen. Das ist derselbe
-Verbrauchervertrag: Ein Parser darf keine umformatierte Vorschau erhalten.
-Diese Dokumentation beschreibt den jeweiligen Upstream-Stand; sie beweist
-keine Funktion einer anderen installierten RTK-Version.
-[Technische Quelle](https://github.com/rtk-ai/rtk/blob/develop/docs/contributing/TECHNICAL.md#32-command-rewriting).
-
-## Selbst prüfen
+## Run your comparison
 
 ```bash
-bun run ats bench --out ./mein-rtk-bericht
+bun run ats bench --out ./my-rtk-report
 ```
 
-Optional wählt `--rtk /pfad/zur/rtk` eine bestimmte installierte Binärdatei.
-ATS installiert keine Software und vertraut keinen Projektfiltern. Die
-Vorbereitung schaltet RTK-Telemetrie im isolierten Home ab. Scheitert sie,
-werden die RTK-Arme als nicht verfügbar ausgewiesen.
+Use `--rtk /path/to/rtk` to select an installed binary. ATS installs no RTK
+software or plugins. Preparation disables telemetry in an isolated home; failed
+preparation marks the arms unavailable.
 
-Der Ordner enthält pro Fall Rohtext, Kandidat und ausgewählte Ausgabe. Der
-Bericht nennt fehlende Belege, Filterstatus und Bytezahlen. Die Fixture-Hashes
-machen unterschiedliche Eingaben sichtbar. Ein neuer Vergleich darf frühere
-Gegenbefunde nicht aus seiner Bilanz entfernen.
+Each case saves raw, candidate and selected output. The report includes missing
+literals, status, byte counts and fixture hashes. Keep counterexamples in the
+record when comparing a new version.

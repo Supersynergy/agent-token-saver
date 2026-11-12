@@ -1,65 +1,62 @@
-# Geschwindigkeit am abgenommenen Ergebnis messen
+# Measure speed at the accepted result
 
-Stand: 12. November 2026. Diese Seite übernimmt begrenzte Prinzipien aus den
-lokalen Speed-Skills und Superloop. Sie startet deren Workflows nicht.
-`ats guide speed` ist die kurze Merkhilfe.
+Reviewed November 12, 2026. These are bounded principles from local Speed skills
+and Superloop, not instructions to start those workflows. `ats guide speed`
+is the short version.
 
-## Erst unterscheiden, wo die Zeit bleibt
+## Separate the time before optimizing it
 
-Ein langsamer Schritt kann Modellwartezeit, Prozessstart, tatsächliche Toolarbeit
-oder Nacharbeit enthalten. Diese Zeiten brauchen getrennte Messungen. Die
-Toollaufzeit aus `ats verify` enthält keine außerhalb des Aufrufs liegende
-Modellwartezeit. Aus einer kleinen Werkzeugmessung lässt sich deshalb kein
-Anteil an der gesamten Agentensitzung ableiten.
+Model wait, process startup, tool work and rework are different costs. Measure
+them separately. `ats verify` cannot measure model wait outside its child-command
+run. A small tool benchmark therefore cannot establish its share of an entire
+agent session.
 
-Vor einem Versuch stehen die konkrete Aufgabe, die unveränderte Prüfaussage
-und die Abbruchbedingung. Ändere den vermuteten Engpass. Vergleiche denselben
-Auftrag mit gleicher Abnahme und notiere Fehler statt sie aus der Bilanz zu
-entfernen. Bei Startkosten Kalt- und Warmlauf trennen; bei CPU-Arbeit zusätzlich
-CPU-Zeit beobachten. Ein einzelner niedriger Wanduhrwert kann Lastdrift sein.
+Before comparing candidates, fix the task, quality condition and stop rule.
+Change the measured bottleneck. Compare the same accepted outcome and retain
+failures in the accounting. Separate cold and warm calls when startup matters;
+measure CPU time as well for CPU-bound work. A low wall-time sample can be load
+drift rather than an improvement.
 
-## Was wir aus Superloop übernehmen
+## What survives the Superloop review
 
-Der Ablauf Auftrag → Quelle finden → ändern → prüfen → Beleg → ausliefern ist
-für einen vollständigen Slice brauchbar. Es ist ein Gerüst, keine Pflicht,
-für jeden Dateinamen eine neue Planungsrunde zu erzeugen. Ein lokaler Lookup
-bleibt ein direkter Lookup.
+Contract → find → edit → check → evidence → ship is a useful slice outline.
+It is a scaffold, not a reason to plan every filename lookup. A local lookup
+can remain a direct tool call.
 
-Einmalige Initialisierung kann sich für wiederholte Aufrufe lohnen. Das muss die
-wirkliche Aufrufhäufigkeit tragen. Ein Dienst auf Vorrat kostet Ressourcen,
-auch wenn nie ein zweiter Aufruf kommt. ATS startet deshalb keinen Daemon.
+Paying initialization once can help repeated operations, when actual frequency
+repays the setup and ongoing resource cost. A service started before a real
+consumer exists still costs memory and maintenance. ATS starts no daemon.
 
-Gebündelte Abfragen sind nützlich, wenn die Einzelstatus und nötigen Belege
-erhalten bleiben. Abhängige Änderungen bleiben geordnet. Ein gemeinsamer
-Exitcode, der einen roten Teilschritt versteckt, ist kein Gewinn.
+Batch operations when individual statuses and required evidence survive.
+Keep dependent writes ordered. A shared exit that hides a failed step is not
+a useful optimization.
 
-Der engste betroffene Check verkürzt den inneren Arbeitsloop. Vorgeschriebene
-Release- oder Sicherheitsgates bleiben bestehen. Nach passender grüner Abnahme
-endet die Arbeit; ein Quellenwechsel macht den alten Beleg nicht automatisch
-für die neue Fassung gültig.
+The narrow affected check can shorten an inner loop. Required release and
+security gates stay required. Stop after matching acceptance passes; a source
+change does not automatically inherit the old proof.
 
-## Was wir ausdrücklich nicht übernehmen
+## What stays out
 
-- „Runden sind immer wichtiger als Millisekunden“ wird keine pauschale Regel.
-  Zuerst Modellwartezeit und Toolzeit unterscheiden; Häufigkeit und Engpass messen.
-- Ein fehlendes erforderliches Werkzeug ist kein bestandener Check. Optionales
-  RTK wird als `unavailable` ausgewiesen; ein fehlender Pflicht-Oracle blockiert.
-- Kein automatisches Reclaim, Töten fremder Prozesse oder Tracker-Fallback.
-- Keine feste Turn-Grenze aus zwei Aufgaben und keine heutige Preisempfehlung
-  aus einem alten Off-Peak-Vergleich.
-- Keine zusätzlichen Keepalives, Hintergrund-Warmups oder Modellaufrufe zur
-  Optimierung einer bereits deterministisch beantwortbaren Frage.
+- No universal rule that rounds always dominate milliseconds. Measure both
+  model wait and tool time, then account for frequency and the actual bottleneck.
+- A missing required tool is not a passed check. Optional RTK is `unavailable`;
+  a missing required oracle blocks acceptance.
+- No automatic reclaim, killing other owners' processes or tracker fallback.
+- No fixed turn cap from two tasks or current price recommendation from an old
+  off-peak experiment.
+- No keepalive, background warmup or extra model call to shorten deterministic data.
 
-## Wie die Quellen verwendet wurden
+## Sources and limits
 
-`superloop` liefert das Phasengerüst. `speedtuning` liefert Kostenklassen und
-Qualitätsinvarianten. `speedplaybook` liefert Gegenbeispiele für unpassende
-Parallelität und nicht amortisierte Startkosten. Der lokale Harness-Bericht
-zeigt die Grenze reiner Tokenminimierung. Die
-[Quellhashes](../data/research/speed-review-2026-11-12.json) kennzeichnen die
-geprüften Fassungen. Ihre Zahlen werden weder als ATS-Messung noch als
-übertragbarer Beschleunigungsfaktor ausgegeben.
+`superloop` contributed the phase outline; `speedtuning` contributed cost classes
+and quality invariants. `speedplaybook` supplied counterexamples to unnecessary
+parallelism and unamortized startup. A local harness study showed why token
+minimization alone can misprice an accepted task.
 
-Die ursprüngliche [Auswahl der 20 Skills](SKILLS.md) bleibt als Entwurfsnachweis
-erhalten. Diese zusätzliche Prüfung erweitert die Begründung, nicht die Zahl
-der automatisch geladenen Skills oder die Befugnisse des Werkzeugs.
+[Source hashes](../data/research/speed-review-2026-11-12.json) identify the reviewed
+versions. Their figures are neither ATS measurements nor transferable speed
+factors. Private source documents are not bundled.
+
+The [20-skill design review](SKILLS.md) remains separate provenance. This review
+extends the reasoning, not the number of automatically loaded skills or the
+authority granted to the tool.

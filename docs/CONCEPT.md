@@ -1,143 +1,121 @@
-# Der teuerste Token ist der nächste unnötige Schritt
+# The next unnecessary step can cost more than the text it removes
 
-Stand: 12. November 2026. Konzept und lokale Umsetzung von ATS 5.1.
+Reviewed November 12, 2026. ATS starts with an accepted result, then removes
+unnecessary operations and shortens evidence views. A small output is useful
+only while the information needed for the next decision survives.
 
-Ein Agent kann eine Ausgabe um 99 Prozent kürzen und trotzdem länger brauchen.
-Er übersieht einen Fehler, sucht erneut, liest die Rohdatei nach und beginnt den
-Test von vorn. Die gesparten Zeichen sind weg. Die Zusatzrunde bleibt auf der Uhr.
+## What matters most
 
-Unser neuer Entwurf beginnt deshalb beim abgenommenen Ergebnis. Ein kleines
-Ergebnis ohne erhaltene Prüfaussage ist kein Fortschritt. Die Denkfilter dafür:
-Engpass suchen und die eigene Sparbehauptung widerlegen.
+### Remove repeated work
 
-## Worauf es am meisten ankommt
+Before a call, identify the open question it will answer. Reuse relevant decisions
+and source-matched green checks. Batch independent reads when each result stays
+observable. Stop after the agreed acceptance condition passes.
 
-### 1. Unnötige Runden entfernen
+This is a process priority, not a universal percentage derived from ATS data.
+Track requests, wall time, rework and interruptions alongside tokens. A faster
+projection does not fix a queue or an incorrect task contract.
 
-Vor einem Aufruf muss feststehen, welche offene Entscheidung er klärt.
-Vorhandene Antworten und zum Quellenstand passende grüne Tests wiederverwenden.
-Bekannte unabhängige Reads bündeln. Nach erfüllter Abnahme aufhören.
+### Preserve the acceptance condition
 
-Das ist eine Priorität für den Ablauf, keine aus unseren ATS-Daten abgeleitete
-allgemeine Prozentzahl. Wer sparen will, erfasst Anfragen, Wandzeit, Nacharbeit
-und Nutzerunterbrechungen neben Tokens. Eine schnellere Textprojektion löst
-keine Warteschlange und keinen falschen Auftrag.
+The September 13 matrix estimated 407,670 visible input units for the raw path
+and 1,932 for a selective CLI path. Every aggregate row was unaccepted because
+the skill-routing component failed its oracle. The small output was not an
+accepted saving. [Source](../data/benchmarks/token-stack-matrix-2026-09-13.md).
 
-### 2. Die Prüfaussage erhalten
+`verify` therefore saves raw logs and the original exit before showing a shorter
+view. `project` reports omissions. A match limit is not a complete inventory.
+An empty diagnostic view cannot turn a failed command into success.
 
-Die Matrix vom 13. September schätzte 407.670 sichtbare Eingabeeinheiten im
-Rohpfad und 1.932 im selektiven CLI-Pfad. Alle Gesamtreihen trugen `Accepted: no`.
-Der Skill-Routing-Oracle scheiterte. Das Ergebnis darf keine Sparwerbung tragen.
-[Quelle und Komponenten](../data/benchmarks/token-stack-matrix-2026-09-13.md).
+An oracle must also fit the task. Correctly forwarding an exit proves only what
+the selected command actually checked.
 
-Deshalb bewahrt `verify` Rohlogs und Exitcode, bevor eine Diagnose gekürzt wird.
-`project` nennt ausgelassene Bytes. Ein Trefferlimit ist niemals eine komplette
-Inventur. Ein leeres Diagnosefenster macht einen roten Befehl nicht grün.
+### Select before the model reads
 
-Das Oracle selbst muss zur Aufgabe passen. Auch ein korrekt weitergereichter
-Exitcode beweist nur, was der aufgerufene Check tatsächlich prüft.
+The September 13 microbenchmark reduced a Git-log view from 10,636 to 52 estimated
+units; JSON-key selection reduced 48,487 to 582. These were UTF-8-bytes/4 proxies,
+not provider counters or money. [Source](../data/benchmarks/stack-tool-microbench-2026-09-13.md).
 
-### 3. Vor dem Modell auswählen
+Start with an exact search or the needed data fields. Use a bounded structural
+read when that is insufficient. A graph or browser needs a named open question;
+a small known log does not automatically need an indexing service.
 
-Die lokale Werkzeugmessung vom 13. September schrumpfte einen Git-Log-Ausschnitt
-von 10.636 auf 52 geschätzte Einheiten. Bei `jq keys` waren es 48.487 auf 582.
-Das zeigt, wo feste Projektionen helfen. Die Zahlen sind UTF-8-Bytes geteilt
-durch vier; sie sind weder Anbieterzähler noch Eurobeträge.
-[Quelle](../data/benchmarks/stack-tool-microbench-2026-09-13.md).
+### Price cache and output separately
 
-Zuerst genaue Suche oder benötigte Datenfelder. Danach ein begrenzter struktureller
-Read. Größere Graphen oder Browser nur für eine benannte offene Frage. Ein
-kleiner bekannter Log braucht keinen Indexdienst.
+The July 15 Codex comparison reported 19.67% fewer aggregate provider tokens,
+but its process-table task used 32.16% more. There was one run per arm. An
+aggregate cannot promise a gain for every task.
+[Source](../data/benchmarks/codex-provider-ab-2026-07-15/compact-policy/result.md).
 
-### 4. Cache und Ausgabe getrennt bepreisen
+Three August runs showed variable baselines and different signs for raw counts
+and weighted list-price estimates. Their price ratios are historical assumptions.
+[Run 1](../data/benchmarks/codex-provider-ab-2026-08-22-terra/result.md),
+[run 2](../data/benchmarks/codex-provider-ab-2026-08-22-terra-v2/result.md),
+[run 3](../data/benchmarks/codex-provider-ab-2026-08-22-terra-v3/result.md).
 
-Der Codex-Vergleich vom 15. Juli meldete insgesamt 19,67 Prozent weniger
-Anbietertokens. Die Prozesstabelle wurde dabei um 32,16 Prozent teurer.
-Es war je ein Lauf pro Arm. Ein Durchschnitt ist kein Versprechen für jede Aufgabe.
-[Quelle](../data/benchmarks/codex-provider-ab-2026-07-15/compact-policy/result.md).
+In the September 14 Claude sample, `cap-graperoot` used 0.21% more raw total tokens
+while its reported cost was 9.46% lower. `cap-budget` reported 35.92% lower cost
+but only 1.61% fewer weighted total tokens. Different metrics answer different
+questions; this sample does not establish a general default.
+[Source](../data/benchmarks/claude-ab-2026-09-14/result.md).
 
-Die drei Augustläufe zeigten stark schwankende Baselines und unterschiedliche
-Vorzeichen bei rohen Tokens und gewichteten Listenpreis-Schätzungen. Die
-ursprünglichen Preisverhältnisse sind historische Annahmen.
-[Erster Lauf](../data/benchmarks/codex-provider-ab-2026-08-22-terra/result.md),
-[zweiter](../data/benchmarks/codex-provider-ab-2026-08-22-terra-v2/result.md),
-[dritter](../data/benchmarks/codex-provider-ab-2026-08-22-terra-v3/result.md).
+ATS requires an explicit price source, currency and disjoint usage classes.
+It does not pick a current provider tariff. A stable prefix can help cache reuse;
+its value must be measured on the actual route. Keepalive calls are not part of
+the design.
 
-Im Claude-Einzelvergleich vom 14. September war `cap-graperoot` nach rohen
-Gesamttokens um 0,21 Prozent schlechter; die ausgewiesene Kostensumme lag
-9,46 Prozent niedriger. `cap-budget` meldete 35,92 Prozent geringere Kosten,
-aber nur 1,61 Prozent weniger gewichtete Gesamttokens. Das sind verschiedene
-Messgrößen. Auch diese Stichprobe begründet keine allgemeine Voreinstellung.
-[Quelle](../data/benchmarks/claude-ab-2026-09-14/result.md).
+### Count maintenance and startup
 
-ATS 5 verlangt deshalb Preisquelle, Währung und getrennte Nutzungsklassen als
-Eingabe. Modell, Anbieter und Tarif bleiben außerhalb des Kerns. Ein stabiler
-Präfix kann Cachetreffer begünstigen; sein Wert muss im jeweiligen Lauf gemessen
-werden. Erzwungene Warmhalteaufrufe gehören nicht zum Konzept.
+The September 13 hook study measured roughly four seconds for individual Synapse
+hooks and roughly 32 ms for the ATS prompt hook on that host. These are dated
+observations, not current guarantees.
+[Source](../data/benchmarks/hook-stack-2026-09-13.md).
 
-### 5. Werkzeugpflege mitrechnen
+The July capsule study also showed fewer bytes with slightly worse median time
+in one case. Bytes and milliseconds need separate columns.
+[Source](../data/benchmarks/hook-and-capsule-hotpath-2026-07-27.md).
 
-Der Hook-Test vom 13. September maß bei einzelnen Synapse-Hooks rund vier
-Sekunden. Der eigene ATS-Prompt-Hook lag bei rund 32 Millisekunden. Solche
-Messungen beschreiben den damaligen Host und dessen Last, keine heutige Garantie.
-[Quelle](../data/benchmarks/hook-stack-2026-09-13.md).
+The maintained core installs no prompt hook. The TypeScript/Bun move unifies the
+implementation; it does not prove that every TypeScript hook is faster than Python.
 
-Der Juli-Test zeigte außerdem: Ein kompakteres Workerpaket konnte weniger Bytes
-liefern und trotzdem eine etwas schlechtere Medianlaufzeit haben. Bytes und
-Millisekunden brauchen getrennte Spalten.
-[Quelle](../data/benchmarks/hook-and-capsule-hotpath-2026-07-27.md).
+## A small explicit surface
 
-Der neue Standard braucht keine Prompt-Hooks. Das entfernt eine permanente
-Eingriffsstelle. Ob TypeScript in einem bestimmten Hook schneller als Python
-ist, wurde hier nicht gemessen. Der Wechsel dient einem einheitlichen,
-überschaubaren Kern und ist kein Geschwindigkeitsbeleg.
-
-## Ein kleiner Kern mit expliziten Aufgaben
-
-| Befehl | Aufgabe | Aussagegrenze |
+| Command | Job | Limit |
 |---|---|---|
-| `verify` | Einmal ausführen, vollständige Logs sichern, Exitcode erhalten | Der gewählte Prüfbefehl bestimmt die Abnahmequalität |
-| `project` | Endansicht mit Bytebudget liefern | Auslassungen verhindern einen Vollständigkeitsbeleg |
-| `cost` | Vorgegebene Nutzung mit angegebenen Preisen verrechnen | Schätzung, keine Anbieterrechnung |
-| `skills` | Die 20 ausgewerteten Prinzipien nachschlagen | Keine automatische Skill-Ausführung |
-| `install` | Eigene Generation und gesicherten Starter schreiben | Keine aktive Hostkonfiguration migrieren |
-| `doctor` | Installierte Dateien prüfen | Keine echte Host- oder Kundenabnahme |
-| `bench` | RTK gegen acht Aufgabenverträge prüfen | Synthetische Belege, keine allgemeine Rangliste |
-| `guide` | Die nächste passende Aktion erklären | Keine automatische Werkzeugwahl |
-| `rollback` | Vorherige Starter und Generation herstellen | Verweigert spätere fremde Änderungen |
+| `verify` | one command, raw logs, original exit | the chosen oracle defines quality |
+| `project` | bounded tail or literal-match view | omissions prevent a completeness claim |
+| `cost` | supplied usage times explicit rates | estimate, not an invoice |
+| `skills` | read the 20 reviewed contributions | no automatic skill execution |
+| `install` | create a generation and starters | no host-hook migration |
+| `doctor` | check installed hashes and starters | no live host or customer acceptance |
+| `bench` | compare eight RTK task contracts | synthetic evidence, not a ranking |
+| `guide` | explain a next useful action | no automatic routing |
+| `rollback` | restore previous starters and generation | refuses later edits |
 
-Die Laufzeit hat null zusätzliche Pakete. Bun und die Node-Standardbibliothek
-reichen. TypeScript und Bun-Typen sind auf feste Versionen gesetzte
-Entwicklungsabhängigkeiten. [Buns TypeScript-Dokumentation](https://bun.sh/docs/runtime/typescript)
-beschreibt die Trennung zwischen Ausführung und Typprüfung;
-[Prozessaufrufe](https://bun.sh/docs/runtime/child-process) dokumentieren Argumentlisten
-und getrennte Ausgabeströme.
+Bun and the Node standard library cover the runtime. TypeScript and Bun types
+are pinned development dependencies. [Bun's TypeScript documentation](https://bun.sh/docs/runtime/typescript)
+distinguishes execution from type checking; its
+[process API](https://bun.sh/docs/runtime/child-process) documents argv and streams.
 
-## Was wir streichen und was wir bewahren
+## Remove breadth, retain counterexamples
 
-Aus dem Standard verschwinden automatische Kontextrouter, Providervermittlung,
-mehrere überlappende Profile und still installierte Hosthooks. Ein eigener
-Aufgabenmanager wäre Doppelpflege; bestehendes `sis` bleibt zuständig.
+Automatic routers, provider gateways and overlapping hook profiles were retired.
+Existing task systems keep task ownership; ATS creates no second board. Local
+changes were archived before obsolete surfaces were removed. Git history and
+[the migration map](MIGRATION.md) preserve the boundary.
 
-Benchmarkartefakte bleiben. Auch Gegenbefunde. Die Python- und Shell-Implementierungen
-sind aus dem Produktbaum entfernt; vorliegende lokale Änderungen wurden zuvor
-außerhalb gesichert. Die [Migration](MIGRATION.md) benennt jeden Funktionsbereich
-und seinen Ersatz. Vorherige Fassungen bleiben in der Git-Historie lesbar.
+The [November RTK review](RTK.md) accepted one of eight candidates. Three saved
+no bytes; four lost required evidence. This supports task-specific selection,
+not a blanket rejection of RTK.
 
-Der [RTK-Vergleich vom 12. November](RTK.md) ergänzt die historischen Daten.
-Er nimmt nur einen von acht Kandidaten an. Drei bringen keinen Bytegewinn,
-vier verlieren verlangte Belege. Das begründet eine aufgabengebundene Auswahl,
-keine pauschale Ablehnung von RTK.
+## Before making a new saving claim
 
-## Wie eine neue Sparbehauptung zugelassen wird
+Fix task, model, source and oracle before the experiment. Compare the same
+independent tasks with balanced ordering and multiple runs. Keep every started
+arm in the accounting, including failures. Record accepted outcomes, fresh input,
+cache classes, output, wall time and rework.
 
-Für einen künftigen Vergleich werden vorab Aufgabe, Modell, Quellhash und Oracle
-festgelegt. Baseline und Kandidat laufen auf denselben unabhängigen Aufgaben,
-mit wechselnder Reihenfolge und mehreren Wiederholungen. Zu erfassen sind
-akzeptierte Ergebnisse, frische Eingabe, Cacheklassen, Ausgabe, Laufzeit,
-Fehler und Nacharbeit. Alle gestarteten Läufe bleiben in der Bilanz.
-
-Die Preisquelle trägt ein Datum. Lokale Bytesschätzungen stehen separat.
-Ein gescheitertes Oracle sperrt die Sparbehauptung dieses Arms. Eine Änderung
-an Oracle oder Fixture beginnt einen neuen Vergleich. Der lokale TypeScript-Gate
-belegt Verhalten; Providerkosten und Kundennutzen sind damit noch nicht gemessen.
+Date the price source. Keep byte proxies separate. A failed oracle invalidates
+that arm's saving claim; changing the oracle or fixture begins a new comparison.
+A local source gate proves behavior under its checks. Provider costs and customer
+outcomes still need their own evidence.

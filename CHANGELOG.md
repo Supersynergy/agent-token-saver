@@ -1,5 +1,16 @@
 # Changelog
 
+## 5.1.1 (2026-11-12)
+
+Translate the active user-facing documentation and skill summaries to English.
+Keep install and core commands in a compact README opening view; move evidence
+and recovery details behind links or collapsed sections. Refresh English release
+text while preserving the immutable 5.1.0 tag and its original archive.
+
+Scan the explicit Bun lockfile during the release gate so a parent workspace
+ignore rule cannot hide the dependency manifest. No command-execution, permission,
+raw-log or recovery behavior changed.
+
 ## 5.1.0 (2026-11-12)
 
 Release preparation adds a tagged Bun quick start, source archive/checksums,

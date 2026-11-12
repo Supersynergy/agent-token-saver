@@ -1,65 +1,57 @@
-# Von der alten Werkzeugkette zum Bun-Produkt
+# Move to the Bun product
 
-Stand: 12. November 2026. Der gepflegte Quellbaum enthält TypeScript/Bun für
-CLI, Installer, Vergleichsfixtures und Tests. Die Python- und Shell-Oberflächen
-sind entfernt. Historische Messdaten bleiben unter `data/benchmarks/` erhalten.
+The maintained CLI, installer, fixtures and tests use TypeScript/Bun. Python
+and shell surfaces were retired. Historical reports remain in `data/benchmarks/`;
+they are not current installation instructions.
 
-Die Ablösung ist eine bewusste Verkleinerung. ATS wird nicht gleichzeitig
-Providervermittlung, Aufgabenboard und Hookplattform. Auf diese Funktionen
-angewiesene Nutzer behalten ihr bisheriges System, bis sie dessen Migration
-getrennt geprüft haben.
+This is a deliberate reduction. ATS is not also a provider gateway, task board
+and hook platform. Users who need a removed feature should keep their existing
+system until that migration is separately verified.
 
-## Befehle und Ersatz
-
-| Bisherige Fläche | Neuer Weg | Grenze |
+| Previous surface | Current path | Limit |
 |---|---|---|
-| `ats-verify` | `ats verify -- COMMAND` | einmaliger Lauf, Rohlogs, erhaltener Exitcode |
-| `ats-cache`, `agent-token-ledger`, `ats-token-cfo` | `ats cost FILE` für normalisierte Nutzung | native Provider-Ingestion und Teamabrechnung sind entfernt |
-| `ats-pipe`, `ats-llm-pipe` | genaue Suche, `jq`/SQL, `ats project` | kein Modell zum Kürzen deterministischer Daten |
-| `ats-url-cache`, News-Pipeline | eigener vorhandener Fetch-/Cache-Client | ATS übernimmt keine HTTP- oder Nachrichtendienste |
-| `ats-recall`, CLI-Log-Ingestion | bestehendes Recall-Werkzeug gezielt verwenden | kein Cronjob und kein zweiter Speicher in ATS |
-| `goal`, Provider-/Kimi-Worker und `llmadapter` | bestehendes Aufgaben- und Agentensystem | kein automatischer Agentenstart oder Provideraufruf |
-| Prompt-, Stop-, Capsule- und Explore-Hooks | kompakter Skill plus explizite Befehle | keine automatische Hostverdrahtung |
-| Profile `minimal`, `lean`, `teams`, `heavy` | ein expliziter Bun-Kern | alte Profilargumente werden als unbekannt abgewiesen |
-| Python- und Shell-Benchmarkstarter | `ats bench --out DIR` | acht lokale synthetische RTK-Verträge, kein Provider-A/B-Ersatz |
-| `install-universal.sh` | `bun install.ts` | lokaler geprüfter Checkout, `--apply` schreibt |
-| `just legacy-check` | `just check` | Typprüfung und aktuelle Bun-Verhaltenstests |
+| `ats-verify` | `ats verify -- COMMAND` | one execution, raw logs, original exit |
+| `ats-cache`, token ledger/CFO | `ats cost FILE` | normalized usage; no provider ingestion or team billing |
+| `ats-pipe`, LLM pipe | exact search, `jq`/SQL, `ats project` | no model required to shorten deterministic data |
+| URL cache and news pipeline | existing fetch/cache client | no HTTP or news service in ATS |
+| Recall and CLI-log ingestion | existing scoped recall tool | no cron job or second memory store |
+| Goal/worker/provider adapters | existing task and agent system | no automatic worker or provider calls |
+| Prompt/Stop/Capsule/Explore hooks | compact skill plus explicit commands | no automatic host wiring |
+| Minimal/Lean/Teams/Heavy profiles | one Bun core | old profile arguments fail explicitly |
+| Python/shell benchmark launchers | `ats bench --out DIR` | eight synthetic RTK contracts, not provider A/B |
+| `install-universal.sh` | `bun install.ts` | reviewed local checkout; `--apply` writes |
+| `just legacy-check` | `just check` | types and current Bun behavior tests |
 
-Das ist keine Zusage, dass jeder entfernte Spezialfall identisch portiert wurde.
-Die neue Hilfe beschreibt nur verfügbare Funktionen. Vorherige Quellen und
-Anleitungen sind über die Git-Historie vor diesem Umbau auffindbar.
-Vorhandene lokale Änderungen an entfernten Dateien wurden vor dem Umbau
-außerhalb des Produktbaums gesichert und nicht als neue Implementierung übernommen.
+Removed special cases were not silently replaced with incomplete equivalents.
+Previous sources remain in Git history. Local uncommitted work was archived
+outside the product tree before retirement. The
+[retired-surface manifest](retired-surfaces.json) records source identities.
 
-## Persönliche Installationen bleiben ein eigener Schritt
+## Existing host installations need a separate migration
 
-Ein Checkout-Update entfernt weder alte globale Befehle noch aktive v4-Hooks.
-Sie können weiterhin Python benötigen. Wer einen Host vollständig ablösen will,
-prüft dessen tatsächliche Konfiguration, sichert sie und entfernt nur die
-bekannten alten Einträge. Eine Liste alter Dateinamen beweist keine aktive
-Integration. Ein neuer CLI-Doctor prüft keine fremden Hostdateien.
+A checkout update does not remove old global commands or v4 hooks. Those may
+still need Python. Inspect the real host config, back it up and remove only
+known old entries. A filename inventory does not prove an active integration.
+The new doctor does not audit unrelated host files.
 
-Die neue Installation schreibt ausschließlich ihre Generation, Installationsbelege
-und zwei Starter. Sie führt keine Abhängigkeitsinstallation aus. Bun muss
-vorhanden sein; `~/.local/bin/` muss für die kurzen Befehle im Suchpfad liegen.
+The installer writes only its own generation, receipts and two starters. Bun
+must already be installed; `~/.local/bin` must be on PATH. It installs no packages.
 
-## Installation und Rückbau testen
+## Try recovery in a separate home
 
 ```bash
 bun install.ts --home ./probe-home --apply
 bun run ats doctor --home ./probe-home
-bun run ats rollback --home ./probe-home --id INSTALLATIONS_ID
-bun run ats rollback --home ./probe-home --id INSTALLATIONS_ID --apply
+bun run ats rollback --home ./probe-home --id INSTALLATION_ID
+bun run ats rollback --home ./probe-home --id INSTALLATION_ID --apply
 ```
 
-Die Kennung stammt aus der Installation. Der Rückbau stellt vorherige Dateien
-oder Verknüpfungen wieder her. Er verweigert eine veraltete Kennung, wenn bereits
-eine neuere Generation aktiv ist, und überschreibt keine später geänderten Starter.
-Generationen werden nicht automatisch gelöscht.
+Use the ID returned by installation. Rollback restores earlier files or symlinks,
+refuses a receipt for an older active generation and preserves later starter
+edits. Generations are not automatically deleted.
 
-## Was geändert wurde
+## Release history
 
-Die bisherigen parallel gepflegten Anleitungen sind durch einen Einstieg und
-aufgabenbezogene Seiten ersetzt. Herstellerzähler, lokale Bytemessungen und
-Preisschätzungen bleiben getrennt. Die früheren Sparschlagzeilen sind datierten
-Befunden gewichen, einschließlich fehlgeschlagener Vergleiche.
+Version 5.1.0 is the initial Bun-only release. Version 5.1.1 updates presentation
+and shipped text to English. The old tag is retained; current downloads carry
+the newer text. No host permissions or automatic integrations changed.

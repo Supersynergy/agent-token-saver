@@ -4,13 +4,13 @@ Agent Token Saver runs a check once, keeps its complete local output and gives
 coding agents a bounded view of the evidence. Runtime packages and API keys are
 not required. The maintained release uses TypeScript/Bun throughout.
 
-## Install release 5.1.0
+## Install release 5.1.1
 
 Install Bun using its [official instructions](https://bun.sh/docs/installation),
 then use the tagged source:
 
 ```bash
-git clone --branch v5.1.0 --depth 1 https://github.com/Supersynergy/agent-token-saver.git
+git clone --branch v5.1.1 --depth 1 https://github.com/Supersynergy/agent-token-saver.git
 cd agent-token-saver
 bun run ats guide
 bun install.ts              # show the plan

@@ -1,9 +1,9 @@
-# 5.1.0: TypeScript/Bun, mit erhaltenen Belegen
+# 5.1.0: TypeScript/Bun with retained evidence
 
-ATS 5.1 führt Checks einmal aus und macht gespeicherte Ergebnisse gezielt lesbar.
-Die gepflegte Implementierung, Installation und Tests verwenden TypeScript/Bun.
+ATS 5.1 runs a check once and makes its saved evidence searchable. The maintained
+CLI, installer and tests use TypeScript/Bun.
 
-## Einstieg
+## Start
 
 ```bash
 git clone --branch v5.1.0 --depth 1 https://github.com/Supersynergy/agent-token-saver.git
@@ -13,37 +13,36 @@ bun install.ts --apply
 ats doctor
 ```
 
-Bun ist Voraussetzung. Zum Benutzen braucht es weder Entwicklungsabhängigkeiten
-noch API-Schlüssel. Der Release-Download enthält außerdem das Quellarchiv und
-`SHA256SUMS`. GitHub stellt die üblichen Source-Archive zusätzlich bereit.
+Bun is required. Runtime packages and API keys are not. The release includes a
+source archive and SHA256SUMS, alongside GitHub's standard source downloads.
 
-## Neu für Nutzer
+## User-visible changes
 
-- Kurze lesbare Ausgabe als Standard; `--json` für Skripte.
-- `verify` mit erhaltenem Exitcode und vollständigen lokalen Logdateien.
-- `project --match` mit Zeilennummern und ausgewiesenen ausgelassenen Treffern.
-- `guide speed` mit getrennten Modell- und Toolzeiten statt pauschalen Speed-Regeln.
-- Optionaler RTK-Vergleich, der Kandidaten mit fehlenden Belegen verwirft.
-- Installation und Rückbau mit gesicherten Startern; keine automatischen Hooks.
+- Short readable output by default; `--json` for scripts.
+- `verify` retains the original exit and complete local output.
+- `project --match` reports line numbers and omitted matches.
+- `guide speed` separates model wait from tool time.
+- The optional RTK comparison rejects lost evidence and zero byte gain.
+- Installation keeps recoverable starters and installs no host hooks.
 
-## Brüche gegenüber 4.x
+## Breaking changes from 4.x
 
-Python- und Shell-Helfer, Providervermittlung, automatische Hookprofile und alte
-Profilargumente sind entfernt. `install-universal.sh` wird durch `bun install.ts`
-ersetzt. Nicht jede frühere Spezialfunktion ist identisch portiert. Die
-[Migrationsübersicht](MIGRATION.md) nennt die entfernten Bereiche und den Ersatz.
-Bereits installierte persönliche v4-Hooks bleiben ein eigener Migrationsschritt.
+Python/shell helpers, provider routing, automatic hook profiles and old profile
+arguments are retired. Use `bun install.ts` in place of `install-universal.sh`.
+Not every earlier special case was ported. The [migration map](MIGRATION.md)
+identifies replacements and limits. Existing personal v4 hooks are a separate
+migration.
 
-## Evidenz und Grenzen
+## Evidence and limits
 
-Der RTK-Vergleich benutzt acht synthetische Aufgaben. Ein Kandidat wurde kleiner
-und behielt seine Pflichtliterale; drei brachten keinen Bytegewinn, vier verloren
-Belege. Das ist keine allgemeine RTK-Fehlerquote oder neue ATS-Spargarantie.
+Eight synthetic RTK tasks accepted one smaller candidate with retained required
+literals, rejected three with no byte gain and rejected four with lost evidence.
+This is neither a general RTK failure rate nor a new ATS saving guarantee.
 
-Weitere Benchmarks korrigieren die frühere Empfehlung zum zeitversetzten
-Agentenstart und zeigen falsche Dokumentationsantworten trotz kleiner Ausgaben.
-Die Release-Unterlagen trennen diese historischen Messungen von heutigen Preisen
-und vom Verhalten des Bun-Kerns. Vollständige Sitzungstraces sind nicht Teil
-des gepflegten Quellarchivs; Messberichte bleiben erhalten.
+The additional benchmark review corrects the earlier staggered-start advice and
+records wrong-library documentation answers despite small outputs. Historical
+measurements are separate from current prices and Bun-core behavior. Full
+session traces are excluded from the maintained source archive.
 
-Lizenz: MIT, Copyright 2026 Supersynergy.
+License: MIT, copyright 2026 Supersynergy. The original tag and archive are
+retained; 5.1.1 carries the English presentation update.

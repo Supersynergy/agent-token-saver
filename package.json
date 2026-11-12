@@ -1,6 +1,6 @@
 {
   "name": "agent-token-saver",
-  "version": "5.1.0",
+  "version": "5.1.1",
   "private": true,
   "type": "module",
   "description": "Run checks once, keep full evidence, and test whether output compression actually helps. TypeScript/Bun.",

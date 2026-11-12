@@ -6,4 +6,4 @@ check:
 
 pre-pr: check
     bun tools/release.ts audit
-    osv-scanner scan source -r .
+    osv-scanner scan source --lockfile bun.lock

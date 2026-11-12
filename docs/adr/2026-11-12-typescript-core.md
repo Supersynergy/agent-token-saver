@@ -1,35 +1,35 @@
-# ATS: TypeScript/Bun, aufgabenbezogene Belege
+# ATS: TypeScript/Bun and task-specific evidence
 
-Datum: 12. November 2026. Status: lokale Umsetzung 5.1, keine Hostausrollung.
+Date: November 12, 2026. Status: implemented locally and published in the 5.1 line.
+No automatic host rollout.
 
-## Anlass
+## Context
 
-Der Nutzer verlangt einen vollständigen TypeScript/Bun-Umbau und eine Erklärung,
-welche bisherigen Optimierungen tatsächlich helfen. Die Übergangsversion 5.0
-ließ Python- und Shell-Altbestand im Repository. Die neue Anforderung löst auch
-diesen Bestand ab. Vorliegende lokale Änderungen wurden zuvor gesichert.
+The redesign request required TypeScript/Bun and an account of which earlier
+optimizations helped. Version 5.0 retained old Python and shell files;
+5.1 retired that maintained surface after archiving existing local changes.
 
-## Entscheidung
+## Decision
 
-Ein Bun-Einstieg für Prüfungen, Ansichten, explizite Kostenrechnung und Hilfe.
-Installer und Rückbau sind TypeScript. Starter sind Verknüpfungen auf eine
-Bun-Shebang-Datei. Provider, Hookprofile und automatische Router sind entfernt.
-Historische Messdaten bleiben als Quellen; Beschreibungen verweisen auf aktuelle
-Befehle. Die Migrationsseite benennt entfernte Funktionen ohne Vollport-Versprechen.
+Use one Bun entry for checks, bounded views, explicit cost arithmetic and help.
+The installer and rollback use TypeScript. Starters are symlinks to a Bun-shebang
+file. Remove providers, hook profiles and automatic routers. Keep historical
+measurement data, current command descriptions and an explicit migration map.
 
-RTK wird mit acht synthetischen Aufgabenverträgen verglichen. Ein Kandidat darf
-nur bei erhaltenen Pflichtliteralen und geringerer Bytezahl ausgewählt werden.
-Fehlende oder verworfene Filter verwenden Rohtext. Diese Regel beweist keine
-semantische Gleichwertigkeit oder geringere Anbieterrechnung.
+Compare RTK on eight synthetic task contracts. Select a candidate only if all
+required literals survive and the byte count decreases. Rejected or unavailable
+candidates retain raw output. This does not prove semantic equivalence or lower
+provider bills.
 
-## Folgen
+## Consequences
 
-`just check` umfasst strikte Typprüfung und Bun-Verhaltenstests. Der alte
-Python-Gate entfällt mit seiner Implementierung. Tests prüfen Fehlerpfade und
-Installation in einem temporären Home. Echte RTK-Messungen bleiben von den
-kontrollierten Unit-Tests getrennt, damit der Pflichtgate kein RTK benötigt.
+The product gate combines strict types and Bun behavior tests. The retired
+Python gate disappears with its implementation. Tests cover failure paths and
+installation in a temporary home. Live RTK measurements stay separate from
+controlled tests so RTK is not a mandatory dependency.
 
-Keine globale Installation, Hostkonfiguration oder bezahlte Modellmessung wird
-ausgelöst. Laufende alte Hosthooks brauchen eine gesonderte Migration. Ein
-mechanischer Vollport aller Spezialwerkzeuge wäre die alte Breite in einer
-anderen Sprache; der Auftrag verlangt einen verständlicheren, nützlicheren Kern.
+No global host configuration or paid model run follows from this source change.
+Existing v4 hooks need their own migration. A mechanical port of every old special
+case would recreate the breadth that the redesign was intended to remove.
+Version 5.1.1 updates the English presentation and shipped guidance without
+changing these boundaries.

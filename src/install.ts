@@ -4,7 +4,7 @@ import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
 const root = resolve(import.meta.dir, "..");
-const files = ["src/cli.ts", "src/core.ts", "src/install.ts", "src/rtk.ts", "src/guide.ts", "data/skills-v5.json", "examples/usage.json", "skills/agent-token-saver/SKILL.md", "package.json", "README.md", "docs/GUIDE.md", "docs/RTK.md", "docs/MIGRATION.md", "docs/CONCEPT.md", "docs/SKILLS.md", "docs/SPEED.md", "docs/BENCHMARK_REVIEW.md", "docs/QUICKSTART.en.md", "data/research/speed-review-2026-11-12.json"];
+const files = ["src/cli.ts", "src/core.ts", "src/install.ts", "src/rtk.ts", "src/guide.ts", "data/skills-v5.json", "examples/usage.json", "skills/agent-token-saver/SKILL.md", "package.json", "README.md", "docs/GUIDE.md", "docs/RTK.md", "docs/MIGRATION.md", "docs/CONCEPT.md", "docs/SKILLS.md", "docs/SPEED.md", "docs/BENCHMARK_REVIEW.md", "docs/QUICKSTART.en.md", "docs/RELEASE-5.1.1.md", "data/research/speed-review-2026-11-12.json"];
 const hash = (body: string) => createHash("sha256").update(body).digest("hex");
 const names = ["agent-token-saver", "ats"];
 function entryExists(path: string): boolean {

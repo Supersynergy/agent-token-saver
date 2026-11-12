@@ -1,7 +1,7 @@
 ---
 name: agent-token-saver
 description: Reduce repeated work and noisy context while preserving task evidence. Use for long check output, exact log questions and RTK comparisons; skip already-small lookups.
-version: 5.1.0
+version: 5.1.1
 license: MIT
 ---
 
