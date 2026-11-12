@@ -1,0 +1,10 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Reviewed non-secret metadata: exact bytes/4 label and one pinned source SHA-256"
+regexTarget = "match"
+regexes = [
+'''token_proxy"?:\s*"utf8_bytes_div_4"''',
+'''token-stack-prompt\.py":\s*"204fac449a905f53408a9d245ed0e0cd6d9158ae6f3333be591ad2a79521db91"'''
+]

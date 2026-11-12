@@ -1,12 +1,9 @@
 _default:
     @just --list
 
-# Schnellpruefung: Lint, Format, Test.
 check:
-    uv run ruff check .
-    uv run ruff format --check .
-    uv run pytest -q
+    bun run check
 
 pre-pr: check
-    gitleaks detect --source . --redact
+    bun tools/release.ts audit
     osv-scanner scan source -r .

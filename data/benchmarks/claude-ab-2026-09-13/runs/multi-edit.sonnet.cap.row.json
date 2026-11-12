@@ -1,0 +1,50 @@
+{
+  "arm": "cap",
+  "model": "sonnet",
+  "return_code": 0,
+  "timed_out": false,
+  "elapsed_ms": 33030,
+  "num_turns": 5,
+  "transcript_turns": 8,
+  "usage": {
+    "input_tokens": 247057,
+    "cached_input_tokens": 231630,
+    "uncached_input_tokens": 15427,
+    "output_tokens": 1566,
+    "total_tokens": 248623,
+    "fresh_input_tokens": 16,
+    "cache_read_input_tokens": 231630,
+    "cache_creation_input_tokens": 15411,
+    "thinking_tokens": 546
+  },
+  "economics_usage": {
+    "input_tokens": 16,
+    "cache_read_input_tokens": 231630,
+    "cache_creation_input_tokens": 15411,
+    "output_tokens": 1566
+  },
+  "usage_source": "transcript",
+  "model_usage_match": false,
+  "total_cost_usd": 0.072544,
+  "terminal_reason": "completed",
+  "permission_denials": 0,
+  "answer": "All references renamed consistently across all files.\n\nATS_EDIT_OK",
+  "commands": [
+    "grep -rn \"compute_score\" src/ | sort",
+    "for f in src/mod_010.py src/mod_033.py src/mod_057.py src/mod_081.py src/mod_099.py src/mod_117.py; do sed -i '' 's/compute_score_v1/compute_score/g' \"$f\"; done && grep -rn \"compute_score\" src/ | sort"
+  ],
+  "rtk_observed": false,
+  "verify_ok": true,
+  "accepted": false,
+  "oracle": {
+    "exact_answer": false,
+    "command_terms": true,
+    "fixture_state": true,
+    "provider_usage": true,
+    "transcript_found": true
+  },
+  "transcript_source": "~/.claude/projects/-private-var-folders-bm-0dt5fcdn56vg7pnkkzptmlkh0000gn-T-ats-claude-ab-ike977qn-fixture/ef27eb3c-5522-4f56-91a8-234124cfb22c.jsonl",
+  "parse_error": "",
+  "stderr_tail": "",
+  "raw_result": "runs/multi-edit.sonnet.cap.result.json"
+}

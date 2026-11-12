@@ -1,0 +1,16 @@
+{
+  "currency": "USD",
+  "price_source": "Synthetic example rates; replace with your dated provider tariff",
+  "usage": {
+    "fresh_input": 1000,
+    "cache_read": 9000,
+    "cache_write": 0,
+    "output": 100
+  },
+  "prices_per_million": {
+    "fresh_input": 1,
+    "cache_read": 0.1,
+    "cache_write": 1.25,
+    "output": 5
+  }
+}

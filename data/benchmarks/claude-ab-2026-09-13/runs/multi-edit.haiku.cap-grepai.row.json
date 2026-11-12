@@ -1,0 +1,47 @@
+{
+  "arm": "cap-grepai",
+  "model": "haiku",
+  "return_code": 0,
+  "timed_out": false,
+  "elapsed_ms": 26769,
+  "num_turns": 15,
+  "transcript_turns": 19,
+  "usage": {
+    "input_tokens": 444568,
+    "cached_input_tokens": 384854,
+    "uncached_input_tokens": 59714,
+    "output_tokens": 21698,
+    "total_tokens": 466266,
+    "fresh_input_tokens": 170,
+    "cache_read_input_tokens": 384854,
+    "cache_creation_input_tokens": 59544,
+    "thinking_tokens": 3502
+  },
+  "economics_usage": {
+    "input_tokens": 170,
+    "cache_read_input_tokens": 384854,
+    "cache_creation_input_tokens": 59544,
+    "output_tokens": 21698
+  },
+  "usage_source": "transcript",
+  "model_usage_match": false,
+  "total_cost_usd": 0.03873939999999999,
+  "terminal_reason": "completed",
+  "permission_denials": 0,
+  "answer": "ATS_EDIT_OK",
+  "commands": [],
+  "rtk_observed": false,
+  "verify_ok": true,
+  "accepted": true,
+  "oracle": {
+    "exact_answer": true,
+    "command_terms": true,
+    "fixture_state": true,
+    "provider_usage": true,
+    "transcript_found": true
+  },
+  "transcript_source": "~/.claude/projects/-private-var-folders-bm-0dt5fcdn56vg7pnkkzptmlkh0000gn-T-ats-claude-ab-t96bp769-fixture/9e7dc1e1-d922-4c57-b0a6-582251f623a8.jsonl",
+  "parse_error": "",
+  "stderr_tail": "",
+  "raw_result": "runs/multi-edit.haiku.cap-grepai.result.json"
+}

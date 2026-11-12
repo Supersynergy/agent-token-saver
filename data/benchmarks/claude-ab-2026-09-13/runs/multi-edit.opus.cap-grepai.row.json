@@ -1,0 +1,50 @@
+{
+  "arm": "cap-grepai",
+  "model": "opus",
+  "return_code": 0,
+  "timed_out": false,
+  "elapsed_ms": 33580,
+  "num_turns": 3,
+  "transcript_turns": 4,
+  "usage": {
+    "input_tokens": 69347,
+    "cached_input_tokens": 57568,
+    "uncached_input_tokens": 11779,
+    "output_tokens": 932,
+    "total_tokens": 70279,
+    "fresh_input_tokens": 8,
+    "cache_read_input_tokens": 57568,
+    "cache_creation_input_tokens": 11771,
+    "thinking_tokens": 112
+  },
+  "economics_usage": {
+    "input_tokens": 8,
+    "cache_read_input_tokens": 57568,
+    "cache_creation_input_tokens": 11771,
+    "output_tokens": 932
+  },
+  "usage_source": "transcript",
+  "model_usage_match": false,
+  "total_cost_usd": 0.1153815,
+  "terminal_reason": "completed",
+  "permission_denials": 0,
+  "answer": "ATS_EDIT_OK",
+  "commands": [
+    "grep -rn \"compute_score\" --exclude-dir=.git --exclude-dir=.grepai . | grep -v \"^./src/mod_[0-9]*.py:12:\" ; grep -rn \"compute_score\" src/mod_010.py src/lib_core.py",
+    "sed -i '' 's/\\bcompute_score_v1\\b/compute_score/g' src/lib_core.py src/mod_010.py src/mod_033.py src/mod_057.py src/mod_081.py src/mod_099.py src/mod_117.py; sed -i '' 's/compute_score_v1\\([^0-9A-Za-z_]\\)/compute_score\\1/g' src/lib_core.py src/mod_010.py src/mod_033.py src/mod_057.py src/mod_081.py src/mod_099.py src/mod_117.py; grep -rn \"compute_score\" --exclude-dir=.git --exclude-dir=.grepai ."
+  ],
+  "rtk_observed": false,
+  "verify_ok": true,
+  "accepted": true,
+  "oracle": {
+    "exact_answer": true,
+    "command_terms": true,
+    "fixture_state": true,
+    "provider_usage": true,
+    "transcript_found": true
+  },
+  "transcript_source": "~/.claude/projects/-private-var-folders-bm-0dt5fcdn56vg7pnkkzptmlkh0000gn-T-ats-claude-ab-o7hlhksg-fixture/052ebdf6-721a-4f34-82d8-efae60c8f1a7.jsonl",
+  "parse_error": "",
+  "stderr_tail": "",
+  "raw_result": "runs/multi-edit.opus.cap-grepai.result.json"
+}

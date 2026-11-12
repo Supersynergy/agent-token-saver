@@ -1,16 +1,15 @@
-## Result
+## User-visible result
 
-What becomes better for the user?
+Which question can a user answer more reliably or with less effort?
 
 ## Evidence
 
-- [ ] Same accepted output before/after
-- [ ] Token/input measurement attached
-- [ ] Latency attached
-- [ ] Existing settings preserved
-- [ ] `uv run pytest` passes
-- [ ] release-surface Ruff command from `CONTRIBUTING.md` passes
+- [ ] Required task evidence survives; omissions are explicit
+- [ ] Failing command exit and raw logs survive
+- [ ] `just check` passed for this source state
+- [ ] New byte or latency claims include fixtures and versions
+- [ ] Provider costs are separate from local output estimates
 
-## Scope
+## Compatibility
 
-What did you intentionally leave out?
+List renamed or retired commands, the replacement and rollback path.

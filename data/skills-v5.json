@@ -1,0 +1,186 @@
+{
+  "as_of": "2026-11-12",
+  "selection": "20 passende Beiträge zum ATS-Neuentwurf; redaktionelle Auswahl, keine globale Rangliste. Scores sind Metadaten. Ein Hauptskill pro Phase.",
+  "skills": [
+    {
+      "name": "superfast",
+      "principle": "Gesamtaufwand bis zur Abnahme messen.",
+      "application": "Keine Zusatzrunden nach erfülltem Vertrag.",
+      "guard": "Eine Laufzeitverkürzung gilt erst bei gleicher Abnahme.",
+      "source": "si atlas --detail superfast --json",
+      "source_sha256": "c41934d6b7e73328eda0a8b1422b003ed5af9378995b64db91a4b13d85622d83",
+      "atlas_score": 412.3
+    },
+    {
+      "name": "aiworkflow",
+      "principle": "Ziel und ausführbare Abnahme vor der Werkzeugwahl festlegen.",
+      "application": "Ein CLI-Kern mit festen Befehlen statt mehrerer Controller.",
+      "guard": "verify führt den angegebenen Prüfbefehl unverändert aus.",
+      "source": "si atlas --detail aiworkflow --json",
+      "source_sha256": "3f86a98376f977d64d52649c6106f84b32c1cababdf1e38dad05ffa240ec7e33",
+      "atlas_score": 301.8
+    },
+    {
+      "name": "zeroloop",
+      "principle": "Den engsten betroffenen Check wählen; nach Grün stoppen.",
+      "application": "`just check` bündelt Typprüfung und Verhaltenstests.",
+      "guard": "Ein grüner Stand wird nicht zur Beruhigung erneut getestet.",
+      "source": "si atlas --detail zeroloop --json",
+      "source_sha256": "8bd633b4e260562a1bda6ff12cc894f24d50cc81d3a75d77f4ee0172fe462104",
+      "atlas_score": 142.8
+    },
+    {
+      "name": "warm-handoff",
+      "principle": "Weniger Anfragen auf kleinerem Kontext; stabile Übergaben.",
+      "application": "Lange Logs bleiben als Dateien; Ergebnis enthält Pfade.",
+      "guard": "Keine periodischen Keepalives oder erzwungenen Neustarts.",
+      "source": "si atlas --detail warm-handoff --json",
+      "source_sha256": "e5add56fd4305898e76451fb4b10294d36e9002e799f159cf23b83597f90c435",
+      "atlas_score": 129
+    },
+    {
+      "name": "synapse-recall",
+      "principle": "Nur frühere Entscheidungen laden, die den nächsten Schritt ändern.",
+      "application": "Vorhandene Benchmarkartefakte auswerten statt alles neu messen.",
+      "guard": "Veränderliche Aussagen bleiben an Datum und Quelle gebunden.",
+      "source": "si atlas --detail synapse-recall --json",
+      "source_sha256": "538dfba5215b206813a89ddd30d16644ace2baf78dd3fbe7715480300f4c197a",
+      "atlas_score": 89.8
+    },
+    {
+      "name": "agent-efficiency-orchestrator",
+      "principle": "Abgenommene Arbeit pro Gesamtaufwand optimieren.",
+      "application": "Kein Sparversprechen, wenn die Abnahme scheitert.",
+      "guard": "Kosten separat von Laufzeit und Qualität berichten.",
+      "source": "si atlas --detail agent-efficiency-orchestrator --json",
+      "source_sha256": "cac25274e187880394f03d634379b834fadaa71fe179830a81e2366a16c4d3ee",
+      "atlas_score": 74.1
+    },
+    {
+      "name": "superiss",
+      "principle": "Claim und Quellenstand mit der Abnahme verbinden.",
+      "application": "Projekt-DB explizit; ATS baut kein zweites Aufgabenboard.",
+      "guard": "ATS-result.json ersetzt keinen sis-Proof.",
+      "source": "si atlas --detail superiss --json",
+      "source_sha256": "98e764a45712229a0c9e8f0b159f20412672ea0573b3c9d070884ca9713b1a3b",
+      "atlas_score": 57.9
+    },
+    {
+      "name": "best-defaults",
+      "principle": "Kleine umkehrbare Voreinstellung mit begründetem Ausweg.",
+      "application": "Installation zeigt zuerst einen Plan; --apply schreibt.",
+      "guard": "Keine globale Konfiguration bei einem Projekt-Update anfassen.",
+      "source": "si atlas --detail best-defaults --json",
+      "source_sha256": "09d2b7c62766712f2212ff47f3a7a5c089c95f4ef68c75ece15e2d1d0e10db0d",
+      "atlas_score": 55
+    },
+    {
+      "name": "antislop",
+      "principle": "Jede Bewertung braucht eine prüfbare Aussage.",
+      "application": "README mit einem gescheiterten Benchmark statt Siegesslogan.",
+      "guard": "slopcheck plus redaktionelle Streichprobe.",
+      "source": "si atlas --detail antislop --json",
+      "source_sha256": "26dfccd00249d7e7e51e3ab71e50ddc6120ebb79ed6e7be656a7c7c6cb7b4684",
+      "atlas_score": 54.3
+    },
+    {
+      "name": "thinkforward",
+      "principle": "Engpass und Widerlegung als Denkfilter.",
+      "application": "Gegenprobe: Kürzung verliert das Fehlersignal.",
+      "guard": "Tests prüfen Exitcode und Rohbeleg. Auslassungen bleiben sichtbar.",
+      "source": "si atlas --detail thinkforward --json",
+      "source_sha256": "d549d8dc2ee60cdea250e3d7cdfd1f97e72c6318055047d4b8a594c5cbada554",
+      "atlas_score": 45.3
+    },
+    {
+      "name": "speedplaybook",
+      "principle": "Kostenklasse vor der Optimierung bestimmen.",
+      "application": "Cachekosten separat von Prozesszeit und Ausgabemenge messen.",
+      "guard": "Kein pauschaler Geschwindigkeitsfaktor aus fremden Workloads.",
+      "source": "si atlas --detail speedplaybook --json",
+      "source_sha256": "cab936d0c54f65ff88a6d6747fabbb61a3ab89d1a5139be887506fe3d1a272bc",
+      "atlas_score": 43.6
+    },
+    {
+      "name": "loop2goal",
+      "principle": "Den nächsten Schritt am Oracle ausrichten.",
+      "application": "verify liefert ein Ergebnisartefakt für genau eine Ausführung.",
+      "guard": "Das Ergebnis verweist auf seinen Rohbeleg.",
+      "source": "si atlas --detail loop2goal --json",
+      "source_sha256": "a01564513b1df2dad6e6c052bedc96d8eb50510baff5282e012ea23b528cf63b",
+      "atlas_score": 22.6
+    },
+    {
+      "name": "skill-portfolio-governance",
+      "principle": "Überlappung und beobachtetes Verhalten vor Archivierung prüfen.",
+      "application": "20 Prinzipien kuratieren; keine 20 Skills automatisch laden.",
+      "guard": "Atlas-Score belegt weder Qualität noch allgemeine Rangfolge.",
+      "source": "si atlas --detail skill-portfolio-governance --json",
+      "source_sha256": "afcd8dea5191e3cf12c6574de20649d0ca05b8b5a82b8f14fcfe56f80b97c4d3",
+      "atlas_score": 20
+    },
+    {
+      "name": "verify-and-stop",
+      "principle": "Pass, fail, unavailable und blocked unterscheiden.",
+      "application": "Startfehler ist 127, Zeitlimit 124; keine künstliche grüne Ausgabe.",
+      "guard": "Nur die betroffenen roten Checks nach einer Korrektur wiederholen.",
+      "source": "si atlas --detail verify-and-stop --json",
+      "source_sha256": "3d5599f49771b864eba94f27f456fda295c48c1a37fa6ba2f65fdcb13cc32acb",
+      "atlas_score": 10.1
+    },
+    {
+      "name": "researchflow",
+      "principle": "Quellen sichern und prüfbare Aussagen daraus ableiten.",
+      "application": "Quellenhash pro Skill und relative Benchmarklinks.",
+      "guard": "Messung von Schätzung trennen; Vorschläge eigens kennzeichnen.",
+      "source": "si atlas --detail researchflow --json",
+      "source_sha256": "7f141defdbc49d52acc1ab2b3b54dff9680a1277e0a50906598bb87805ff79b5",
+      "atlas_score": 10
+    },
+    {
+      "name": "autom",
+      "principle": "Einen begrenzten Kandidaten prüfen und behalten oder verwerfen.",
+      "application": "Neue Defaults brauchen wiederholte Vergleiche mit festem Oracle.",
+      "guard": "Keine automatische Selbständerung und keine bezahlten Modellaufrufe.",
+      "source": "si atlas --detail autom --json",
+      "source_sha256": "31fd0002b59e2f19efe919bb36efc34a7cb1fe613e9d6e82f06a791a50617ea6",
+      "atlas_score": 7
+    },
+    {
+      "name": "context-budget",
+      "principle": "Geladene Regeln, Skills und Werkzeugdefinitionen sichtbar machen.",
+      "application": "Keine dauerhafte breite Werkzeugregistrierung im Kern.",
+      "guard": "Pauschale Tokens-pro-Tool-Heuristiken gelten nicht als Abrechnung.",
+      "source": "si atlas --detail context-budget --json",
+      "source_sha256": "85b32e7dd4ddb8f936a7f8c880df0ceff0954e55e93ac88095e4415b52ccb95a",
+      "atlas_score": 7
+    },
+    {
+      "name": "systematic-debugging",
+      "principle": "Ursache aus Fehlermeldung und Reproduktion bestimmen.",
+      "application": "Vollständiges stdout und stderr vor jeder Kürzung sichern.",
+      "guard": "Leere oder ungewöhnliche Fehlerausgabe bleibt als Fehler sichtbar.",
+      "source": "si atlas --detail systematic-debugging --json",
+      "source_sha256": "4a759e8c19f7accbce9662a84ac5eca5d9f89e3c84a66ed67457e21e105a4c86",
+      "atlas_score": 5
+    },
+    {
+      "name": "ratiomaster",
+      "principle": "Nutzeraufwand und tatsächlichen Erfolg gemeinsam messen.",
+      "application": "Ein Aufruf bis zum Ergebnis; Dry-run und Rückbaupfad.",
+      "guard": "CLI-Laufzeit ist kein Beleg für Browser- oder Kunden-UX.",
+      "source": "si atlas --detail ratiomaster --json",
+      "source_sha256": "5e338f1f1dc34e262bdb897201176bc71539fd4f0acdf444789b8cac792897f1",
+      "atlas_score": 177.6
+    },
+    {
+      "name": "ponytail",
+      "principle": "Vorhandenes und Standardbibliothek vor neuer Abstraktion.",
+      "application": "Bun und Node-Standardbibliothek; null Laufzeitpakete.",
+      "guard": "Keine Providervermittlung, Cronjobs oder generischen Plugins im Kern.",
+      "source": "si atlas --detail ponytail --json",
+      "source_sha256": "1316a2f3f95741d2300b116fe0c2d81ce4a9568656ed0a62643f54aaf09957f2",
+      "atlas_score": 53
+    }
+  ]
+}

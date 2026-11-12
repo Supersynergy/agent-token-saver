@@ -1,0 +1,51 @@
+{
+  "arm": "cap",
+  "model": "opus",
+  "return_code": 0,
+  "timed_out": false,
+  "elapsed_ms": 49360,
+  "num_turns": 4,
+  "transcript_turns": 6,
+  "usage": {
+    "input_tokens": 111170,
+    "cached_input_tokens": 93910,
+    "uncached_input_tokens": 17260,
+    "output_tokens": 1320,
+    "total_tokens": 112490,
+    "fresh_input_tokens": 12,
+    "cache_read_input_tokens": 93910,
+    "cache_creation_input_tokens": 17248,
+    "thinking_tokens": 168
+  },
+  "economics_usage": {
+    "input_tokens": 12,
+    "cache_read_input_tokens": 93910,
+    "cache_creation_input_tokens": 17248,
+    "output_tokens": 1320
+  },
+  "usage_source": "transcript",
+  "model_usage_match": false,
+  "total_cost_usd": 0.153409,
+  "terminal_reason": "completed",
+  "permission_denials": 0,
+  "answer": "ATS_EDIT_OK",
+  "commands": [
+    "grep -rn \"compute_score\" --exclude-dir=.git . | grep -v \"^./payload.txt\" | head -50; grep -c compute_score payload.txt",
+    "sed -i '' 's/\\bcompute_score_v1\\b/compute_score/g' src/lib_core.py src/mod_010.py src/mod_033.py src/mod_057.py src/mod_081.py src/mod_099.py src/mod_117.py 2>/dev/null; grep -rn \"compute_score\" --exclude-dir=.git .",
+    "sed -i '' 's/[[:<:]]compute_score_v1[[:>:]]/compute_score/g' src/lib_core.py src/mod_010.py src/mod_033.py src/mod_057.py src/mod_081.py src/mod_099.py src/mod_117.py && grep -rn \"compute_score\" --exclude-dir=.git . && git diff --stat -- src; ls tests; cd src && python3 -c \"import lib_core, mod_010, mod_033, mod_057, mod_081, mod_099, mod_117; print('ok')\""
+  ],
+  "rtk_observed": false,
+  "verify_ok": true,
+  "accepted": true,
+  "oracle": {
+    "exact_answer": true,
+    "command_terms": true,
+    "fixture_state": true,
+    "provider_usage": true,
+    "transcript_found": true
+  },
+  "transcript_source": "~/.claude/projects/-private-var-folders-bm-0dt5fcdn56vg7pnkkzptmlkh0000gn-T-ats-claude-ab-o7hlhksg-fixture/6fe8e80c-f07c-4fcf-8d4b-0a0aaba805a8.jsonl",
+  "parse_error": "",
+  "stderr_tail": "",
+  "raw_result": "runs/multi-edit.opus.cap.result.json"
+}

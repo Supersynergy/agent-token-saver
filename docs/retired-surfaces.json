@@ -1,0 +1,558 @@
+{
+  "as_of": "2026-11-12",
+  "reason": "Retired implementation; replacements in MIGRATION.md. Source hashes record the pre-retirement local snapshot, including uncommitted work.",
+  "files": [
+    {
+      "path": "docs/adr/2026-10-12-native-codex-hook-trust.md",
+      "source_sha256": "23f25759f617951685be0196f1edf03b4fb488cca926d15513155f0cedfe60d9"
+    },
+    {
+      "path": "docs/adr/2026-10-26-preserved-host-config.md",
+      "source_sha256": "73415d0059c5819068df95a8299d196842aa8618505c7d603d1f5c2595d4cd2d"
+    },
+    {
+      "path": "tests/test_codex_native_hooks.py",
+      "source_sha256": "ded77c57e54dede119256a6bca178d4f8ffbe0dc8a05e29ac36c9e03395f559a"
+    },
+    {
+      "path": "docs/AGENTMASTER_PROTOCOL.md",
+      "source_sha256": "f9a29feefcdf1fbd6e9558e461e297aa2014b1f9048d036b5625e914043479e1"
+    },
+    {
+      "path": "docs/CLI_FIRST_POLICY.md",
+      "source_sha256": "508c24291f1cc40ce4aeb8987693f9117026041d44a7efc5f9d142d332689def"
+    },
+    {
+      "path": "docs/COST_ROUTING_POLICY.md",
+      "source_sha256": "820d138683e10e165615eb76431a9ab4cd04db84afe126fb8423f1962a0b88cb"
+    },
+    {
+      "path": "docs/FULL_CONTEXT_MEASUREMENT.md",
+      "source_sha256": "cac2241ebc7981af0aa842752ec1a91f9b1dcfb0b0321683be808989ec1fdf87"
+    },
+    {
+      "path": "docs/HOOKS_AND_AGENTS.md",
+      "source_sha256": "020ffd7c5d327ac44f3ecb3d84bf980aae8b1200b85a9cfae77a502871bf3b0a"
+    },
+    {
+      "path": "docs/NEWS_PIPELINE.md",
+      "source_sha256": "dcb6d3458594557234b22492bc2e32780f1cfb266266ff781f197e773586a6a0"
+    },
+    {
+      "path": "docs/PLAYBOOK.md",
+      "source_sha256": "c6d79cae1df7e6e9eb555460dc9ec8c772670711ff23dccc3f837092c62f8458"
+    },
+    {
+      "path": "docs/SAVINGS_USE_CASES.md",
+      "source_sha256": "1989e16ce3ceed04ca5fcdcc04e86387a3c3fbbbe3a97f2cb7485f81b0ca7cbd"
+    },
+    {
+      "path": "docs/SPEC-INCREMENTAL-SESSION-GUARD-2026-07-29.md",
+      "source_sha256": "a866ac16559b97aeca35d19f93d7cf86d2e54e4ad6def79d113de411828c2073"
+    },
+    {
+      "path": "docs/SUBAGENT_CONTEXT_PROTOCOL.md",
+      "source_sha256": "e61907aa3dfac8102f90eb4afbe4788b85cd763c07fecd7ee1be26e9de45a4bf"
+    },
+    {
+      "path": "docs/SWARM_CONTROL_PLANE.md",
+      "source_sha256": "a1c007fb73b3134002e7d199f54eab80da859575d8856c6ac209359e3284b518"
+    },
+    {
+      "path": "docs/TOKEN_SAVER_RESEARCH_2026-07-13.md",
+      "source_sha256": "fade6cf9fe52e35d80636a773b2c0e478308b2c273d2534b7d35b6f9ff7d2578"
+    },
+    {
+      "path": "docs/TOKEN_SAVER_RESEARCH_2026-07-19.md",
+      "source_sha256": "cde1f3053b25cdfd8c9af89f075342ed723ca08f920b364a242a53b85dd86f5d"
+    },
+    {
+      "path": "docs/TOOLING_AND_WIRING.md",
+      "source_sha256": "49e09e1def926bd8a3615714c0a2efec5df58ec8be5b3c1012be83b54126d236"
+    },
+    {
+      "path": "docs/adr/2026-07-14-public-core-and-team-profile.md",
+      "source_sha256": "6700f733df16d00105041611f4f3fc6d9f4da583699c61e9849b62b04753a1a5"
+    },
+    {
+      "path": "docs/adr/2026-07-15-external-auditor-and-transport-gates.md",
+      "source_sha256": "0ff25dcf5ae22544ab6d19cd89b8e21f4cd14e3506637f222613bc5e0ff4dcdc"
+    },
+    {
+      "path": "docs/adr/2026-07-16-cheapest-viable-team-structure.md",
+      "source_sha256": "70ff8ee77340126d7eda20c2ba625ebafcfdcc735a9a6fee8e0c8b84e6a6d6a8"
+    },
+    {
+      "path": "docs/adr/2026-07-18-headroom-proxy-provider-ab.md",
+      "source_sha256": "57d2878d97b1a4ca319a93d50129f8152b11aa66a9f9b4d4a070c13b570e4654"
+    },
+    {
+      "path": "docs/adr/2026-07-19-simultaneous-fanout-and-kimi-lean-lane.md",
+      "source_sha256": "4ffa0a85ee5dfb999f7230a3113fac69472f1d952a6bc18cdb52cb819e1cd423"
+    },
+    {
+      "path": "docs/adr/2026-07-27-forbid-synx-doctor-in-hooks.md",
+      "source_sha256": "3173b047d9ad6a86ea0c5379c5e7d3a0b6eb49d4831db9a65f2a411a4dd3db3f"
+    },
+    {
+      "path": "docs/adr/2026-07-27-public-benchmark-boundary.md",
+      "source_sha256": "7ab2881330b01de932cc23fe0d30bbc42044e7e25893347f669b28004cb73d01"
+    },
+    {
+      "path": "docs/adr/2026-09-03-omniroute-lane.md",
+      "source_sha256": "e8d3c99a5712b1c4f6027bcc820537aff6d01da4367145556164fe5df25b79db"
+    },
+    {
+      "path": "docs/adr/2026-09-04-fresh-install-journey.md",
+      "source_sha256": "c0c09992276790fccbab9e521c6a47a7c6c0d593f7c0df1363be1432b77909bc"
+    },
+    {
+      "path": "docs/ai-cheatsheet.md",
+      "source_sha256": "08558bf2a3cdeaf64d0f93e09933ad9823510b3a1669eca3b1be6f6eee3ec78f"
+    },
+    {
+      "path": "docs/assets/agentmaster-swarm-flow.png",
+      "source_sha256": "dffc02323e950beddba01646da5a4343e9b0426b43629bba26c6ddcdecbe504d"
+    },
+    {
+      "path": "docs/assets/social-preview.svg",
+      "source_sha256": "435342246ecfae082113705da1e65ab17c898ddf23babd50d4664fe811cc701b"
+    },
+    {
+      "path": "install-universal.sh",
+      "source_sha256": "416ea8fc3e3cc3cc264fab444657456d1ca165a9bb968b93bdbf7a94c9d79982"
+    },
+    {
+      "path": "integration/cli/agent-token-saver.sh",
+      "source_sha256": "158b99f0316da05e36cae09644fc835cdbd7c7871d2aa299f714b31c48f25cc3"
+    },
+    {
+      "path": "integration/cli/ats-jury-bench-v2.py",
+      "source_sha256": "a6e88c3df0b5e6470ed94c140434a27c4c15258a7f38fc67724283fb7d93c527"
+    },
+    {
+      "path": "integration/cli/ats-jury-bench.py",
+      "source_sha256": "fc04e6fc271439c47278862d3128508ed63ced818e71154b1d0c5ea4cdbe78a8"
+    },
+    {
+      "path": "integration/cli/ats-llm-pipe",
+      "source_sha256": "7316eb620c0932936cc7d5b2bd7e824769a8da1a1c1ed292847f4e164174d887"
+    },
+    {
+      "path": "integration/cli/ats-pipe",
+      "source_sha256": "a911a3bff6ae60d76a1cebb96e735c091a01cb373be05a2fe83bd8f25c789011"
+    },
+    {
+      "path": "integration/cli/ats-poweruser-bench.py",
+      "source_sha256": "290e15c5b79c351f94c597bf0bfc4e9462258c29856ea81f717ed18e3c5275ba"
+    },
+    {
+      "path": "integration/cli/ats-recall",
+      "source_sha256": "7523cbd8321c3e2d8e65804fcb16b520e43fd1c014f563ef7c6d7e2265b5b2b8"
+    },
+    {
+      "path": "integration/cli/ats-recon-bench.py",
+      "source_sha256": "e006356c2d05152744e40bac4ff5628c63c1e2181b2a95c4ff7fe3d899842699"
+    },
+    {
+      "path": "integration/cli/ats-swarm-bench.py",
+      "source_sha256": "4ead96d6cbccbec39a10d476b37827f0305bce8b8cf67e5a0dc2006d3f27ec0c"
+    },
+    {
+      "path": "integration/cli/ats-token-cfo",
+      "source_sha256": "58f49ce007fdbdf7d1738c556d048a416c771d10f672906b074a49ce459c6605"
+    },
+    {
+      "path": "integration/cli/ats-url-cache",
+      "source_sha256": "2f89cc823c5af428856b3a72f9c9a5a07262fa6d6ba2a3730cab0f9066b545d1"
+    },
+    {
+      "path": "integration/cli/ats-verify",
+      "source_sha256": "e0269da3f0bd0f05d3ac9383672216c52c69549b002dce8af9782bfcf47ae0cf"
+    },
+    {
+      "path": "integration/cli/claude-token-saver.sh",
+      "source_sha256": "c3b56e55f032ea751ff1d0cc027c10f7579148101eb7846573e265e6d0bd5efc"
+    },
+    {
+      "path": "integration/cli/cmux-token-saver.sh",
+      "source_sha256": "aacccf8d9a24dd759e041537bf1ee26f1797d589d9f5fd6188d29a889631cc49"
+    },
+    {
+      "path": "integration/cli/codex-heavy-context",
+      "source_sha256": "5b610f48e1bc7a9657b97e2910887a84a5e036c0d95cd23662966714a752cee4"
+    },
+    {
+      "path": "integration/cli/codex-token-saver.sh",
+      "source_sha256": "29ce9c77c320b1e542900d09d5b5c1f775b10a5443b8ed4129c1c017dff1a84c"
+    },
+    {
+      "path": "integration/cli/devin-bootstrap.md",
+      "source_sha256": "ce7a026b3a74b3096c7b2882269622d77c40051514a7e4015ecc795eefc6ea1c"
+    },
+    {
+      "path": "integration/cli/devin-token-saver.sh",
+      "source_sha256": "332feda9b4f052d31b07c4b1929fd7d3c20dfbdcb8edbbcffa2cca7f07b90a21"
+    },
+    {
+      "path": "integration/cli/goal",
+      "source_sha256": "6462f52712d87abd9ec6a44436f2754466faa435826df71fbf27c6228df7b51b"
+    },
+    {
+      "path": "integration/cli/goal.sh",
+      "source_sha256": "e47ea67578344707774f67e11341fb6f001a79940ab1b4e3f211a9d0341dfa36"
+    },
+    {
+      "path": "integration/cli/kimi-worker",
+      "source_sha256": "299b6d830b5cc6f3c93c0ca44d7910f3974e98b79cc199bb868512458f607df8"
+    },
+    {
+      "path": "integration/cli/synapse-ingest-cli-logs.py",
+      "source_sha256": "1faf86de30be371bd2f2bd120b0f5925ced93786daf74ee6f548bb262f858668"
+    },
+    {
+      "path": "integration/hooks/agent-worker-capsule.py",
+      "source_sha256": "1161635de6377592712bd6b6bf274d6d0a8684634222c47c5a7b79def41947a0"
+    },
+    {
+      "path": "integration/hooks/ats-context-capsule.py",
+      "source_sha256": "ca0c2ffee7a0e09972819205ef4247a345ef6603ed00c50a06bf88404e6da08d"
+    },
+    {
+      "path": "integration/hooks/ats-explore-budget.py",
+      "source_sha256": "816c702d8ddd7e55a4728447cb75751da49bec8b0317500b920aa422ff83d947"
+    },
+    {
+      "path": "integration/hooks/token-session-guard.py",
+      "source_sha256": "ec0bf40ec8cab98b905346afae275f30d1870ba7968c6343bf265f97a48b48ba"
+    },
+    {
+      "path": "integration/hooks/token-stack-prompt.py",
+      "source_sha256": "aa9e1336918424169bd68d4b07994307f8e3efdcbe7c198acf9f4f332d183215"
+    },
+    {
+      "path": "integration/instructions/compact-default.md",
+      "source_sha256": "3b96b9e5ad6fca2c91481c90d36bcbe44e50b38885c9f3a78e8af465661cde19"
+    },
+    {
+      "path": "pyproject.toml",
+      "source_sha256": "3842e16664442f5266f68a6fb309abc3864f856825ae3a3709a8eac1f704b440"
+    },
+    {
+      "path": "schemas/llmadapter-result-v2.schema.json",
+      "source_sha256": "cfb452a9424f2208437ed14e810247e33f86bc4c8b2dda263046a994044713a9"
+    },
+    {
+      "path": "scripts/abba.py",
+      "source_sha256": "72da83476d2411aca9edc8953daf9975f5ee37e96e903374589e8e8aac3a4118"
+    },
+    {
+      "path": "scripts/bench_news_agent_stack.py",
+      "source_sha256": "db66eea516939e68844a6bd761f3e8d220fc01728c22d736aa63b6e61018b9cc"
+    },
+    {
+      "path": "scripts/benchmark_freshdocs_lane.py",
+      "source_sha256": "9e9f14e3ca402ae4b47715de995dba480c53e9cd505ac8cd36c7aa7af102f61f"
+    },
+    {
+      "path": "scripts/benchmark_output_filters.py",
+      "source_sha256": "e36ca0cb1dcff1e744c5fd56ce7747fcc3e4c5673a6aa8c1c652c5abb3939ca1"
+    },
+    {
+      "path": "scripts/cache_economics.py",
+      "source_sha256": "7fd5b64b6809413e405b8b50ec947f53cd446d9c13ce126f95233fb17ca49b03"
+    },
+    {
+      "path": "scripts/claude_provider_ab.py",
+      "source_sha256": "4c19a60a7f927c22aedf16fecded4fdfa82c2e89c9614f39f44bb76827f9c06c"
+    },
+    {
+      "path": "scripts/codex_provider_ab.py",
+      "source_sha256": "9b05b37b7822cd3d34b19ece80b3996935f22c05af1be19821c4324ae3a5afae"
+    },
+    {
+      "path": "scripts/external_usage_gate.py",
+      "source_sha256": "1a0d5e641086d6ac91a0cdc48490cff8048c47a791b0668d22f7e2681eb46375"
+    },
+    {
+      "path": "scripts/full_context_ledger.py",
+      "source_sha256": "d9bcafe1514afaa10da592b42c53d3bdb55a870baaeb98d32972f7138fa00213"
+    },
+    {
+      "path": "scripts/graph_query_benchmark.py",
+      "source_sha256": "cc42e10dec125478c719d419665534f9eb533be379118273ff77d79d9da10923"
+    },
+    {
+      "path": "scripts/headroom_provider_ab.py",
+      "source_sha256": "ccd6baa7cc23ec7630440d7c36a25aa7cc00695b1329bba6499f937f6170a9b6"
+    },
+    {
+      "path": "scripts/hook_hotpath_benchmark.py",
+      "source_sha256": "daeebe45192617d59f457ff699e943f0ffca7230590d4e19e80d79b2d648c2f3"
+    },
+    {
+      "path": "scripts/hook_stack_benchmark.py",
+      "source_sha256": "bf6a620560349560d0c95eea3638ba3d4667512d96999f609190c6a9ef87687b"
+    },
+    {
+      "path": "scripts/install-ingest-cron.sh",
+      "source_sha256": "81acd62ac65cd4f44bd04cafd1d68c59cb55de5eb3e5a5a24a4364a9e02af458"
+    },
+    {
+      "path": "scripts/install_agent_token_saver.py",
+      "source_sha256": "fc7129e2dc484464b8bb38a41d2f6c09c53746ff4ec26a60533ebb4598033ff4"
+    },
+    {
+      "path": "scripts/install_stack_tools.py",
+      "source_sha256": "a571fd02dfc9e636e073e653313a8419d272954ab6245eef128c530b501df2bc"
+    },
+    {
+      "path": "scripts/install_stack_tools.sh",
+      "source_sha256": "27322842a99e0737a830ccd0417c56ead4eb59ef81275d6fe95c3552c4eba3ec"
+    },
+    {
+      "path": "scripts/kimi_k3_lane_benchmark.py",
+      "source_sha256": "a393a1b21e8eb03420dc9e14a676602c42167f6cb1b3cdcd48ba7b24fc44fe3e"
+    },
+    {
+      "path": "scripts/lane_policy_check.py",
+      "source_sha256": "5b7d74e3549c2ab362c9026ba012c5c7b8f59b4be37ac2297aa0884bd6504ea2"
+    },
+    {
+      "path": "scripts/llmadapter.ts",
+      "source_sha256": "ee9e375d4e119bdea20e527c52d339ff230035269bc28c572150e568a98d4107"
+    },
+    {
+      "path": "scripts/make_log_fixture.py",
+      "source_sha256": "d5f5a5b5d1d91aa4aa08d84915a0706efee40d37a285a5a3387afcb5700b11c9"
+    },
+    {
+      "path": "scripts/neutral_install_smoke.sh",
+      "source_sha256": "d145e60a1eeff0e3ed09fc6114d1fe250fe1078082062ccc3ed0164c07a2c825"
+    },
+    {
+      "path": "scripts/news_projection.py",
+      "source_sha256": "af2fba360d25530805af0a90602019d963bd61fcfb19c74057b62def0172221b"
+    },
+    {
+      "path": "scripts/remote_bootstrap_smoke.sh",
+      "source_sha256": "d2f00bda99f7387dac9afa30fc3dfb85755ad471c10c0baf98b2b8fd2b2b2652"
+    },
+    {
+      "path": "scripts/retrieval_backend_benchmark.py",
+      "source_sha256": "c4e4b050eef9a3a447bdcdb0215d7250901a8bd59438ac506878df507da008db"
+    },
+    {
+      "path": "scripts/stack_doctor.py",
+      "source_sha256": "d91ada1b0dbb410bf57407baaeaa8825da5d8a1af179959c6731e8d5af895912"
+    },
+    {
+      "path": "scripts/stack_tool_microbench.py",
+      "source_sha256": "75e1440434e65ae9dac072de05edd4863135bf363bba71622aa40c00f016537f"
+    },
+    {
+      "path": "scripts/swarm_control_benchmark.py",
+      "source_sha256": "14e79514ddfe4f7b0dad88e4ddc36b4e398f12320d502ed125d8de3f4528a80a"
+    },
+    {
+      "path": "scripts/synxp-chats-oracle.sh",
+      "source_sha256": "485e275c19f9d18cf83fc534c2f2487b3924a2201d3af2c3ece0eaebb0004f37"
+    },
+    {
+      "path": "scripts/token_stack_matrix_benchmark.py",
+      "source_sha256": "d928102053de88736a613aadbbf0317d5f5e3b73323c0fe88ae070b49f6f0589"
+    },
+    {
+      "path": "scripts/workflow_matrix_benchmark.py",
+      "source_sha256": "159aff22d0f60c72a857f87326f5fb513371d2fcbaf2f27d759d202bcd77c862"
+    },
+    {
+      "path": "scripts/workflow_policy.py",
+      "source_sha256": "af4b811ee496940081c767ddfc3f2e006f2c1ea39d93fe7e2d1850b525b9f40a"
+    },
+    {
+      "path": "skills/agent-token-saver-devin/MASTER-PLAN.md",
+      "source_sha256": "70b6d15773d2ecf352e4620bb92b21eb4e8beb7454fabf66216c6e0e0f12adff"
+    },
+    {
+      "path": "skills/agent-token-saver-devin/SKILL.md",
+      "source_sha256": "b6d2abc781ae17f80ee5bd92c7581b5e5561081411fd686a1cda066ee74309b9"
+    },
+    {
+      "path": "skills/agent-token-saver-devin/capsule-template.md",
+      "source_sha256": "06e47fb738bacb0c201edcab05f28b2354eefd8155827eb058f1c816417033e3"
+    },
+    {
+      "path": "stack/catalog.json",
+      "source_sha256": "e208ab2a48fffac01e3b091f29ee0e088eee37648ee1e11644b05677f36f56aa"
+    },
+    {
+      "path": "tests/__init__.py",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tests/test_abba.py",
+      "source_sha256": "4420d9b354f8fc38d61d4ee237f054802f19b5d4e7d8910ba0b8cb1cb6a64b92"
+    },
+    {
+      "path": "tests/test_agent_worker_capsule.py",
+      "source_sha256": "2bf3b801d09e6328d151c9879307090dc649904c0a298bf598d840858ce34324"
+    },
+    {
+      "path": "tests/test_ats_context_capsule.py",
+      "source_sha256": "eac04a32bffefcdd1e0e47815631e43499071ccc562138272a31aba7919a42f8"
+    },
+    {
+      "path": "tests/test_ats_explore_budget.py",
+      "source_sha256": "d8674252d0962ecd7bac2380f22732c59ab6c5f850b318822ba27809a055dbe9"
+    },
+    {
+      "path": "tests/test_ats_verify.py",
+      "source_sha256": "6f19e7e1b431ba2fb39aa6b426e2c6869c8477405f149159dd7ae2e4c13cbc28"
+    },
+    {
+      "path": "tests/test_ats_verify_rtk_filters.py",
+      "source_sha256": "ae7b14a6ab36d5298352c3ae865dcdddaffc964e09d8547c2a4eadb045422d77"
+    },
+    {
+      "path": "tests/test_benchmark_helpers.py",
+      "source_sha256": "70d5c3149ebd098672b4d77d6a0d6fc858aec0e2be5df37f923fb6446614a810"
+    },
+    {
+      "path": "tests/test_cache_economics.py",
+      "source_sha256": "82e9a7e4fb4911bedd7cf3a1ef660db6b45962c5edafa5ae2dc32b76ca68468b"
+    },
+    {
+      "path": "tests/test_claude_provider_ab.py",
+      "source_sha256": "472e04b1e744003ccbb6202da4daecd8203e3c4d856c5ab65477d4a26b474c84"
+    },
+    {
+      "path": "tests/test_codex_provider_ab.py",
+      "source_sha256": "22cf08c88b04eb85abf447ca15272f74ba5c176b7578dfdb563e5db49ca8ffd9"
+    },
+    {
+      "path": "tests/test_external_usage_gate.py",
+      "source_sha256": "879834bfc2d0de0e5be5345d329d51a01ec7839aa5d8c6bc0fc7002a6988f58a"
+    },
+    {
+      "path": "tests/test_freshdocs_lane_benchmark.py",
+      "source_sha256": "7e639d2f500427c0a9e083e91d53dde2794488c5a2322bab32e9622f24ca6bdc"
+    },
+    {
+      "path": "tests/test_full_context_ledger.py",
+      "source_sha256": "daa0d12f00df8e4955507e3ca3ee8b44f99060059589a238663c241e888c7d4a"
+    },
+    {
+      "path": "tests/test_goal_system.sh",
+      "source_sha256": "e31a71e13d6cd3de93aad6593caf4c49fc7d07c893de7c05da225c392190cf55"
+    },
+    {
+      "path": "tests/test_headroom_provider_ab.py",
+      "source_sha256": "cc983a16eeb141fed8f6b45a40135e305a20d778eb00ba64c2f6090fc2113069"
+    },
+    {
+      "path": "tests/test_hook_hotpath_benchmark.py",
+      "source_sha256": "ff429bd4410d30a0d0d21d87e9409d3cb93a058455d4a4944af831cb5380cd43"
+    },
+    {
+      "path": "tests/test_install_stack_tools.py",
+      "source_sha256": "e592b536f3d15928ecb5081f8fa42a9720a9d201b7181917ffff5fe6d4e2b259"
+    },
+    {
+      "path": "tests/test_installer.py",
+      "source_sha256": "9e779d6aceb32020ce27d39d39066d09a9d29227c9644c292a406527e76009e4"
+    },
+    {
+      "path": "tests/test_kimi_k3_lane_benchmark.py",
+      "source_sha256": "b4c5519eb729c145b185292fcd2871ec56b50068a20c52a8d235417076c19615"
+    },
+    {
+      "path": "tests/test_kimi_worker.py",
+      "source_sha256": "40674f73b708f8cc869a62a40e88dbf2e3d8e61799bb0bf867572210f48ca2a0"
+    },
+    {
+      "path": "tests/test_llmadapter_extensions.py",
+      "source_sha256": "c69b2206186ef86d659dfe500c3592bcc19b0f23597e4db27ccc56fb7827f6a0"
+    },
+    {
+      "path": "tests/test_llmadapter_omniroute.py",
+      "source_sha256": "c4dcecb46b784fb98b3cc0a8522b03a9029212668fb1b5bc76e4a56a47f7d040"
+    },
+    {
+      "path": "tests/test_llmadapter_pii_shield.sh",
+      "source_sha256": "14cb1c2916d0b7ba7ed9ddc293580d7cd0198a6c0561215e7436cce53d2dd3fc"
+    },
+    {
+      "path": "tests/test_llmadapter_swarm.py",
+      "source_sha256": "fb84b736054faf47f55b83cd6c4533b7d44ada2df0a26a6609251e87e1380bc5"
+    },
+    {
+      "path": "tests/test_llmadapter_v2.py",
+      "source_sha256": "19971117f6dbcaa867163026809abd61ac857f45b33aa725498368437f28995c"
+    },
+    {
+      "path": "tests/test_news_projection.py",
+      "source_sha256": "d99049aae4d188144913d912b0ec88728158b4abeda835c3fcf41e516d1c15f6"
+    },
+    {
+      "path": "tests/test_prompt_hook.py",
+      "source_sha256": "c8d1b66355087d09edf79208963ee093d4afcd8a9fbf190863cdd3ab5db99e50"
+    },
+    {
+      "path": "tests/test_public_benchmark_artifacts.py",
+      "source_sha256": "7fe4a63bef38f4ae38beaefdc1f251fca8d7a5224fb88f8cc2ebd95071b77911"
+    },
+    {
+      "path": "tests/test_quality_gate.py",
+      "source_sha256": "3f7c6f6f1006342d99d68cec514ba7b4da6706033c0e128d2f81ede8572b5350"
+    },
+    {
+      "path": "tests/test_retrieval_backend_benchmark.py",
+      "source_sha256": "38737342bb66bfae63799f5e85e0883aaf003b90ac56601768452177899e0eb9"
+    },
+    {
+      "path": "tests/test_session_guard_hook.py",
+      "source_sha256": "3f0a7d7bbae6866f434f6128739b442fe1a52690553cbd72741a0008f6358e8a"
+    },
+    {
+      "path": "tests/test_skill_doc_drift.py",
+      "source_sha256": "f922198fc76aefe1227176ab69f3ea03d115831c46527068486c5142a1491a26"
+    },
+    {
+      "path": "tests/test_stack_doctor.py",
+      "source_sha256": "5d4f5751ea8c93bffc1014c829041884623a979f1038d0115e290a003b3728e7"
+    },
+    {
+      "path": "tests/test_stack_tool_microbench.py",
+      "source_sha256": "610343ad898e095e91caff1477d998c46a4ef2c8cf3d52d192cb2c9ea3da4868"
+    },
+    {
+      "path": "tests/test_swarm_bench.py",
+      "source_sha256": "1c49db929deff51812c58a3f56042c87b4ff8a868995ee8b87a930d2a52efae9"
+    },
+    {
+      "path": "tests/test_swarm_control_benchmark.py",
+      "source_sha256": "90c19cd29a185caf7d2a0acc86526d681ebf7ac734ae8b22a240cc9e54ae18cb"
+    },
+    {
+      "path": "tests/test_synapse_ingest_cli_logs.py",
+      "source_sha256": "f6322eecc5eb6deace80e8d1556ff06b8a85becd30ec3d03cdb507bc3e2ab48d"
+    },
+    {
+      "path": "tests/test_url_cache.py",
+      "source_sha256": "588ff2cc8d1c219e0f173d4dd472c6a81c45de374cad2930b13b33786c7bb421"
+    },
+    {
+      "path": "tests/test_workflow_policy.py",
+      "source_sha256": "6357e863621fcd50768b492333d60062c1c16bd20df0867fc01b4760c9ab4fa5"
+    },
+    {
+      "path": "tests/workflow_matrix_benchmark_test.py",
+      "source_sha256": "989c9ca9b3ab4273f2d9980ad24ba660ff963fe3870135705a3286819100b7c0"
+    },
+    {
+      "path": "uv.lock",
+      "source_sha256": "118d527b178ff7eb56e1dc5beffad2741911d2a59d2f8a8638c333e8748df8fc"
+    }
+  ]
+}

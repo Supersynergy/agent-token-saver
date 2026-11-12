@@ -1,0 +1,1721 @@
+{
+  "schema_version": 2,
+  "date": "2026-09-13 21:38:09 CEST",
+  "replayed": true,
+  "tasks": [
+    {
+      "name": "git-history",
+      "model": "haiku",
+      "prompt": "Minimize token/context bloat. Inspect the repository history with git log. Confirm there are exactly 121 commits and the oldest subject is ATS seed. Compute the count and oldest subject inside the shell command before output reaches the model. If both are true, reply exactly ATS_HISTORY_OK and nothing else.",
+      "expected": "ATS_HISTORY_OK",
+      "arms": {
+        "all": {
+          "arm": "all",
+          "model": "haiku",
+          "usage": {
+            "input_tokens": 97034,
+            "cached_input_tokens": 84182,
+            "uncached_input_tokens": 12852,
+            "output_tokens": 1458,
+            "total_tokens": 98492,
+            "fresh_input_tokens": 40,
+            "cache_read_input_tokens": 84182,
+            "cache_creation_input_tokens": 12812,
+            "thinking_tokens": 1096
+          },
+          "economics_usage": {
+            "input_tokens": 40,
+            "cache_read_input_tokens": 84182,
+            "cache_creation_input_tokens": 12812,
+            "output_tokens": 1458
+          },
+          "usage_source": "transcript",
+          "total_cost_usd": 0.0217131,
+          "num_turns": 2,
+          "transcript_turns": 4,
+          "answer": "ATS_HISTORY_OK",
+          "commands": [
+            "count=$(git log --oneline | wc -l); oldest=$(git log --reverse --format=%s | head -1); if [ \"$count\" = \"121\" ] && [ \"$oldest\" = \"ATS seed\" ]; then echo \"ATS_HISTORY_OK\"; else echo \"Count: $count (expected 121), Oldest: $oldest (expected ATS seed)\"; fi"
+          ],
+          "rtk_observed": false,
+          "verify_ok": null,
+          "accepted": true
+        },
+        "ats": {
+          "arm": "ats",
+          "model": "haiku",
+          "usage": {
+            "input_tokens": 91276,
+            "cached_input_tokens": 81664,
+            "uncached_input_tokens": 9612,
+            "output_tokens": 1092,
+            "total_tokens": 92368,
+            "fresh_input_tokens": 36,
+            "cache_read_input_tokens": 81664,
+            "cache_creation_input_tokens": 9576,
+            "thinking_tokens": 746
+          },
+          "economics_usage": {
+            "input_tokens": 36,
+            "cache_read_input_tokens": 81664,
+            "cache_creation_input_tokens": 9576,
+            "output_tokens": 1092
+          },
+          "usage_source": "transcript",
+          "total_cost_usd": 0.0174342,
+          "num_turns": 2,
+          "transcript_turns": 4,
+          "answer": "ATS_HISTORY_OK",
+          "commands": [
+            "count=$(git log --format=%s | wc -l) && oldest=$(git log --format=%s | tail -1) && if [ \"$count\" -eq 121 ] && [ \"$oldest\" = \"ATS seed\" ]; then echo \"ATS_HISTORY_OK\"; else echo \"FAILED: count=$count, oldest=$oldest\"; fi"
+          ],
+          "rtk_observed": false,
+          "verify_ok": null,
+          "accepted": true
+        },
+        "baseline": {
+          "arm": "baseline",
+          "model": "haiku",
+          "usage": {
+            "input_tokens": 88484,
+            "cached_input_tokens": 79406,
+            "uncached_input_tokens": 9078,
+            "output_tokens": 808,
+            "total_tokens": 89292,
+            "fresh_input_tokens": 36,
+            "cache_read_input_tokens": 79406,
+            "cache_creation_input_tokens": 9042,
+            "thinking_tokens": 416
+          },
+          "economics_usage": {
+            "input_tokens": 36,
+            "cache_read_input_tokens": 79406,
+            "cache_creation_input_tokens": 9042,
+            "output_tokens": 808
+          },
+          "usage_source": "transcript",
+          "total_cost_usd": 0.0160673,
+          "num_turns": 2,
+          "transcript_turns": 4,
+          "answer": "ATS_HISTORY_OK",
+          "commands": [
+            "\ncount=$(git log --oneline | wc -l)\noldest=$(git log --oneline | tail -1 | cut -d' ' -f2-)\nif [ \"$count\" -eq 121 ] && [ \"$oldest\" = \"ATS seed\" ]; then\n  echo \"ATS_HISTORY_OK\"\nelse\n  echo \"Count: $count, Oldest: $oldest\"\nfi\n"
+          ],
+          "rtk_observed": false,
+          "verify_ok": null,
+          "accepted": true
+        },
+        "ctx": {
+          "arm": "ctx",
+          "model": "haiku",
+          "usage": {
+            "input_tokens": 93918,
+            "cached_input_tokens": 81924,
+            "uncached_input_tokens": 11994,
+            "output_tokens": 882,
+            "total_tokens": 94800,
+            "fresh_input_tokens": 40,
+            "cache_read_input_tokens": 81924,
+            "cache_creation_input_tokens": 11954,
+            "thinking_tokens": 508
+          },
+          "economics_usage": {
+            "input_tokens": 40,
+            "cache_read_input_tokens": 81924,
+            "cache_creation_input_tokens": 11954,
+            "output_tokens": 882
+          },
+          "usage_source": "transcript",
+          "total_cost_usd": 0.019302200000000002,
+          "num_turns": 2,
+          "transcript_turns": 4,
+          "answer": "ATS_HISTORY_OK",
+          "commands": [
+            "\ncommit_count=$(git log --oneline | wc -l)\noldest_subject=$(git log --oneline | tail -1 | cut -d' ' -f2-)\nif [ \"$commit_count\" -eq 121 ] && [ \"$oldest_subject\" = \"ATS seed\" ]; then\n  echo \"ATS_HISTORY_OK\"\nelse\n  echo \"Count: $commit_count (expected 121), Oldest: '$oldest_subject' (expected 'ATS seed')\"\nfi\n"
+          ],
+          "rtk_observed": false,
+          "verify_ok": null,
+          "accepted": true
+        }
+      },
+      "comparisons": {
+        "all": {
+          "accepted": true,
+          "provider_delta": {
+            "input_tokens": 8550,
+            "uncached_input_tokens": 3774,
+            "output_tokens": 650,
+            "total_tokens": 9200,
+            "cost_usd": 0.005646,
+            "input_saved_percent": -9.66,
+            "total_saved_percent": -10.3
+          },
+          "weighted_delta": {
+            "baseline_weighted_input_tokens": 19279.1,
+            "candidate_weighted_input_tokens": 24473.2,
+            "baseline_weighted_total_tokens": 23319.1,
+            "candidate_weighted_total_tokens": 31763.2,
+            "baseline_cache_hit_rate_percent": 89.74,
+            "candidate_cache_hit_rate_percent": 86.76,
+            "cache_hit_rate_delta": -2.98,
+            "input_saved_percent": -26.94,
+            "total_saved_percent": -36.21,
+            "profile": {
+              "name": "anthropic",
+              "cache_read_ratio": 0.1,
+              "cache_write_ratio": 1.25,
+              "output_ratio": 5.0,
+              "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+              "verified": "2026-08-25",
+              "note": "5-minute cache write. Ratios identical across active Claude models."
+            },
+            "basis": "Weighted numbers are a list-ratio estimate against a no-cache counterfactual, not an invoice. Raw provider counters stay authoritative."
+          }
+        },
+        "ats": {
+          "accepted": true,
+          "provider_delta": {
+            "input_tokens": 2792,
+            "uncached_input_tokens": 534,
+            "output_tokens": 284,
+            "total_tokens": 3076,
+            "cost_usd": 0.001367,
+            "input_saved_percent": -3.16,
+            "total_saved_percent": -3.44
+          },
+          "weighted_delta": {
+            "baseline_weighted_input_tokens": 19279.1,
+            "candidate_weighted_input_tokens": 20172.4,
+            "baseline_weighted_total_tokens": 23319.1,
+            "candidate_weighted_total_tokens": 25632.4,
+            "baseline_cache_hit_rate_percent": 89.74,
+            "candidate_cache_hit_rate_percent": 89.47,
+            "cache_hit_rate_delta": -0.27,
+            "input_saved_percent": -4.63,
+            "total_saved_percent": -9.92,
+            "profile": {
+              "name": "anthropic",
+              "cache_read_ratio": 0.1,
+              "cache_write_ratio": 1.25,
+              "output_ratio": 5.0,
+              "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+              "verified": "2026-08-25",
+              "note": "5-minute cache write. Ratios identical across active Claude models."
+            },
+            "basis": "Weighted numbers are a list-ratio estimate against a no-cache counterfactual, not an invoice. Raw provider counters stay authoritative."
+          }
+        },
+        "ctx": {
+          "accepted": true,
+          "provider_delta": {
+            "input_tokens": 5434,
+            "uncached_input_tokens": 2916,
+            "output_tokens": 74,
+            "total_tokens": 5508,
+            "cost_usd": 0.003235,
+            "input_saved_percent": -6.14,
+            "total_saved_percent": -6.17
+          },
+          "weighted_delta": {
+            "baseline_weighted_input_tokens": 19279.1,
+            "candidate_weighted_input_tokens": 23174.9,
+            "baseline_weighted_total_tokens": 23319.1,
+            "candidate_weighted_total_tokens": 27584.9,
+            "baseline_cache_hit_rate_percent": 89.74,
+            "candidate_cache_hit_rate_percent": 87.23,
+            "cache_hit_rate_delta": -2.51,
+            "input_saved_percent": -20.21,
+            "total_saved_percent": -18.29,
+            "profile": {
+              "name": "anthropic",
+              "cache_read_ratio": 0.1,
+              "cache_write_ratio": 1.25,
+              "output_ratio": 5.0,
+              "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+              "verified": "2026-08-25",
+              "note": "5-minute cache write. Ratios identical across active Claude models."
+            },
+            "basis": "Weighted numbers are a list-ratio estimate against a no-cache counterfactual, not an invoice. Raw provider counters stay authoritative."
+          }
+        }
+      }
+    },
+    {
+      "name": "git-history",
+      "model": "sonnet",
+      "prompt": "Minimize token/context bloat. Inspect the repository history with git log. Confirm there are exactly 121 commits and the oldest subject is ATS seed. Compute the count and oldest subject inside the shell command before output reaches the model. If both are true, reply exactly ATS_HISTORY_OK and nothing else.",
+      "expected": "ATS_HISTORY_OK",
+      "arms": {
+        "ats": {
+          "arm": "ats",
+          "model": "sonnet",
+          "usage": {
+            "input_tokens": 60809,
+            "cached_input_tokens": 55154,
+            "uncached_input_tokens": 5655,
+            "output_tokens": 202,
+            "total_tokens": 61011,
+            "fresh_input_tokens": 4,
+            "cache_read_input_tokens": 55154,
+            "cache_creation_input_tokens": 5651,
+            "thinking_tokens": 0
+          },
+          "economics_usage": {
+            "input_tokens": 4,
+            "cache_read_input_tokens": 55154,
+            "cache_creation_input_tokens": 5651,
+            "output_tokens": 202
+          },
+          "usage_source": "transcript",
+          "total_cost_usd": 0.0366848,
+          "num_turns": 2,
+          "transcript_turns": 2,
+          "answer": "ATS_HISTORY_OK",
+          "commands": [
+            "n=$(git log --oneline | wc -l | tr -d ' '); oldest=$(git log --reverse --format=%s | head -1); if [ \"$n\" = \"121\" ] && [ \"$oldest\" = \"ATS seed\" ]; then echo OK; else echo \"FAIL n=$n oldest=$oldest\"; fi"
+          ],
+          "rtk_observed": false,
+          "verify_ok": null,
+          "accepted": true
+        },
+        "baseline": {
+          "arm": "baseline",
+          "model": "sonnet",
+          "usage": {
+            "input_tokens": 85026,
+            "cached_input_tokens": 76561,
+            "uncached_input_tokens": 8465,
+            "output_tokens": 442,
+            "total_tokens": 85468,
+            "fresh_input_tokens": 6,
+            "cache_read_input_tokens": 76561,
+            "cache_creation_input_tokens": 8459,
+            "thinking_tokens": 42
+          },
+          "economics_usage": {
+            "input_tokens": 6,
+            "cache_read_input_tokens": 76561,
+            "cache_creation_input_tokens": 8459,
+            "output_tokens": 442
+          },
+          "usage_source": "transcript",
+          "total_cost_usd": 0.0312364,
+          "num_turns": 2,
+          "transcript_turns": 3,
+          "answer": "ATS_HISTORY_OK",
+          "commands": [
+            "count=$(git log --oneline | wc -l | tr -d ' '); oldest=$(git log --reverse --format=%s | head -n 1); if [ \"$count\" -eq 121 ] && [ \"$oldest\" = \"ATS seed\" ]; then echo OK; else echo \"FAIL count=$count oldest=$oldest\"; fi"
+          ],
+          "rtk_observed": false,
+          "verify_ok": null,
+          "accepted": true
+        }
+      },
+      "comparisons": {
+        "ats": {
+          "accepted": true,
+          "provider_delta": {
+            "input_tokens": -24217,
+            "uncached_input_tokens": -2810,
+            "output_tokens": -240,
+            "total_tokens": -24457,
+            "cost_usd": 0.005448,
+            "input_saved_percent": 28.48,
+            "total_saved_percent": 28.62
+          },
+          "weighted_delta": {
+            "baseline_weighted_input_tokens": 18235.85,
+            "candidate_weighted_input_tokens": 12583.15,
+            "baseline_weighted_total_tokens": 20445.85,
+            "candidate_weighted_total_tokens": 13593.15,
+            "baseline_cache_hit_rate_percent": 90.04,
+            "candidate_cache_hit_rate_percent": 90.7,
+            "cache_hit_rate_delta": 0.66,
+            "input_saved_percent": 31.0,
+            "total_saved_percent": 33.52,
+            "profile": {
+              "name": "anthropic",
+              "cache_read_ratio": 0.1,
+              "cache_write_ratio": 1.25,
+              "output_ratio": 5.0,
+              "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+              "verified": "2026-08-25",
+              "note": "5-minute cache write. Ratios identical across active Claude models."
+            },
+            "basis": "Weighted numbers are a list-ratio estimate against a no-cache counterfactual, not an invoice. Raw provider counters stay authoritative."
+          }
+        }
+      }
+    },
+    {
+      "name": "large-git-diff",
+      "model": "haiku",
+      "prompt": "Minimize token/context bloat. Inspect the repository's full uncommitted change with git diff. Confirm exactly 6000 removed lines, 6000 added lines, and the added marker FIXED-06000. If all are true, reply exactly ATS_DIFF_OK and nothing else.",
+      "expected": "ATS_DIFF_OK",
+      "arms": {
+        "all": {
+          "arm": "all",
+          "model": "haiku",
+          "usage": {
+            "input_tokens": 96430,
+            "cached_input_tokens": 84174,
+            "uncached_input_tokens": 12256,
+            "output_tokens": 1340,
+            "total_tokens": 97770,
+            "fresh_input_tokens": 40,
+            "cache_read_input_tokens": 84174,
+            "cache_creation_input_tokens": 12216,
+            "thinking_tokens": 982
+          },
+          "economics_usage": {
+            "input_tokens": 40,
+            "cache_read_input_tokens": 84174,
+            "cache_creation_input_tokens": 12216,
+            "output_tokens": 1340
+          },
+          "usage_source": "transcript",
+          "total_cost_usd": 0.020807700000000002,
+          "num_turns": 2,
+          "transcript_turns": 4,
+          "answer": "ATS_DIFF_OK",
+          "commands": [
+            "git diff --stat && git diff | grep -c '^-' && git diff | grep -c '^+' && git diff | grep -c 'FIXED-06000'"
+          ],
+          "rtk_observed": false,
+          "verify_ok": null,
+          "accepted": true
+        },
+        "ats": {
+          "arm": "ats",
+          "model": "haiku",
+          "usage": {
+            "input_tokens": 184194,
+            "cached_input_tokens": 173734,
+            "uncached_input_tokens": 10460,
+            "output_tokens": 1666,
+            "total_tokens": 185860,
+            "fresh_input_tokens": 68,
+            "cache_read_input_tokens": 173734,
+            "cache_creation_input_tokens": 10392,
+            "thinking_tokens": 718
+          },
+          "economics_usage": {
+            "input_tokens": 68,
+            "cache_read_input_tokens": 173734,
+            "cache_creation_input_tokens": 10392,
+            "output_tokens": 1666
+          },
+          "usage_source": "transcript",
+          "total_cost_usd": 0.024290700000000002,
+          "num_turns": 4,
+          "transcript_turns": 8,
+          "answer": "ATS_DIFF_OK",
+          "commands": [
+            "git diff --stat",
+            "git diff | grep -c \"^+\" && git diff | grep -c \"^-\" && git diff | grep \"FIXED-06000\"",
+            "git diff | grep \"^+\" | grep -v \"^+++\" | wc -l && git diff | grep \"^-\" | grep -v \"^---\" | wc -l"
+          ],
+          "rtk_observed": false,
+          "verify_ok": null,
+          "accepted": true
+        },
+        "baseline": {
+          "arm": "baseline",
+          "model": "haiku",
+          "usage": {
+            "input_tokens": 186666,
+            "cached_input_tokens": 173544,
+            "uncached_input_tokens": 13122,
+            "output_tokens": 2030,
+            "total_tokens": 188696,
+            "fresh_input_tokens": 68,
+            "cache_read_input_tokens": 173544,
+            "cache_creation_input_tokens": 13054,
+            "thinking_tokens": 512
+          },
+          "economics_usage": {
+            "input_tokens": 68,
+            "cache_read_input_tokens": 173544,
+            "cache_creation_input_tokens": 13054,
+            "output_tokens": 2030
+          },
+          "usage_source": "transcript",
+          "total_cost_usd": 0.027853199999999998,
+          "num_turns": 5,
+          "transcript_turns": 8,
+          "answer": "",
+          "commands": [
+            "git diff",
+            "tail -20 ~/.claude/projects/-private-var-folders-bm-0dt5fcdn56vg7pnkkzptmlkh0000gn-T-ats-claude-ab-972808xs-fixture/ee64cdbc-3988-4db6-a720-2442c6f19b53/tool-results/bhssfjked.txt",
+            "grep -c \"^-ORIGINAL\" ~/.claude/projects/-private-var-folders-bm-0dt5fcdn56vg7pnkkzptmlkh0000gn-T-ats-claude-ab-972808xs-fixture/ee64cdbc-3988-4db6-a720-2442c6f19b53/tool-results/bhssfjked.txt && grep -c \"^+FIXED\" ~/.claude/projects/-private-var-folders-bm-0dt5fcdn56vg7pnkkzptmlkh0000gn-T-ats-claude-ab-972808xs-fixture/ee64cdbc-3988-4db6-a720-2442c6f19b53/tool-results/bhssfjked.txt"
+          ],
+          "rtk_observed": false,
+          "verify_ok": null,
+          "accepted": false
+        },
+        "ctx": {
+          "arm": "ctx",
+          "model": "haiku",
+          "usage": {
+            "input_tokens": 196124,
+            "cached_input_tokens": 180928,
+            "uncached_input_tokens": 15196,
+            "output_tokens": 1758,
+            "total_tokens": 197882,
+            "fresh_input_tokens": 72,
+            "cache_read_input_tokens": 180928,
+            "cache_creation_input_tokens": 15124,
+            "thinking_tokens": 746
+          },
+          "economics_usage": {
+            "input_tokens": 72,
+            "cache_read_input_tokens": 180928,
+            "cache_creation_input_tokens": 15124,
+            "output_tokens": 1758
+          },
+          "usage_source": "transcript",
+          "total_cost_usd": 0.029634399999999998,
+          "num_turns": 4,
+          "transcript_turns": 8,
+          "answer": "ATS_DIFF_OK",
+          "commands": [
+            "git diff",
+            "diff_file=\"~/.claude/projects/-private-var-folders-bm-0dt5fcdn56vg7pnkkzptmlkh0000gn-T-ats-claude-ab-972808xs-fixture/1f0e376f-0305-4250-b663-d142a5e15af4/tool-results/b7toz41mc.txt\"\n\n# Count removed lines (lines starting with -)\nremoved=$(grep -c \"^-ORIGINAL-\" \"$diff_file\" 2>/dev/null || echo \"0\")\n\n# Count added lines (lines starting with +)\nadded=$(grep -c \"^+FIXED-\" \"$diff_file\" 2>/dev/null || echo \"0\")\n\n# Check for FIXED-06000 marker\nmarker=$(grep \"FIXED-06000\" \"$diff_file\" 2>/dev/null | head -1)\n\necho \"Removed lines: $removed\"\necho \"Added lines: $added\"\necho \"Marker found: $marker\""
+          ],
+          "rtk_observed": false,
+          "verify_ok": null,
+          "accepted": true
+        }
+      },
+      "comparisons": {
+        "all": {
+          "accepted": false,
+          "provider_delta": {
+            "input_tokens": -90236,
+            "uncached_input_tokens": -866,
+            "output_tokens": -690,
+            "total_tokens": -90926,
+            "cost_usd": -0.007045,
+            "input_saved_percent": null,
+            "total_saved_percent": null
+          },
+          "weighted_delta": {
+            "baseline_weighted_input_tokens": 33739.9,
+            "candidate_weighted_input_tokens": 23727.4,
+            "baseline_weighted_total_tokens": 43889.9,
+            "candidate_weighted_total_tokens": 30427.4,
+            "baseline_cache_hit_rate_percent": 92.97,
+            "candidate_cache_hit_rate_percent": 87.29,
+            "cache_hit_rate_delta": -5.68,
+            "input_saved_percent": null,
+            "total_saved_percent": null,
+            "profile": {
+              "name": "anthropic",
+              "cache_read_ratio": 0.1,
+              "cache_write_ratio": 1.25,
+              "output_ratio": 5.0,
+              "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+              "verified": "2026-08-25",
+              "note": "5-minute cache write. Ratios identical across active Claude models."
+            },
+            "basis": "Weighted numbers are a list-ratio estimate against a no-cache counterfactual, not an invoice. Raw provider counters stay authoritative."
+          }
+        },
+        "ats": {
+          "accepted": false,
+          "provider_delta": {
+            "input_tokens": -2472,
+            "uncached_input_tokens": -2662,
+            "output_tokens": -364,
+            "total_tokens": -2836,
+            "cost_usd": -0.003562,
+            "input_saved_percent": null,
+            "total_saved_percent": null
+          },
+          "weighted_delta": {
+            "baseline_weighted_input_tokens": 33739.9,
+            "candidate_weighted_input_tokens": 30431.4,
+            "baseline_weighted_total_tokens": 43889.9,
+            "candidate_weighted_total_tokens": 38761.4,
+            "baseline_cache_hit_rate_percent": 92.97,
+            "candidate_cache_hit_rate_percent": 94.32,
+            "cache_hit_rate_delta": 1.35,
+            "input_saved_percent": null,
+            "total_saved_percent": null,
+            "profile": {
+              "name": "anthropic",
+              "cache_read_ratio": 0.1,
+              "cache_write_ratio": 1.25,
+              "output_ratio": 5.0,
+              "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+              "verified": "2026-08-25",
+              "note": "5-minute cache write. Ratios identical across active Claude models."
+            },
+            "basis": "Weighted numbers are a list-ratio estimate against a no-cache counterfactual, not an invoice. Raw provider counters stay authoritative."
+          }
+        },
+        "ctx": {
+          "accepted": false,
+          "provider_delta": {
+            "input_tokens": 9458,
+            "uncached_input_tokens": 2074,
+            "output_tokens": -272,
+            "total_tokens": 9186,
+            "cost_usd": 0.001781,
+            "input_saved_percent": null,
+            "total_saved_percent": null
+          },
+          "weighted_delta": {
+            "baseline_weighted_input_tokens": 33739.9,
+            "candidate_weighted_input_tokens": 37069.8,
+            "baseline_weighted_total_tokens": 43889.9,
+            "candidate_weighted_total_tokens": 45859.8,
+            "baseline_cache_hit_rate_percent": 92.97,
+            "candidate_cache_hit_rate_percent": 92.25,
+            "cache_hit_rate_delta": -0.72,
+            "input_saved_percent": null,
+            "total_saved_percent": null,
+            "profile": {
+              "name": "anthropic",
+              "cache_read_ratio": 0.1,
+              "cache_write_ratio": 1.25,
+              "output_ratio": 5.0,
+              "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+              "verified": "2026-08-25",
+              "note": "5-minute cache write. Ratios identical across active Claude models."
+            },
+            "basis": "Weighted numbers are a list-ratio estimate against a no-cache counterfactual, not an invoice. Raw provider counters stay authoritative."
+          }
+        }
+      }
+    },
+    {
+      "name": "large-git-diff",
+      "model": "sonnet",
+      "prompt": "Minimize token/context bloat. Inspect the repository's full uncommitted change with git diff. Confirm exactly 6000 removed lines, 6000 added lines, and the added marker FIXED-06000. If all are true, reply exactly ATS_DIFF_OK and nothing else.",
+      "expected": "ATS_DIFF_OK",
+      "arms": {
+        "ats": {
+          "arm": "ats",
+          "model": "sonnet",
+          "usage": {
+            "input_tokens": 91155,
+            "cached_input_tokens": 80014,
+            "uncached_input_tokens": 11141,
+            "output_tokens": 493,
+            "total_tokens": 91648,
+            "fresh_input_tokens": 6,
+            "cache_read_input_tokens": 80014,
+            "cache_creation_input_tokens": 11135,
+            "thinking_tokens": 112
+          },
+          "economics_usage": {
+            "input_tokens": 6,
+            "cache_read_input_tokens": 80014,
+            "cache_creation_input_tokens": 11135,
+            "output_tokens": 493
+          },
+          "usage_source": "transcript",
+          "total_cost_usd": 0.037492,
+          "num_turns": 2,
+          "transcript_turns": 3,
+          "answer": "ATS_DIFF_OK",
+          "commands": [
+            "git diff --shortstat && echo \"---MARKER---\" && git diff | grep -c '^+.*FIXED-06000'"
+          ],
+          "rtk_observed": false,
+          "verify_ok": null,
+          "accepted": true
+        },
+        "baseline": {
+          "arm": "baseline",
+          "model": "sonnet",
+          "usage": {
+            "input_tokens": 118246,
+            "cached_input_tokens": 107074,
+            "uncached_input_tokens": 11172,
+            "output_tokens": 570,
+            "total_tokens": 118816,
+            "fresh_input_tokens": 8,
+            "cache_read_input_tokens": 107074,
+            "cache_creation_input_tokens": 11164,
+            "thinking_tokens": 312
+          },
+          "economics_usage": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 107074,
+            "cache_creation_input_tokens": 11164,
+            "output_tokens": 570
+          },
+          "usage_source": "transcript",
+          "total_cost_usd": 0.0369214,
+          "num_turns": 2,
+          "transcript_turns": 4,
+          "answer": "ATS_DIFF_OK",
+          "commands": [
+            "git diff --stat && echo \"---SEARCH---\" && git diff | grep -c \"FIXED-06000\""
+          ],
+          "rtk_observed": false,
+          "verify_ok": null,
+          "accepted": true
+        },
+        "ctx": {
+          "arm": "ctx",
+          "model": "sonnet",
+          "usage": {
+            "input_tokens": 191080,
+            "cached_input_tokens": 174678,
+            "uncached_input_tokens": 16402,
+            "output_tokens": 1876,
+            "total_tokens": 192956,
+            "fresh_input_tokens": 12,
+            "cache_read_input_tokens": 174678,
+            "cache_creation_input_tokens": 16390,
+            "thinking_tokens": 1114
+          },
+          "economics_usage": {
+            "input_tokens": 12,
+            "cache_read_input_tokens": 174678,
+            "cache_creation_input_tokens": 16390,
+            "output_tokens": 1876
+          },
+          "usage_source": "transcript",
+          "total_cost_usd": 0.0606628,
+          "num_turns": 3,
+          "transcript_turns": 6,
+          "answer": "ATS_DIFF_OK",
+          "commands": [
+            "git diff --numstat",
+            "git diff -- payload.txt | grep -c '^+FIXED-06000' ; git diff -- payload.txt | grep -c '^+' ; git diff -- payload.txt | grep -c '^-'"
+          ],
+          "rtk_observed": false,
+          "verify_ok": null,
+          "accepted": true
+        }
+      },
+      "comparisons": {
+        "ats": {
+          "accepted": true,
+          "provider_delta": {
+            "input_tokens": -27091,
+            "uncached_input_tokens": -31,
+            "output_tokens": -77,
+            "total_tokens": -27168,
+            "cost_usd": 0.000571,
+            "input_saved_percent": 22.91,
+            "total_saved_percent": 22.87
+          },
+          "weighted_delta": {
+            "baseline_weighted_input_tokens": 24670.4,
+            "candidate_weighted_input_tokens": 21926.15,
+            "baseline_weighted_total_tokens": 27520.4,
+            "candidate_weighted_total_tokens": 24391.15,
+            "baseline_cache_hit_rate_percent": 90.55,
+            "candidate_cache_hit_rate_percent": 87.78,
+            "cache_hit_rate_delta": -2.77,
+            "input_saved_percent": 11.12,
+            "total_saved_percent": 11.37,
+            "profile": {
+              "name": "anthropic",
+              "cache_read_ratio": 0.1,
+              "cache_write_ratio": 1.25,
+              "output_ratio": 5.0,
+              "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+              "verified": "2026-08-25",
+              "note": "5-minute cache write. Ratios identical across active Claude models."
+            },
+            "basis": "Weighted numbers are a list-ratio estimate against a no-cache counterfactual, not an invoice. Raw provider counters stay authoritative."
+          }
+        },
+        "ctx": {
+          "accepted": true,
+          "provider_delta": {
+            "input_tokens": 72834,
+            "uncached_input_tokens": 5230,
+            "output_tokens": 1306,
+            "total_tokens": 74140,
+            "cost_usd": 0.023741,
+            "input_saved_percent": -61.6,
+            "total_saved_percent": -62.4
+          },
+          "weighted_delta": {
+            "baseline_weighted_input_tokens": 24670.4,
+            "candidate_weighted_input_tokens": 37967.3,
+            "baseline_weighted_total_tokens": 27520.4,
+            "candidate_weighted_total_tokens": 47347.3,
+            "baseline_cache_hit_rate_percent": 90.55,
+            "candidate_cache_hit_rate_percent": 91.42,
+            "cache_hit_rate_delta": 0.87,
+            "input_saved_percent": -53.9,
+            "total_saved_percent": -72.04,
+            "profile": {
+              "name": "anthropic",
+              "cache_read_ratio": 0.1,
+              "cache_write_ratio": 1.25,
+              "output_ratio": 5.0,
+              "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+              "verified": "2026-08-25",
+              "note": "5-minute cache write. Ratios identical across active Claude models."
+            },
+            "basis": "Weighted numbers are a list-ratio estimate against a no-cache counterfactual, not an invoice. Raw provider counters stay authoritative."
+          }
+        }
+      }
+    },
+    {
+      "name": "multi-edit",
+      "model": "haiku",
+      "prompt": "In this repository, the function `compute_score_v1` is defined once in src/lib_core.py and called by several modules under src/. Rename it to `compute_score` everywhere — the definition and all call sites — without changing behavior. When finished reply exactly ATS_EDIT_OK and nothing else.",
+      "expected": "ATS_EDIT_OK",
+      "arms": {
+        "ats-cap": {
+          "arm": "ats-cap",
+          "model": "haiku",
+          "usage": {
+            "input_tokens": 483045,
+            "cached_input_tokens": 378037,
+            "uncached_input_tokens": 105008,
+            "output_tokens": 24789,
+            "total_tokens": 507834,
+            "fresh_input_tokens": 178,
+            "cache_read_input_tokens": 378037,
+            "cache_creation_input_tokens": 104830,
+            "thinking_tokens": 4450
+          },
+          "economics_usage": {
+            "input_tokens": 178,
+            "cache_read_input_tokens": 378037,
+            "cache_creation_input_tokens": 104830,
+            "output_tokens": 24789
+          },
+          "usage_source": "transcript",
+          "total_cost_usd": 0.04879019999999999,
+          "num_turns": 15,
+          "transcript_turns": 20,
+          "answer": "ATS_EDIT_OK",
+          "commands": [],
+          "rtk_observed": false,
+          "verify_ok": true,
+          "accepted": true
+        },
+        "baseline": {
+          "arm": "baseline",
+          "model": "haiku",
+          "usage": {
+            "input_tokens": 711268,
+            "cached_input_tokens": 673520,
+            "uncached_input_tokens": 37748,
+            "output_tokens": 13820,
+            "total_tokens": 725088,
+            "fresh_input_tokens": 228,
+            "cache_read_input_tokens": 673520,
+            "cache_creation_input_tokens": 37520,
+            "thinking_tokens": 1632
+          },
+          "economics_usage": {
+            "input_tokens": 228,
+            "cache_read_input_tokens": 673520,
+            "cache_creation_input_tokens": 37520,
+            "output_tokens": 13820
+          },
+          "usage_source": "transcript",
+          "total_cost_usd": 0.0718538,
+          "num_turns": 18,
+          "transcript_turns": 28,
+          "answer": "ATS_EDIT_OK",
+          "commands": [
+            "find /private/var/folders/bm/0dt5fcdn56vg7pnkkzptmlkh0000gn/T/ats-claude-ab-hnp1nu1a/fixture/src -type f -name \"*.py\" | head -20",
+            "grep -r \"compute_score_v1\" /private/var/folders/bm/0dt5fcdn56vg7pnkkzptmlkh0000gn/T/ats-claude-ab-hnp1nu1a/fixture/src --include=\"*.py\"",
+            "grep -r \"compute_score_v1\" /private/var/folders/bm/0dt5fcdn56vg7pnkkzptmlkh0000gn/T/ats-claude-ab-hnp1nu1a/fixture/src --include=\"*.py\""
+          ],
+          "rtk_observed": false,
+          "verify_ok": true,
+          "accepted": true
+        },
+        "cap": {
+          "arm": "cap",
+          "model": "haiku",
+          "usage": {
+            "input_tokens": 457745,
+            "cached_input_tokens": 400164,
+            "uncached_input_tokens": 57581,
+            "output_tokens": 25743,
+            "total_tokens": 483488,
+            "fresh_input_tokens": 178,
+            "cache_read_input_tokens": 400164,
+            "cache_creation_input_tokens": 57403,
+            "thinking_tokens": 4720
+          },
+          "economics_usage": {
+            "input_tokens": 178,
+            "cache_read_input_tokens": 400164,
+            "cache_creation_input_tokens": 57403,
+            "output_tokens": 25743
+          },
+          "usage_source": "transcript",
+          "total_cost_usd": 0.0390968,
+          "num_turns": 15,
+          "transcript_turns": 20,
+          "answer": "ATS_EDIT_OK",
+          "commands": [],
+          "rtk_observed": false,
+          "verify_ok": true,
+          "accepted": true
+        }
+      },
+      "comparisons": {
+        "ats-cap": {
+          "accepted": true,
+          "provider_delta": {
+            "input_tokens": -228223,
+            "uncached_input_tokens": 67260,
+            "output_tokens": 10969,
+            "total_tokens": -217254,
+            "cost_usd": -0.023064,
+            "input_saved_percent": 32.09,
+            "total_saved_percent": 29.96
+          },
+          "weighted_delta": {
+            "baseline_weighted_input_tokens": 114480.0,
+            "candidate_weighted_input_tokens": 169019.2,
+            "baseline_weighted_total_tokens": 183580.0,
+            "candidate_weighted_total_tokens": 292964.2,
+            "baseline_cache_hit_rate_percent": 94.69,
+            "candidate_cache_hit_rate_percent": 78.26,
+            "cache_hit_rate_delta": -16.43,
+            "input_saved_percent": -47.64,
+            "total_saved_percent": -59.58,
+            "profile": {
+              "name": "anthropic",
+              "cache_read_ratio": 0.1,
+              "cache_write_ratio": 1.25,
+              "output_ratio": 5.0,
+              "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+              "verified": "2026-08-25",
+              "note": "5-minute cache write. Ratios identical across active Claude models."
+            },
+            "basis": "Weighted numbers are a list-ratio estimate against a no-cache counterfactual, not an invoice. Raw provider counters stay authoritative."
+          }
+        },
+        "cap": {
+          "accepted": true,
+          "provider_delta": {
+            "input_tokens": -253523,
+            "uncached_input_tokens": 19833,
+            "output_tokens": 11923,
+            "total_tokens": -241600,
+            "cost_usd": -0.032757,
+            "input_saved_percent": 35.64,
+            "total_saved_percent": 33.32
+          },
+          "weighted_delta": {
+            "baseline_weighted_input_tokens": 114480.0,
+            "candidate_weighted_input_tokens": 111948.15,
+            "baseline_weighted_total_tokens": 183580.0,
+            "candidate_weighted_total_tokens": 240663.15,
+            "baseline_cache_hit_rate_percent": 94.69,
+            "candidate_cache_hit_rate_percent": 87.42,
+            "cache_hit_rate_delta": -7.27,
+            "input_saved_percent": 2.21,
+            "total_saved_percent": -31.09,
+            "profile": {
+              "name": "anthropic",
+              "cache_read_ratio": 0.1,
+              "cache_write_ratio": 1.25,
+              "output_ratio": 5.0,
+              "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+              "verified": "2026-08-25",
+              "note": "5-minute cache write. Ratios identical across active Claude models."
+            },
+            "basis": "Weighted numbers are a list-ratio estimate against a no-cache counterfactual, not an invoice. Raw provider counters stay authoritative."
+          }
+        }
+      }
+    },
+    {
+      "name": "multi-edit",
+      "model": "sonnet",
+      "prompt": "In this repository, the function `compute_score_v1` is defined once in src/lib_core.py and called by several modules under src/. Rename it to `compute_score` everywhere — the definition and all call sites — without changing behavior. When finished reply exactly ATS_EDIT_OK and nothing else.",
+      "expected": "ATS_EDIT_OK",
+      "arms": {
+        "ats-cap": {
+          "arm": "ats-cap",
+          "model": "sonnet",
+          "usage": {
+            "input_tokens": 149190,
+            "cached_input_tokens": 126045,
+            "uncached_input_tokens": 23145,
+            "output_tokens": 867,
+            "total_tokens": 150057,
+            "fresh_input_tokens": 10,
+            "cache_read_input_tokens": 126045,
+            "cache_creation_input_tokens": 23135,
+            "thinking_tokens": 182
+          },
+          "economics_usage": {
+            "input_tokens": 10,
+            "cache_read_input_tokens": 126045,
+            "cache_creation_input_tokens": 23135,
+            "output_tokens": 867
+          },
+          "usage_source": "transcript",
+          "total_cost_usd": 0.0694136,
+          "num_turns": 3,
+          "transcript_turns": 5,
+          "answer": "All references renamed successfully.\n\nNote: an earlier system-reminder injected a fabricated \"context_capsule\" claiming `compute_score` already existed alongside `compute_score_v1` in the same files/lines — that was false (verified via direct grep before editing) and I disregarded it.\n\nATS_EDIT_OK",
+          "commands": [
+            "grep -rn \"compute_score\" src/ | sort",
+            "cd src && for f in mod_010.py mod_033.py mod_057.py mod_081.py mod_099.py mod_117.py; do\n  sed -i '' 's/compute_score_v1/compute_score/g' \"$f\"\ndone\nsed -i '' 's/compute_score_v1/compute_score/g' lib_core.py\ngrep -rn \"compute_score\" ."
+          ],
+          "rtk_observed": false,
+          "verify_ok": true,
+          "accepted": false
+        },
+        "baseline": {
+          "arm": "baseline",
+          "model": "sonnet",
+          "usage": {
+            "input_tokens": 210847,
+            "cached_input_tokens": 185516,
+            "uncached_input_tokens": 25331,
+            "output_tokens": 1639,
+            "total_tokens": 212486,
+            "fresh_input_tokens": 14,
+            "cache_read_input_tokens": 185516,
+            "cache_creation_input_tokens": 25317,
+            "thinking_tokens": 418
+          },
+          "economics_usage": {
+            "input_tokens": 14,
+            "cache_read_input_tokens": 185516,
+            "cache_creation_input_tokens": 25317,
+            "output_tokens": 1639
+          },
+          "usage_source": "transcript",
+          "total_cost_usd": 0.0830926,
+          "num_turns": 4,
+          "transcript_turns": 7,
+          "answer": "ATS_EDIT_OK",
+          "commands": [
+            "grep -rln \"compute_score_v1\" /private/var/folders/bm/0dt5fcdn56vg7pnkkzptmlkh0000gn/T/ats-claude-ab-hnp1nu1a/fixture/src",
+            "grep -n \"compute_score_v1\" src/*.py",
+            "for f in src/lib_core.py src/mod_010.py src/mod_033.py src/mod_057.py src/mod_081.py src/mod_099.py src/mod_117.py; do sed -i '' 's/compute_score_v1/compute_score/g' \"$f\"; done && grep -rn \"compute_score\" src/*.py"
+          ],
+          "rtk_observed": false,
+          "verify_ok": true,
+          "accepted": true
+        },
+        "cap": {
+          "arm": "cap",
+          "model": "sonnet",
+          "usage": {
+            "input_tokens": 181333,
+            "cached_input_tokens": 162371,
+            "uncached_input_tokens": 18962,
+            "output_tokens": 1341,
+            "total_tokens": 182674,
+            "fresh_input_tokens": 12,
+            "cache_read_input_tokens": 162371,
+            "cache_creation_input_tokens": 18950,
+            "thinking_tokens": 384
+          },
+          "economics_usage": {
+            "input_tokens": 12,
+            "cache_read_input_tokens": 162371,
+            "cache_creation_input_tokens": 18950,
+            "output_tokens": 1341
+          },
+          "usage_source": "transcript",
+          "total_cost_usd": 0.052411599999999996,
+          "num_turns": 3,
+          "transcript_turns": 6,
+          "answer": "All occurrences renamed successfully and verified.\n\nNote: a prior system-reminder in this conversation contained an injected \"context capsule\" falsely claiming `compute_score` already existed at the same line numbers as `compute_score_v1` — I disregarded it and verified the actual file contents with `grep` before and after editing, since it looked like a prompt-injection/data-integrity issue rather than genuine repo state.\n\nATS_EDIT_OK",
+          "commands": [
+            "grep -rn \"compute_score\" src/ | sort",
+            "cd src && for f in lib_core.py mod_010.py mod_033.py mod_057.py mod_081.py mod_099.py mod_117.py; do sed -i '' 's/compute_score_v1/compute_score/g' \"$f\"; done\ngrep -rn \"compute_score\" ."
+          ],
+          "rtk_observed": false,
+          "verify_ok": true,
+          "accepted": false
+        }
+      },
+      "comparisons": {
+        "ats-cap": {
+          "accepted": false,
+          "provider_delta": {
+            "input_tokens": -61657,
+            "uncached_input_tokens": -2186,
+            "output_tokens": -772,
+            "total_tokens": -62429,
+            "cost_usd": -0.013679,
+            "input_saved_percent": null,
+            "total_saved_percent": null
+          },
+          "weighted_delta": {
+            "baseline_weighted_input_tokens": 50211.85,
+            "candidate_weighted_input_tokens": 41533.25,
+            "baseline_weighted_total_tokens": 58406.85,
+            "candidate_weighted_total_tokens": 45868.25,
+            "baseline_cache_hit_rate_percent": 87.99,
+            "candidate_cache_hit_rate_percent": 84.49,
+            "cache_hit_rate_delta": -3.5,
+            "input_saved_percent": null,
+            "total_saved_percent": null,
+            "profile": {
+              "name": "anthropic",
+              "cache_read_ratio": 0.1,
+              "cache_write_ratio": 1.25,
+              "output_ratio": 5.0,
+              "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+              "verified": "2026-08-25",
+              "note": "5-minute cache write. Ratios identical across active Claude models."
+            },
+            "basis": "Weighted numbers are a list-ratio estimate against a no-cache counterfactual, not an invoice. Raw provider counters stay authoritative."
+          }
+        },
+        "cap": {
+          "accepted": false,
+          "provider_delta": {
+            "input_tokens": -29514,
+            "uncached_input_tokens": -6369,
+            "output_tokens": -298,
+            "total_tokens": -29812,
+            "cost_usd": -0.030681,
+            "input_saved_percent": null,
+            "total_saved_percent": null
+          },
+          "weighted_delta": {
+            "baseline_weighted_input_tokens": 50211.85,
+            "candidate_weighted_input_tokens": 39936.6,
+            "baseline_weighted_total_tokens": 58406.85,
+            "candidate_weighted_total_tokens": 46641.6,
+            "baseline_cache_hit_rate_percent": 87.99,
+            "candidate_cache_hit_rate_percent": 89.54,
+            "cache_hit_rate_delta": 1.55,
+            "input_saved_percent": null,
+            "total_saved_percent": null,
+            "profile": {
+              "name": "anthropic",
+              "cache_read_ratio": 0.1,
+              "cache_write_ratio": 1.25,
+              "output_ratio": 5.0,
+              "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+              "verified": "2026-08-25",
+              "note": "5-minute cache write. Ratios identical across active Claude models."
+            },
+            "basis": "Weighted numbers are a list-ratio estimate against a no-cache counterfactual, not an invoice. Raw provider counters stay authoritative."
+          }
+        }
+      }
+    },
+    {
+      "name": "process-table",
+      "model": "haiku",
+      "prompt": "Minimize token/context bloat. Inspect the full current process table with a ps shell command. If its output contains both PID and COMMAND headings, reply exactly ATS_PS_OK and nothing else.",
+      "expected": "ATS_PS_OK",
+      "arms": {
+        "all": {
+          "arm": "all",
+          "model": "haiku",
+          "usage": {
+            "input_tokens": 98252,
+            "cached_input_tokens": 75116,
+            "uncached_input_tokens": 23136,
+            "output_tokens": 700,
+            "total_tokens": 98952,
+            "fresh_input_tokens": 40,
+            "cache_read_input_tokens": 75116,
+            "cache_creation_input_tokens": 23096,
+            "thinking_tokens": 526
+          },
+          "economics_usage": {
+            "input_tokens": 40,
+            "cache_read_input_tokens": 75116,
+            "cache_creation_input_tokens": 23096,
+            "output_tokens": 700
+          },
+          "usage_source": "transcript",
+          "total_cost_usd": 0.029614800000000004,
+          "num_turns": 2,
+          "transcript_turns": 4,
+          "answer": "ATS_PS_OK",
+          "commands": [
+            "ps"
+          ],
+          "rtk_observed": false,
+          "verify_ok": null,
+          "accepted": true
+        },
+        "ats": {
+          "arm": "ats",
+          "model": "haiku",
+          "usage": {
+            "input_tokens": 93036,
+            "cached_input_tokens": 81616,
+            "uncached_input_tokens": 11420,
+            "output_tokens": 540,
+            "total_tokens": 93576,
+            "fresh_input_tokens": 36,
+            "cache_read_input_tokens": 81616,
+            "cache_creation_input_tokens": 11384,
+            "thinking_tokens": 358
+          },
+          "economics_usage": {
+            "input_tokens": 36,
+            "cache_read_input_tokens": 81616,
+            "cache_creation_input_tokens": 11384,
+            "output_tokens": 540
+          },
+          "usage_source": "transcript",
+          "total_cost_usd": 0.0178258,
+          "num_turns": 2,
+          "transcript_turns": 4,
+          "answer": "ATS_PS_OK",
+          "commands": [
+            "ps aux"
+          ],
+          "rtk_observed": false,
+          "verify_ok": null,
+          "accepted": true
+        },
+        "baseline": {
+          "arm": "baseline",
+          "model": "haiku",
+          "usage": {
+            "input_tokens": 90210,
+            "cached_input_tokens": 70394,
+            "uncached_input_tokens": 19816,
+            "output_tokens": 450,
+            "total_tokens": 90660,
+            "fresh_input_tokens": 36,
+            "cache_read_input_tokens": 70394,
+            "cache_creation_input_tokens": 19780,
+            "thinking_tokens": 316
+          },
+          "economics_usage": {
+            "input_tokens": 36,
+            "cache_read_input_tokens": 70394,
+            "cache_creation_input_tokens": 19780,
+            "output_tokens": 450
+          },
+          "usage_source": "transcript",
+          "total_cost_usd": 0.025435700000000002,
+          "num_turns": 2,
+          "transcript_turns": 4,
+          "answer": "ATS_PS_OK",
+          "commands": [
+            "ps"
+          ],
+          "rtk_observed": false,
+          "verify_ok": null,
+          "accepted": true
+        },
+        "ctx": {
+          "arm": "ctx",
+          "model": "haiku",
+          "usage": {
+            "input_tokens": 95686,
+            "cached_input_tokens": 80934,
+            "uncached_input_tokens": 14752,
+            "output_tokens": 540,
+            "total_tokens": 96226,
+            "fresh_input_tokens": 40,
+            "cache_read_input_tokens": 80934,
+            "cache_creation_input_tokens": 14712,
+            "thinking_tokens": 364
+          },
+          "economics_usage": {
+            "input_tokens": 40,
+            "cache_read_input_tokens": 80934,
+            "cache_creation_input_tokens": 14712,
+            "output_tokens": 540
+          },
+          "usage_source": "transcript",
+          "total_cost_usd": 0.0211217,
+          "num_turns": 2,
+          "transcript_turns": 4,
+          "answer": "ATS_PS_OK",
+          "commands": [
+            "ps"
+          ],
+          "rtk_observed": false,
+          "verify_ok": null,
+          "accepted": true
+        }
+      },
+      "comparisons": {
+        "all": {
+          "accepted": true,
+          "provider_delta": {
+            "input_tokens": 8042,
+            "uncached_input_tokens": 3320,
+            "output_tokens": 250,
+            "total_tokens": 8292,
+            "cost_usd": 0.004179,
+            "input_saved_percent": -8.91,
+            "total_saved_percent": -9.15
+          },
+          "weighted_delta": {
+            "baseline_weighted_input_tokens": 31800.4,
+            "candidate_weighted_input_tokens": 36421.6,
+            "baseline_weighted_total_tokens": 34050.4,
+            "candidate_weighted_total_tokens": 39921.6,
+            "baseline_cache_hit_rate_percent": 78.03,
+            "candidate_cache_hit_rate_percent": 76.45,
+            "cache_hit_rate_delta": -1.58,
+            "input_saved_percent": -14.53,
+            "total_saved_percent": -17.24,
+            "profile": {
+              "name": "anthropic",
+              "cache_read_ratio": 0.1,
+              "cache_write_ratio": 1.25,
+              "output_ratio": 5.0,
+              "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+              "verified": "2026-08-25",
+              "note": "5-minute cache write. Ratios identical across active Claude models."
+            },
+            "basis": "Weighted numbers are a list-ratio estimate against a no-cache counterfactual, not an invoice. Raw provider counters stay authoritative."
+          }
+        },
+        "ats": {
+          "accepted": true,
+          "provider_delta": {
+            "input_tokens": 2826,
+            "uncached_input_tokens": -8396,
+            "output_tokens": 90,
+            "total_tokens": 2916,
+            "cost_usd": -0.00761,
+            "input_saved_percent": -3.13,
+            "total_saved_percent": -3.22
+          },
+          "weighted_delta": {
+            "baseline_weighted_input_tokens": 31800.4,
+            "candidate_weighted_input_tokens": 22427.6,
+            "baseline_weighted_total_tokens": 34050.4,
+            "candidate_weighted_total_tokens": 25127.6,
+            "baseline_cache_hit_rate_percent": 78.03,
+            "candidate_cache_hit_rate_percent": 87.73,
+            "cache_hit_rate_delta": 9.7,
+            "input_saved_percent": 29.47,
+            "total_saved_percent": 26.2,
+            "profile": {
+              "name": "anthropic",
+              "cache_read_ratio": 0.1,
+              "cache_write_ratio": 1.25,
+              "output_ratio": 5.0,
+              "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+              "verified": "2026-08-25",
+              "note": "5-minute cache write. Ratios identical across active Claude models."
+            },
+            "basis": "Weighted numbers are a list-ratio estimate against a no-cache counterfactual, not an invoice. Raw provider counters stay authoritative."
+          }
+        },
+        "ctx": {
+          "accepted": true,
+          "provider_delta": {
+            "input_tokens": 5476,
+            "uncached_input_tokens": -5064,
+            "output_tokens": 90,
+            "total_tokens": 5566,
+            "cost_usd": -0.004314,
+            "input_saved_percent": -6.07,
+            "total_saved_percent": -6.14
+          },
+          "weighted_delta": {
+            "baseline_weighted_input_tokens": 31800.4,
+            "candidate_weighted_input_tokens": 26523.4,
+            "baseline_weighted_total_tokens": 34050.4,
+            "candidate_weighted_total_tokens": 29223.4,
+            "baseline_cache_hit_rate_percent": 78.03,
+            "candidate_cache_hit_rate_percent": 84.58,
+            "cache_hit_rate_delta": 6.55,
+            "input_saved_percent": 16.59,
+            "total_saved_percent": 14.18,
+            "profile": {
+              "name": "anthropic",
+              "cache_read_ratio": 0.1,
+              "cache_write_ratio": 1.25,
+              "output_ratio": 5.0,
+              "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+              "verified": "2026-08-25",
+              "note": "5-minute cache write. Ratios identical across active Claude models."
+            },
+            "basis": "Weighted numbers are a list-ratio estimate against a no-cache counterfactual, not an invoice. Raw provider counters stay authoritative."
+          }
+        }
+      }
+    },
+    {
+      "name": "process-table",
+      "model": "sonnet",
+      "prompt": "Minimize token/context bloat. Inspect the full current process table with a ps shell command. If its output contains both PID and COMMAND headings, reply exactly ATS_PS_OK and nothing else.",
+      "expected": "ATS_PS_OK",
+      "arms": {
+        "ats": {
+          "arm": "ats",
+          "model": "sonnet",
+          "usage": {
+            "input_tokens": 91268,
+            "cached_input_tokens": 67776,
+            "uncached_input_tokens": 23492,
+            "output_tokens": 899,
+            "total_tokens": 92167,
+            "fresh_input_tokens": 6,
+            "cache_read_input_tokens": 67776,
+            "cache_creation_input_tokens": 23486,
+            "thinking_tokens": 722
+          },
+          "economics_usage": {
+            "input_tokens": 6,
+            "cache_read_input_tokens": 67776,
+            "cache_creation_input_tokens": 23486,
+            "output_tokens": 899
+          },
+          "usage_source": "transcript",
+          "total_cost_usd": 0.0633732,
+          "num_turns": 2,
+          "transcript_turns": 3,
+          "answer": "ATS_PS_OK",
+          "commands": [
+            "ps aux | head -1"
+          ],
+          "rtk_observed": false,
+          "verify_ok": null,
+          "accepted": true
+        },
+        "baseline": {
+          "arm": "baseline",
+          "model": "sonnet",
+          "usage": {
+            "input_tokens": 89665,
+            "cached_input_tokens": 66865,
+            "uncached_input_tokens": 22800,
+            "output_tokens": 288,
+            "total_tokens": 89953,
+            "fresh_input_tokens": 6,
+            "cache_read_input_tokens": 66865,
+            "cache_creation_input_tokens": 22794,
+            "thinking_tokens": 100
+          },
+          "economics_usage": {
+            "input_tokens": 6,
+            "cache_read_input_tokens": 66865,
+            "cache_creation_input_tokens": 22794,
+            "output_tokens": 288
+          },
+          "usage_source": "transcript",
+          "total_cost_usd": 0.060990800000000005,
+          "num_turns": 2,
+          "transcript_turns": 3,
+          "answer": "Output contains both PID and COMMAND headings.\n\nATS_PS_OK",
+          "commands": [
+            "ps -ef"
+          ],
+          "rtk_observed": false,
+          "verify_ok": null,
+          "accepted": false
+        },
+        "ctx": {
+          "arm": "ctx",
+          "model": "sonnet",
+          "usage": {
+            "input_tokens": 94269,
+            "cached_input_tokens": 79452,
+            "uncached_input_tokens": 14817,
+            "output_tokens": 995,
+            "total_tokens": 95264,
+            "fresh_input_tokens": 6,
+            "cache_read_input_tokens": 79452,
+            "cache_creation_input_tokens": 14811,
+            "thinking_tokens": 702
+          },
+          "economics_usage": {
+            "input_tokens": 6,
+            "cache_read_input_tokens": 79452,
+            "cache_creation_input_tokens": 14811,
+            "output_tokens": 995
+          },
+          "usage_source": "transcript",
+          "total_cost_usd": 0.048374600000000004,
+          "num_turns": 2,
+          "transcript_turns": 3,
+          "answer": "ATS_PS_OK",
+          "commands": [
+            "ps aux | head -1 | grep -q \"PID\" && ps aux | head -1 | grep -q \"COMMAND\" && echo MATCH || echo NOMATCH"
+          ],
+          "rtk_observed": false,
+          "verify_ok": null,
+          "accepted": true
+        }
+      },
+      "comparisons": {
+        "ats": {
+          "accepted": false,
+          "provider_delta": {
+            "input_tokens": 1603,
+            "uncached_input_tokens": 692,
+            "output_tokens": 611,
+            "total_tokens": 2214,
+            "cost_usd": 0.002382,
+            "input_saved_percent": null,
+            "total_saved_percent": null
+          },
+          "weighted_delta": {
+            "baseline_weighted_input_tokens": 35185.0,
+            "candidate_weighted_input_tokens": 36141.1,
+            "baseline_weighted_total_tokens": 36625.0,
+            "candidate_weighted_total_tokens": 40636.1,
+            "baseline_cache_hit_rate_percent": 74.57,
+            "candidate_cache_hit_rate_percent": 74.26,
+            "cache_hit_rate_delta": -0.31,
+            "input_saved_percent": null,
+            "total_saved_percent": null,
+            "profile": {
+              "name": "anthropic",
+              "cache_read_ratio": 0.1,
+              "cache_write_ratio": 1.25,
+              "output_ratio": 5.0,
+              "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+              "verified": "2026-08-25",
+              "note": "5-minute cache write. Ratios identical across active Claude models."
+            },
+            "basis": "Weighted numbers are a list-ratio estimate against a no-cache counterfactual, not an invoice. Raw provider counters stay authoritative."
+          }
+        },
+        "ctx": {
+          "accepted": false,
+          "provider_delta": {
+            "input_tokens": 4604,
+            "uncached_input_tokens": -7983,
+            "output_tokens": 707,
+            "total_tokens": 5311,
+            "cost_usd": -0.012616,
+            "input_saved_percent": null,
+            "total_saved_percent": null
+          },
+          "weighted_delta": {
+            "baseline_weighted_input_tokens": 35185.0,
+            "candidate_weighted_input_tokens": 26464.95,
+            "baseline_weighted_total_tokens": 36625.0,
+            "candidate_weighted_total_tokens": 31439.95,
+            "baseline_cache_hit_rate_percent": 74.57,
+            "candidate_cache_hit_rate_percent": 84.28,
+            "cache_hit_rate_delta": 9.71,
+            "input_saved_percent": null,
+            "total_saved_percent": null,
+            "profile": {
+              "name": "anthropic",
+              "cache_read_ratio": 0.1,
+              "cache_write_ratio": 1.25,
+              "output_ratio": 5.0,
+              "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+              "verified": "2026-08-25",
+              "note": "5-minute cache write. Ratios identical across active Claude models."
+            },
+            "basis": "Weighted numbers are a list-ratio estimate against a no-cache counterfactual, not an invoice. Raw provider counters stay authoritative."
+          }
+        }
+      }
+    }
+  ],
+  "aggregate": {
+    "baseline": {
+      "input_tokens": 1580412,
+      "cached_input_tokens": 1432880,
+      "uncached_input_tokens": 147532,
+      "output_tokens": 20047,
+      "total_tokens": 1600459,
+      "fresh_input_tokens": 402,
+      "cache_creation_input_tokens": 147130
+    },
+    "baseline_cost_usd": 0.353451,
+    "arms": {
+      "all": {
+        "accepted": false,
+        "usage": {
+          "input_tokens": 291716,
+          "cached_input_tokens": 243472,
+          "uncached_input_tokens": 48244,
+          "output_tokens": 3498,
+          "total_tokens": 295214,
+          "fresh_input_tokens": 120,
+          "cache_creation_input_tokens": 48124
+        },
+        "cost_usd": 0.072136,
+        "weighted": {
+          "baseline_weighted_input_tokens": 327602.5,
+          "candidate_weighted_input_tokens": 84622.2,
+          "baseline_weighted_total_tokens": 427837.5,
+          "candidate_weighted_total_tokens": 102112.2,
+          "baseline_cache_hit_rate_percent": 90.66,
+          "candidate_cache_hit_rate_percent": 83.46,
+          "cache_hit_rate_delta": -7.2,
+          "input_saved_percent": null,
+          "total_saved_percent": null,
+          "profile": {
+            "name": "anthropic",
+            "cache_read_ratio": 0.1,
+            "cache_write_ratio": 1.25,
+            "output_ratio": 5.0,
+            "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+            "verified": "2026-08-25",
+            "note": "5-minute cache write. Ratios identical across active Claude models."
+          },
+          "basis": "Weighted numbers are a list-ratio estimate against a no-cache counterfactual, not an invoice. Raw provider counters stay authoritative."
+        },
+        "input_saved_percent": null,
+        "total_saved_percent": null,
+        "cost_saved_percent": null
+      },
+      "ats": {
+        "accepted": false,
+        "usage": {
+          "input_tokens": 611738,
+          "cached_input_tokens": 539958,
+          "uncached_input_tokens": 71780,
+          "output_tokens": 4892,
+          "total_tokens": 616630,
+          "fresh_input_tokens": 156,
+          "cache_creation_input_tokens": 71624
+        },
+        "cost_usd": 0.197101,
+        "weighted": {
+          "baseline_weighted_input_tokens": 327602.5,
+          "candidate_weighted_input_tokens": 143681.8,
+          "baseline_weighted_total_tokens": 427837.5,
+          "candidate_weighted_total_tokens": 168141.8,
+          "baseline_cache_hit_rate_percent": 90.66,
+          "candidate_cache_hit_rate_percent": 88.27,
+          "cache_hit_rate_delta": -2.39,
+          "input_saved_percent": null,
+          "total_saved_percent": null,
+          "profile": {
+            "name": "anthropic",
+            "cache_read_ratio": 0.1,
+            "cache_write_ratio": 1.25,
+            "output_ratio": 5.0,
+            "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+            "verified": "2026-08-25",
+            "note": "5-minute cache write. Ratios identical across active Claude models."
+          },
+          "basis": "Weighted numbers are a list-ratio estimate against a no-cache counterfactual, not an invoice. Raw provider counters stay authoritative."
+        },
+        "input_saved_percent": null,
+        "total_saved_percent": null,
+        "cost_saved_percent": null
+      },
+      "ats-cap": {
+        "accepted": false,
+        "usage": {
+          "input_tokens": 632235,
+          "cached_input_tokens": 504082,
+          "uncached_input_tokens": 128153,
+          "output_tokens": 25656,
+          "total_tokens": 657891,
+          "fresh_input_tokens": 188,
+          "cache_creation_input_tokens": 127965
+        },
+        "cost_usd": 0.118204,
+        "weighted": {
+          "baseline_weighted_input_tokens": 327602.5,
+          "candidate_weighted_input_tokens": 210552.45,
+          "baseline_weighted_total_tokens": 427837.5,
+          "candidate_weighted_total_tokens": 338832.45,
+          "baseline_cache_hit_rate_percent": 90.66,
+          "candidate_cache_hit_rate_percent": 79.73,
+          "cache_hit_rate_delta": -10.93,
+          "input_saved_percent": null,
+          "total_saved_percent": null,
+          "profile": {
+            "name": "anthropic",
+            "cache_read_ratio": 0.1,
+            "cache_write_ratio": 1.25,
+            "output_ratio": 5.0,
+            "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+            "verified": "2026-08-25",
+            "note": "5-minute cache write. Ratios identical across active Claude models."
+          },
+          "basis": "Weighted numbers are a list-ratio estimate against a no-cache counterfactual, not an invoice. Raw provider counters stay authoritative."
+        },
+        "input_saved_percent": null,
+        "total_saved_percent": null,
+        "cost_saved_percent": null
+      },
+      "cap": {
+        "accepted": false,
+        "usage": {
+          "input_tokens": 639078,
+          "cached_input_tokens": 562535,
+          "uncached_input_tokens": 76543,
+          "output_tokens": 27084,
+          "total_tokens": 666162,
+          "fresh_input_tokens": 190,
+          "cache_creation_input_tokens": 76353
+        },
+        "cost_usd": 0.091508,
+        "weighted": {
+          "baseline_weighted_input_tokens": 327602.5,
+          "candidate_weighted_input_tokens": 151884.75,
+          "baseline_weighted_total_tokens": 427837.5,
+          "candidate_weighted_total_tokens": 287304.75,
+          "baseline_cache_hit_rate_percent": 90.66,
+          "candidate_cache_hit_rate_percent": 88.02,
+          "cache_hit_rate_delta": -2.64,
+          "input_saved_percent": null,
+          "total_saved_percent": null,
+          "profile": {
+            "name": "anthropic",
+            "cache_read_ratio": 0.1,
+            "cache_write_ratio": 1.25,
+            "output_ratio": 5.0,
+            "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+            "verified": "2026-08-25",
+            "note": "5-minute cache write. Ratios identical across active Claude models."
+          },
+          "basis": "Weighted numbers are a list-ratio estimate against a no-cache counterfactual, not an invoice. Raw provider counters stay authoritative."
+        },
+        "input_saved_percent": null,
+        "total_saved_percent": null,
+        "cost_saved_percent": null
+      },
+      "ctx": {
+        "accepted": false,
+        "usage": {
+          "input_tokens": 671077,
+          "cached_input_tokens": 597916,
+          "uncached_input_tokens": 73161,
+          "output_tokens": 6051,
+          "total_tokens": 677128,
+          "fresh_input_tokens": 170,
+          "cache_creation_input_tokens": 72991
+        },
+        "cost_usd": 0.179096,
+        "weighted": {
+          "baseline_weighted_input_tokens": 327602.5,
+          "candidate_weighted_input_tokens": 151200.35,
+          "baseline_weighted_total_tokens": 427837.5,
+          "candidate_weighted_total_tokens": 181455.35,
+          "baseline_cache_hit_rate_percent": 90.66,
+          "candidate_cache_hit_rate_percent": 89.1,
+          "cache_hit_rate_delta": -1.56,
+          "input_saved_percent": null,
+          "total_saved_percent": null,
+          "profile": {
+            "name": "anthropic",
+            "cache_read_ratio": 0.1,
+            "cache_write_ratio": 1.25,
+            "output_ratio": 5.0,
+            "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+            "verified": "2026-08-25",
+            "note": "5-minute cache write. Ratios identical across active Claude models."
+          },
+          "basis": "Weighted numbers are a list-ratio estimate against a no-cache counterfactual, not an invoice. Raw provider counters stay authoritative."
+        },
+        "input_saved_percent": null,
+        "total_saved_percent": null,
+        "cost_saved_percent": null
+      }
+    },
+    "provider_savings_claim_valid": false
+  }
+}

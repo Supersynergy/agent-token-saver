@@ -1,75 +1,22 @@
 name: CI
-
 on:
   push:
   pull_request:
-
 permissions:
   contents: read
-
 jobs:
-  test:
-    strategy:
-      fail-fast: false
-      matrix:
-        # Every supported version on Linux; floor and latest on macOS, which is
-        # the expensive runner. Without a pin uv silently picks the newest
-        # available, so `requires-python = ">=3.11"` was an unverified claim.
-        os: [ubuntu-latest]
-        python-version: ["3.11", "3.12", "3.13", "3.14"]
-        include:
-          - os: macos-latest
-            python-version: "3.11"
-          - os: macos-latest
-            python-version: "3.14"
-    runs-on: ${{ matrix.os }}
-    env:
-      UV_PYTHON: ${{ matrix.python-version }}
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-        with:
-          persist-credentials: false
-      - uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff # v6
-        with:
-          enable-cache: true
-      - run: uv run python -V
-      - run: uv sync --extra dev
-      - run: uv run pytest
-      - name: Lint release surface
-        run: uv run ruff check scripts integration tests
-      - name: Check formatting
-        run: uv run ruff format --check .
-      - run: >-
-          bash -n install-universal.sh integration/cli/codex-heavy-context
-          scripts/neutral_install_smoke.sh scripts/remote_bootstrap_smoke.sh
-
-  # The advertised path: a machine that has only Python 3 and git. Bun is
-  # deliberately absent here so the optional adapter can never gate the core.
-  neutral-install:
+  typescript:
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           persist-credentials: false
-      - name: Fresh HOME universal install
-        run: bash scripts/neutral_install_smoke.sh
-      - name: Standalone remote-bootstrap path
-        run: bash scripts/remote_bootstrap_smoke.sh
-
-  # Same smoke with the optional runtime present, so the llmadapter lane and
-  # `doctor --require-llmadapter` stay covered instead of silently rotting.
-  neutral-install-with-bun:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
         with:
-          persist-credentials: false
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
-        with:
-          bun-version: latest
-      - name: Fresh HOME universal install with llmadapter runtime
-        run: bash scripts/neutral_install_smoke.sh
+          bun-version: '1.4.4'
+      - run: bun install --frozen-lockfile --ignore-scripts
+      - run: bun run check

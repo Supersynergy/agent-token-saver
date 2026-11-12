@@ -1,46 +1,16 @@
-<!-- REPO-POLISH-AGENTS:START -->
 # Agent Token Saver
 
-Portable context reduction. Hooks stay fail-open; optional tools stay optional.
+Maintained product: TypeScript/Bun. Setup: `bun install --frozen-lockfile --ignore-scripts`.
+Oracle: `just check`. Installer: `bun install.ts` (plan), `--apply` writes.
 
-## Commands
-
-- setup: `uv sync --extra dev`
-- test: `uv run pytest -q`
-- lint: `uv run ruff check scripts integration tests`
-- smoke: `bash scripts/neutral_install_smoke.sh`
-- live install check: `agent-token-saver doctor --profile teams --json`
-
-## Rules
-
-- Preserve user changes. No destructive Git.
-- Smallest change. Tests for behavior. ADR for durable design decisions.
-- Public files: no private paths, credentials, PIDs, transcripts or host-only claims.
-- Portable core first. Third-party CLIs are detected, never silently installed.
-- Hook code receives JSON, returns JSON or nothing, and never changes approval,
-  sandbox or stop ownership.
-- No maintenance scan in a hook. `synx doctor` is manual-only.
-- One controller; workers get one capsule, one oracle, zero or one skill and a
-  compact evidence result. Three independent workers maximum by default.
-
-## Product boundary
-
-- `minimal`: CLI/ledger only.
-- `lean`: compact host default, prompt gate, session guard and optional
-  routing/projection CLIs.
-- `teams`: Lean plus Claude's worker-capsule hook; no automatic fan-out.
-- `heavy`: opt-in graph/large-context tools for one session.
-
-Codex and Claude use merged JSON hooks plus compact global defaults. Hermes
-uses a managed block in an existing `SOUL.md`; GG Coder uses the home
-`AGENTS.md`; both retain installed skills for explicit full loading. Verify
-active configuration with the doctor; files on disk are not proof.
-
-## References
-
-- [README](README.md): install and user-facing contract.
-- [playbook](docs/PLAYBOOK.md): phase-by-phase usage path and version drift.
-- [hooks](docs/HOOKS_AND_AGENTS.md): host matrix.
-- [tooling](docs/TOOLING_AND_WIRING.md): default versus optional layers.
-- [measurement](docs/FULL_CONTEXT_MEASUREMENT.md): method and limits.
-<!-- REPO-POLISH-AGENTS:END -->
+- Preserve other owners' changes and active processes. Archive before retiring a surface.
+- Use native SIS with an explicit project DB, executable contract, fenced claim and proof.
+- No automatic hooks, paid providers, model routing, agents, daemons or memory writes.
+- Keep raw stdout/stderr and original command exits. A shortened view is not a complete inventory.
+- RTK is optional. Reject a candidate that loses declared evidence or does not reduce bytes.
+- Test RTK locally with synthetic fixtures; label bytes, filter latency and provider billing separately.
+- Never rerun a green test on unchanged source. Record the proof, then stop.
+- One primary skill per phase. The 20-skill catalog is reference material.
+- Zero runtime packages. Development dependencies remain pinned.
+- Do not publish private paths, raw sessions, credentials or unreleased safety claims.
+- Read docs/GUIDE.md for use, docs/RTK.md for evidence, docs/MIGRATION.md for retired commands.

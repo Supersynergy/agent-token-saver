@@ -1,0 +1,50 @@
+{
+  "arm": "cap-grepai",
+  "model": "sonnet",
+  "return_code": 0,
+  "timed_out": false,
+  "elapsed_ms": 19160,
+  "num_turns": 3,
+  "transcript_turns": 5,
+  "usage": {
+    "input_tokens": 148433,
+    "cached_input_tokens": 135492,
+    "uncached_input_tokens": 12941,
+    "output_tokens": 691,
+    "total_tokens": 149124,
+    "fresh_input_tokens": 10,
+    "cache_read_input_tokens": 135492,
+    "cache_creation_input_tokens": 12931,
+    "thinking_tokens": 86
+  },
+  "economics_usage": {
+    "input_tokens": 10,
+    "cache_read_input_tokens": 135492,
+    "cache_creation_input_tokens": 12931,
+    "output_tokens": 691
+  },
+  "usage_source": "transcript",
+  "model_usage_match": false,
+  "total_cost_usd": 0.0483778,
+  "terminal_reason": "completed",
+  "permission_denials": 0,
+  "answer": "ATS_EDIT_OK",
+  "commands": [
+    "grep -rn \"compute_score_v1\" src/ 2>/dev/null",
+    "sed -i '' 's/compute_score_v1/compute_score/g' src/lib_core.py src/mod_010.py src/mod_033.py src/mod_057.py src/mod_081.py src/mod_099.py src/mod_117.py && grep -rn \"compute_score\" src/"
+  ],
+  "rtk_observed": false,
+  "verify_ok": true,
+  "accepted": true,
+  "oracle": {
+    "exact_answer": true,
+    "command_terms": true,
+    "fixture_state": true,
+    "provider_usage": true,
+    "transcript_found": true
+  },
+  "transcript_source": "~/.claude/projects/-private-var-folders-bm-0dt5fcdn56vg7pnkkzptmlkh0000gn-T-ats-claude-ab-t96bp769-fixture/37bfc5d0-843e-42ba-bbb0-05d072ec0c05.jsonl",
+  "parse_error": "",
+  "stderr_tail": "",
+  "raw_result": "runs/multi-edit.sonnet.cap-grepai.result.json"
+}

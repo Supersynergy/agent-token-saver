@@ -1,21 +1,35 @@
 # Contributing
 
-Improvements need evidence, not a larger tool list.
-
-1. Start from an issue or a small benchmark question.
-2. Preserve the accepted result in both benchmark arms.
-3. Record raw tokens or the documented UTF-8-bytes/4 proxy, plus latency.
-4. Keep optional tools optional and hooks fail-open.
-5. Run:
+Start with a user question and an executable acceptance condition.
 
 ```bash
-uv run pytest
-uv run ruff check scripts integration tests
-bash -n install-universal.sh integration/cli/codex-heavy-context \
-  scripts/neutral_install_smoke.sh scripts/remote_bootstrap_smoke.sh
-bash scripts/neutral_install_smoke.sh
+bun install --frozen-lockfile --ignore-scripts
+just check
 ```
 
-A new dependency needs a reason, maintenance check and measured win over the
-stdlib/CLI path. Never commit provider keys, private paths or full conversation
-exports.
+The product, installer, fixtures and tests use TypeScript/Bun. No Python or shell
+implementation is maintained. Runtime dependencies are unnecessary for the
+current scope. Propose a new package only with a concrete gap and a measured cost.
+
+For output changes, prove that the needed evidence survives. Include empty output,
+a nonzero exit and a nonstandard diagnostic. Save raw evidence before filtering.
+A tiny output with a failed task oracle is a rejected candidate.
+
+RTK is optional. Unit tests use a controlled TypeScript stand-in; a local live
+comparison is separate:
+
+```bash
+bun run ats bench --out ./rtk-report
+```
+
+Use a new output directory for a new comparison. Report RTK version, fixture hashes,
+required evidence, byte counts and filter-process time. Do not present a synthetic
+payload comparison as provider savings or an end-to-end speed measurement.
+
+Keep a source-matched green test result. Repeat only after affected code changes,
+a failed check or an explicit request. Publishing and release changes require
+their own authorization. See [the test and release boundaries](SECURITY.md).
+
+If a new filter removes a file path that the next debugging step needs, keep the
+failed candidate in the report even when its byte count looks better than every
+accepted alternative. That loss is the result.

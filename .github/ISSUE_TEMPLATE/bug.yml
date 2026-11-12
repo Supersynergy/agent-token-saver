@@ -1,32 +1,24 @@
 name: Bug report
-description: Report incorrect routing, installer behavior or lost context.
-title: "bug: "
+description: Report lost evidence, incorrect exits or installation/rollback problems.
+title: 'bug: '
 labels: [bug]
 body:
-  - type: dropdown
-    id: agent
+  - type: input
+    id: versions
     attributes:
-      label: Agent
-      options: [Codex CLI, Claude Code, Hermes Agent, GG Coder, Other]
+      label: ATS version, Bun version and OS
     validations:
       required: true
   - type: textarea
     id: reproduce
     attributes:
-      label: Reproduction
-      description: Commands, sanitized config shape and observed output.
+      label: Minimal reproduction and observed result
+      description: Include the exact argv, exit code and sanitized result. Do not attach raw private logs.
     validations:
       required: true
   - type: textarea
     id: expected
     attributes:
-      label: Expected behavior
+      label: Expected evidence or behavior
     validations:
       required: true
-  - type: checkboxes
-    id: safety
-    attributes:
-      label: Safety
-      options:
-        - label: I removed keys, tokens, private paths and personal data.
-          required: true

@@ -1,0 +1,51 @@
+{
+  "arm": "baseline",
+  "model": "sonnet",
+  "return_code": 0,
+  "timed_out": false,
+  "elapsed_ms": 12850,
+  "num_turns": 4,
+  "transcript_turns": 7,
+  "usage": {
+    "input_tokens": 210045,
+    "cached_input_tokens": 186476,
+    "uncached_input_tokens": 23569,
+    "output_tokens": 839,
+    "total_tokens": 210884,
+    "fresh_input_tokens": 14,
+    "cache_read_input_tokens": 186476,
+    "cache_creation_input_tokens": 23555,
+    "thinking_tokens": 76
+  },
+  "economics_usage": {
+    "input_tokens": 14,
+    "cache_read_input_tokens": 186476,
+    "cache_creation_input_tokens": 23555,
+    "output_tokens": 839
+  },
+  "usage_source": "transcript",
+  "model_usage_match": false,
+  "total_cost_usd": 0.075479,
+  "terminal_reason": "completed",
+  "permission_denials": 0,
+  "answer": "ATS_EDIT_OK",
+  "commands": [
+    "grep -rn \"compute_score_v1\" --include=\"*.py\" .",
+    "grep -rln \"compute_score_v1\" . --exclude-dir=.git",
+    "cd /private/var/folders/bm/0dt5fcdn56vg7pnkkzptmlkh0000gn/T/ats-claude-ab-t96bp769/fixture\nsed -i '' 's/compute_score_v1/compute_score/g' src/lib_core.py src/mod_081.py src/mod_033.py src/mod_117.py src/mod_057.py src/mod_099.py src/mod_010.py\ngrep -rn \"compute_score\" src/"
+  ],
+  "rtk_observed": false,
+  "verify_ok": true,
+  "accepted": true,
+  "oracle": {
+    "exact_answer": true,
+    "command_terms": true,
+    "fixture_state": true,
+    "provider_usage": true,
+    "transcript_found": true
+  },
+  "transcript_source": "~/.claude/projects/-private-var-folders-bm-0dt5fcdn56vg7pnkkzptmlkh0000gn-T-ats-claude-ab-t96bp769-fixture/5b91d7d4-019d-4847-883a-8f03154359a1.jsonl",
+  "parse_error": "",
+  "stderr_tail": "",
+  "raw_result": "runs/multi-edit.sonnet.baseline.result.json"
+}

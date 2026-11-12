@@ -1,499 +1,131 @@
 # agent-token-saver
 
+[![CI](https://github.com/Supersynergy/agent-token-saver/actions/workflows/ci.yml/badge.svg)](https://github.com/Supersynergy/agent-token-saver/actions/workflows/ci.yml)
+[![MIT](https://img.shields.io/badge/license-MIT-08b8a8)](LICENSE)
+[![Bun](https://img.shields.io/badge/Bun-1.4.4%20tested-111111)](https://bun.sh)
+
+[English quick start](docs/QUICKSTART.en.md) · [Release 5.1](docs/RELEASE-5.1.0.md)
+
+ATS hilft Coding-Agenten, Prüfergebnisse einmal zu erzeugen und die benötigten
+Belege gezielt zu lesen. CLI, Installation und Tests laufen mit TypeScript/Bun.
+
 ![Agent Token Saver](docs/assets/cover-awesome.png)
 
-**Reduce repeated context and noisy command output before it reaches your coding agent.**
-
-[![MIT](https://img.shields.io/badge/license-MIT-1c7c54.svg)](LICENSE)
-[![CI](https://github.com/Supersynergy/agent-token-saver/actions/workflows/ci.yml/badge.svg)](https://github.com/Supersynergy/agent-token-saver/actions/workflows/ci.yml)
-![Agents](https://img.shields.io/badge/agents-Codex%20%7C%20Claude%20%7C%20Hermes%20%7C%20GG%20Coder-5b5bd6)
-![Measured](https://img.shields.io/badge/evidence-fixture%20%2B%20provider%20A%2FB-1c7c54)
-
-Works with Codex CLI, Claude Code, Hermes and GG Coder. Requires Python 3.11+
-and `git`; the core is standard library only. No daemon, no build step.
-Uninstall is deleting the installed files.
-
-[What is saved in each use case, and when ATS adds overhead](docs/SAVINGS_USE_CASES.md).
-
-**Measured:** a real Codex A/B on identical tasks used **19.67% fewer**
-provider-reported tokens. [Benchmarks →](#benchmarks)
-
-[🚀 Try it](#try-it-in-60-seconds) · [⚙️ Profiles](#choose-a-profile) · [🤖 Hosts](#supported-hosts) · [📊 Benchmarks](#benchmarks) · [🔒 Limits](#safety-and-honest-limits)
-
-## Try it in 60 seconds
-
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Supersynergy/agent-token-saver/main/install-universal.sh \
-  | bash -s -- --profile lean --agent auto --dry-run
-```
-
-`--dry-run` only prints what it would change; nothing is installed yet.
-Liked what you saw? Run the same line again without `--dry-run`, then check
-the wiring:
-
-```bash
-agent-token-saver doctor --profile lean --json
-```
-
-Prefer reviewing the code first?
-
-```bash
-git clone https://github.com/Supersynergy/agent-token-saver.git
+git clone --branch v5.1.0 --depth 1 https://github.com/Supersynergy/agent-token-saver.git
 cd agent-token-saver
-./install-universal.sh --profile lean --agent auto --dry-run
-./install-universal.sh --profile lean --agent auto
+bun run ats guide
+bun run ats verify -- bun -e 'console.log("check passed")'
 ```
 
-`--agent auto` configures the supported hosts it finds. Use `--agent all` only
-when you intentionally want every host integration. The installer copies and
-hashes its own files, merges existing Codex and Claude hook JSON, and creates
-backups. It leaves host configs and optional packages alone.
+Bun genügt zum Benutzen. Es gibt keine Laufzeitpakete, keinen API-Schlüssel und
+keine automatische Hook-Installation. RTK ist optional. Wer am Projekt arbeitet,
+installiert mit `bun install --frozen-lockfile --ignore-scripts` die festgelegten
+Entwicklungswerkzeuge und führt `just check` aus.
 
-## What it removes
+## Der nützlichste Filter ist oft eine genauere Frage
 
-Without routing, one task can accidentally load hundreds of skill
-descriptions, a full source file for one symbol, a 20,000-line log for one
-error count, and the same tool catalog again for every worker.
+In unserem lokalen Vergleich sollte RTK eine Liste von 240 Dateipfaden kürzen.
+Aus 6.720 Bytes wurden 220. Keiner der 240 vollständigen Pfade blieb erhalten.
+Für eine Verzeichnisübersicht mag das reichen. Für die verlangte vollständige
+Dateiliste ist es falsch.
 
-With `agent-token-saver`, the normal path is:
+Bei TypeScript-Fehlern funktionierte die Kürzung: 7.630 auf 230 Bytes, alle
+festgelegten Dateinamen und Fehlercodes erhalten. Das ist der Unterschied, den
+ATS sichtbar macht. [Alle 8 Fälle samt Grenzen](docs/RTK.md).
 
-```text
-exact local evidence
-  → deterministic compact projection
-  → zero or one routed skill
-  → bounded structural read
-  → broader tools only when the task earns them
-```
+Die Leitfrage lautet: Welche Information brauche ich für den nächsten Schritt?
+Eine gezielte Suche beantwortet sie oft mit weniger Aufwand als ein weiterer
+Kompressor. Ein verlorener Fehler kostet eine neue Runde.
 
-The model still gets the decisive lines. It carries less baggage. Your agent,
-its approval rules and its quality gates stay exactly as they are.
+## Vier Aufgaben, die sofort helfen
 
-## Why people use it
+- Check ausführen: `ats verify -- bun test`. Ergebnis und vollständige Logpfade bleiben erhalten.
+- Frühen Fehler finden: `ats project build.log --match TS2322`. Die Ansicht nennt Zeilen und Auslassungen.
+- Logende lesen: `ats project build.log --max-bytes 4096`. Das ist eine ausdrücklich begrenzte Vorschau.
+- RTK prüfen: `ats bench --out ./rtk-report`. Der Bericht zeigt auch verworfene Kandidaten.
 
-<details>
-<summary><strong>📋 Show 6 entries</strong></summary>
+Ohne Installation ersetzt `bun run ats` das kurze `ats` in den Beispielen.
+`ats guide` erklärt den Einstieg; `ats guide rtk` die Werkzeugwahl.
 
-- **Automatic, but reversible**<br>
-  What it means in practice: Lean prompt and Stop hooks reduce routine waste; hooks are fail-open and preserve host control.
-
-- **Measured honestly**<br>
-  What it means in practice: Fixture estimates, provider counters and team projections are labeled separately. Failed task oracles invalidate a saving.
-
-- **Works across agents**<br>
-  What it means in practice: One portable core supports Codex CLI, Claude Code, Hermes, GG Coder and generic CLI/JSON hosts.
-
-- **Low fixed overhead**<br>
-  What it means in practice: CLI-first routing avoids loading a broad MCP schema to discover one useful tool.
-
-- **Team-aware**<br>
-  What it means in practice: Workers receive small task capsules instead of the full parent transcript; one controller keeps the final decision.
-
-- **Safe to adopt**<br>
-  What it means in practice: Dry-run, file hashes, merged hook JSON and backups. Optional third-party tools are detected, never silently installed.
-
-</details>
-
-
-## What happens after installation
-
-1. **Route:** the prompt gate selects compact policy only when the task matches.
-2. **Project:** noisy deterministic output becomes a small evidence view.
-3. **Load:** the agent gets zero or one relevant skill, then only the code or
-   logs needed for the decision.
-4. **Guard:** the Stop hook checks measured session budgets and requests a
-   checkpoint when needed. It never auto-continues or blocks the session.
-
-## Benchmarks
-
-Provider counters are authoritative; local payload numbers are transparent
-`bytes / 4` estimates and say so.
-
-### Real Codex provider A/B
-
-Fresh home directory per run, same model, task and fixture; baseline disabled
-the hooks:
-
-<details>
-<summary><strong>📋 Show 4 entries</strong></summary>
-
-- **Process table**<br>
-  Baseline total: 29,359<br>
-  Lean total: 38,800<br>
-  Change: **32.16% more**
-
-- **Large Git diff**<br>
-  Baseline total: 44,629<br>
-  Lean total: 25,886<br>
-  Change: **42.00% less**
-
-- **Git history**<br>
-  Baseline total: 38,500<br>
-  Lean total: 25,678<br>
-  Change: **33.30% less**
-
-- **Aggregate**<br>
-  Baseline total: **112,488**<br>
-  Lean total: **90,364**<br>
-  Change: **19.67% less**
-
-</details>
-
-
-All three task oracles passed. One task got worse, which is why this README
-avoids universal-savings claims. One run per arm; repeat ABBA runs before
-changing organization-wide defaults.
-Artifact: [Codex provider A/B](data/benchmarks/codex-provider-ab-2026-07-15/compact-policy/result.md).
-
-### Three repeated runs: what survives the noise
-
-Three `gpt-5.6-terra` runs on 2026-08-22 (same harness, all oracles passed in
-every run) showed that a single A/B cannot settle this question. Identical
-baseline runs varied by up to 2.2x on the same task — uncached input on the
-git-diff task came out 8,049, then 18,009, then 8,020. Any single-run headline
-number, including the 2026-07-15 one above, sits inside that noise.
-
-Two things survived all three runs.
-
-**Raw token counts misprice a cached prefix.** Lean moves work out of fresh
-input and into cache hits, which a provider bills at a fraction of the rate.
-Summing tokens unweighted therefore reports a regression where the invoice
-shows a saving:
-
-<details>
-<summary><strong>📋 Show 3 entries</strong></summary>
-
-- **1**<br>
-  Raw token change: +11.4%<br>
-  At list ratios (cached 10%, output 8x): −18.8%
-
-- **2**<br>
-  Raw token change: +0.9%<br>
-  At list ratios (cached 10%, output 8x): −20.1%
-
-- **3**<br>
-  Raw token change: −4.4%<br>
-  At list ratios (cached 10%, output 8x): −7.8%
-
-</details>
-
-
-The weighted column is negative in all three runs (mean −15.6%); the raw
-column straddles zero (mean +2.6%). These are public list ratios, not an
-invoice.
-
-**Lean is far more predictable than the baseline.** Across runs, uncached
-input on the two noisy tasks barely moved under the compact policy while the
-baseline swung wildly:
-
-<details>
-<summary><strong>📋 Show 3 entries</strong></summary>
-
-- **process-table**<br>
-  Lean spread: 100<br>
-  Baseline spread: 7,159
-
-- **large-git-diff**<br>
-  Lean spread: 466<br>
-  Baseline spread: 9,989
-
-- **git-history**<br>
-  Lean spread: 203<br>
-  Baseline spread: 40
-
-</details>
-
-
-The lean figures even span two different policy wordings, which is part of the
-point: bounding noisy output early makes the run reproducible, and a
-reproducible context is what keeps a long session inside its budget.
-
-Artifacts: [run 1](data/benchmarks/codex-provider-ab-2026-08-22-terra/result.md),
-[run 2](data/benchmarks/codex-provider-ab-2026-08-22-terra-v2/result.md),
-[run 3](data/benchmarks/codex-provider-ab-2026-08-22-terra-v3/result.md).
-
-### Fixed payload fixture
-
-The accepted local fixture drops from 375,673 to
-1,887 estimated visible-input units (99.50% less) on the CLI-selective path;
-the automatic Lean path lands at 3,782 (98.99% less). Skill routing, log
-projection and bounded reads carry most of it.
-Artifact and method: [token-stack-matrix-2026-07-15.md](data/benchmarks/token-stack-matrix-2026-07-15.md).
-
-### Bounded worker packets
-
-One controller, compact capsules, independent lanes, one machine-checkable
-oracle:
-
-![Raw context compressed into bounded agent capsules and one verified result](docs/assets/agentmaster-swarm-flow.png)
-
-The three-worker fixture avoids 86.1% of the naive packet (3,800 → 530
-estimated visible-input units); capsule deduplication removes another 43.1%.
-Artifacts: [swarm control](data/benchmarks/swarm-control-2026-07-27.md),
-[hook hot path](data/benchmarks/hook-and-capsule-hotpath-2026-07-27.md).
-
-### Heavier retrieval stays on demand
-
-Tilth answers bounded symbol lookups
-in 27 ms at 4 MB RSS, while graph tools like Gmax and Graphify earn their
-90-110 MB and multi-second builds only for semantic recall or repeated deep
-analysis. Artifacts: [Tilth vs. Gmax](data/benchmarks/tilth-vs-gmax-2026-07-27.md),
-[Graphify code-only](data/benchmarks/graphify-code-only-2026-07-27.md).
-
-## Choose a profile
-
-Start with `lean`. Change profiles only for a concrete need.
-
-<details>
-<summary><strong>📋 Show 4 entries</strong></summary>
-
-- **`minimal`**<br>
-  Best for: portable CLI and ledger<br>
-  Visible surface: no visible skill or prompt hook
-
-- **`lean`**<br>
-  Best for: normal daily coding<br>
-  Visible surface: compact host default, prompt gate, Stop guard, optional projection CLIs
-
-- **`teams`**<br>
-  Best for: independent parallel lanes<br>
-  Visible surface: Lean plus bounded worker-capsule contract
-
-- **`heavy`**<br>
-  Best for: one explicit deep session<br>
-  Visible surface: Lean plus graph and large-context tools
-
-</details>
-
-
-## Supported hosts
-
-<details>
-<summary><strong>📋 Show 5 entries</strong></summary>
-
-- **Codex CLI**<br>
-  Integration: compact global default, prompt gate and Stop guard<br>
-  Active from the first prompt?: yes
-
-- **Claude Code**<br>
-  Integration: compact global default, prompt gate, Stop guard, RTK when present, worker capsule<br>
-  Active from the first prompt?: yes
-
-- **Hermes**<br>
-  Integration: compact default in an existing `SOUL.md` plus installed Agent Skill<br>
-  Active from the first prompt?: only with a `SOUL.md`; otherwise the skill loads when named
-
-- **GG Coder**<br>
-  Integration: compact home `AGENTS.md` default plus installed Markdown skill<br>
-  Active from the first prompt?: policy yes; skill when the agent invokes it
-
-- **Other agents**<br>
-  Integration: repo-local `SKILL.md` plus CLI/JSON<br>
-  Active from the first prompt?: when named
-
-</details>
-
-
-The installer merges into existing host files and never creates a new Hermes
-`SOUL.md`. Files on disk are not proof of active wiring; the doctor checks
-installed paths, hooks and the exact managed default blocks. Details:
-[Hooks and agents](docs/HOOKS_AND_AGENTS.md).
-
-**GG Coder supports native observer extensions.** The companion router installs
-an extension that listens to tool-call events and reports skill loads and shell
-outcomes. Verified through the actual 5.46.2 session and packaged SuperGG/GG
-desktop sidecars with local test providers. The desktop test covers the native
-HTTP/SSE backend; the CLI's compact-catalog helper does not apply to the app.
-See the router's [desktop guide](https://github.com/Supersynergy/agent-token-saver-skill-router/blob/main/docs/GG_DESKTOP.md).
-The policy block remains its automatic instruction layer; Codex/Claude JSON
-prompt and Stop hooks are not GG interfaces. Start a new CLI process after
-installation; restart the desktop app after updating a loaded extension.
-Subagents defined with a
-`tools:` allow-list that omits `skill` (such as `scout`, `researcher`, `verify`)
-cannot invoke the native skill loader. A role with an allowed file reader can
-still read an explicitly supplied skill path, subject to that role's rules.
-
-### What you need, per host
-
-Shared requirements:
-
-- Python 3.11+ on `PATH` (`python3.12` and other versioned names are accepted).
-- `git` for the one-line bootstrap. RTK and the skill router are optional.
-- A `SKILL.md` collection if you want skill routing; Bun only for `llmadapter`.
-
-<details>
-<summary><strong>📋 Show 4 entries</strong></summary>
-
-- **Codex**<br>
-  Integration notes: RTK is optional and agent-guided.
-
-- **Claude Code**<br>
-  Integration notes: Optional RTK integration uses a native hook.
-
-- **Hermes**<br>
-  Integration notes: Automatic policy uses a `SOUL.md` file.
-
-- **GG Coder**<br>
-  Integration notes: No additional host-specific prerequisite in this matrix.
-
-</details>
-
-
-The doctor prints the install line for every optional layer it cannot find,
-and says what each one needs to be useful.
-
-### Companion: the skill router
-
-[agent-token-saver-skill-router](https://github.com/Supersynergy/agent-token-saver-skill-router)
-is a separate stdlib-only CLI that picks zero or one skill out of a large
-local skill catalog. Install it when a host loads many `SKILL.md` files; skip
-it otherwise. Neither installer ever installs the other package.
-
-## AgentMaster protocol (optional)
-
-`llmadapter ask-v2` is the strict machine interface for an external
-controller: stdin-only prompts, bounded capsules, lane selectors
-(`free`/`cheap`/`paid`/`local`/`cli`), health-ordered routing, oracles,
-budgets and one schema-fixed JSON result. It requires [Bun](https://bun.sh/)
-at runtime and stays optional.
+## Einmal prüfen, später im Rohbeleg nachlesen
 
 ```bash
-printf '%s' "$TASK" | llmadapter ask-v2 \
-  --stdin --swarm --lanes local --no-cache \
-  --usage-out run-accounting.json
+bun run ats verify -- bun test ./test/core.test.ts
+bun run ats --json verify -- bun test ./test/rtk.test.ts
 ```
 
-Full contract, lane table, extensions:
-[AgentMaster protocol](docs/AGENTMASTER_PROTOCOL.md).
+Der angegebene Befehl läuft genau einmal als Argumentliste. Bei Erfolg erscheint
+ein kurzes Ergebnis. Bei Fehlern zeigt ATS zusätzlich das Ende von stdout und
+stderr, jeweils höchstens 16 KiB. Beide Rohdateien bleiben vollständig erhalten.
 
-## Measure your own result
+Der ursprüngliche Exitcode bleibt bestehen. Ein Zeitlimit liefert 124, ein nicht
+startbarer Befehl 127. Die Endansicht kann einen frühen Fehler übersehen; nutze
+für diesen Fall `project --match` auf dem gespeicherten Log. Das startet den
+Check nicht erneut. [Details und Grenzen](docs/GUIDE.md).
+
+## Lokal installieren und zurückbauen
+
+```bash
+bun install.ts                              # Plan anzeigen
+bun install.ts --apply                      # ats und agent-token-saver installieren
+ats doctor
+ats guide
+```
+
+Die Installation schreibt eine eigene Generation und zwei Verknüpfungen nach
+`~/.local/bin/`. Dieser Pfad muss in `PATH` stehen. Die Starter verweisen direkt
+auf TypeScript-Dateien mit Bun-Shebang; eine Shell-Implementierung gibt es nicht.
+Vorhandene Starter und der vorherige Versionszeiger stehen im privaten
+Installationsbeleg. Die Ausgabe nennt dessen Kennung.
+
+```bash
+bun run ats rollback --id INSTALLATIONS_ID          # Plan
+bun run ats rollback --id INSTALLATIONS_ID --apply  # vorherigen Zustand herstellen
+```
+
+`--home DIR` erlaubt eine Probeinstallation in einem eigenen Ordner.
+Rückbau verweigert das Überschreiben später geänderter Starter. Generationen
+bleiben erhalten. `doctor` prüft Dateien und Verknüpfungen; einen funktionierenden
+Codex- oder Claude-Nutzerpfad beweist das nicht.
 
 <details>
-<summary>📏 Measurement commands and methodology</summary>
+<summary>Cachekosten mit eigenen Eingaben berechnen</summary>
+
 
 ```bash
-agent-token-ledger \
-  --usage parent=run.jsonl \
-  --usage child-review=child.jsonl \
-  --provider codex \
-  --require-complete-team \
-  --require-within-guard \
-  --format markdown \
-  --out token-ledger.md
+bun run ats cost examples/usage.json
 ```
 
-Keep the model, task, fixture and acceptance oracle fixed for a credible
-before/after. Never translate a local payload estimate directly into money
-saved.
-
-### Derive a workflow policy without changing defaults
-
-The source checkout includes a deterministic component/multi-operation matrix.
-The installed policy command then combines that matrix with one or more
-schema-v4 GG prompt-bench runs and an optional redacted adaptive-history audit:
-
-```bash
-python scripts/workflow_matrix_benchmark.py --out-dir /tmp/ats-workflow --samples 11 --live-local
-
-ats-workflow-policy \
-  --matrix /tmp/ats-workflow/workflow_matrix_benchmark.json \
-  --prompt-bench prompt-run-n5.json \
-  --adaptive-audit adaptive-audit.json \
-  --out-json workflow-policy.json \
-  --out-md workflow-policy.md
-```
-
-The command is report-only. It may recommend an exact deterministic projection
-or exact-fingerprint recall after their executable oracles pass. Prompt/model
-changes need at least 10 trials per cell and three independent tasks by default;
-adaptive routing also needs pre-treatment features, logged arms and
-propensities, deterministic quality labels, and a chronological 30-train/10-test
-holdout per arm. Missing evidence keeps the current full prompt and blocks
-activation. Raw prompts are never accepted as training rows.
-
-### Price the cache, don't just count tokens
-
-Raw token sums misprice a cached prefix. Moving fresh input into cache reads
-raises the raw input count while lowering the bill, so an unweighted
-before/after can call a cheaper run a regression.
-
-```bash
-ats-cache usage.json                      # hit rate, split, weighted vs no-cache
-ats-cache - --format line < usage.json    # one-line statusline summary
-ats-cache lean.json --against base.json   # weighted A/B
-```
-
-`ats-cache` is installed on `PATH`, so an agent can call it as a command; the
-sourced CLI helper defines the same name as a shell function.
-
-```
-cache 90.00% hit | 9,000 read / 0 write / 1,000 fresh | weighted in 1,900 vs 10,000 uncached (81.00% saved)
-cache 0.00% hit | 0 read / 19,967 write / 2 fresh | weighted in 24,961 vs 19,969 uncached (-25.00% saved) | write-only
-```
-
-The trailing verdict names the failure mode instead of leaving it to the
-reader: `write-only` (a prefix written every turn and never read back),
-`rewriting` (more written than read), or `uncached`. A healthy run prints no
-verdict. The ledger carries the same row.
-
-The ledger reports the same block. Weighted tokens are a list-ratio estimate
-against an explicit no-cache counterfactual, never an invoice; provider
-counters stay authoritative. Ratios live in `scripts/cache_economics.py`, each
-pinned to its published per-MTok price by a test.
-
-The cache only pays while the prefix stays byte-identical: grow context
-append-only, keep clocks and session ids out of it, hold tool definitions
-stable within a wave, and don't switch model or effort mid-wave.
-
-Two failure modes cost more than they look, both vendor-documented:
-
-- A byte-identical prefix still misses once the breakpoint drifts past the
-  [lookback window](https://platform.claude.com/docs/en/build-with-claude/prompt-caching)
-  (20 blocks on Anthropic), so a burst of large turns silently pays a full
-  re-write. Add a breakpoint at the end of the static prefix, or keep per-turn
-  growth small.
-- Loading a tool or skill catalog mid-session, and compaction itself, invalidate
-  the prefix [from the first changed token onward](https://developers.openai.com/api/docs/guides/prompt-caching).
-  Lazy-loading definitions to save their tokens can therefore cost a whole
-  cached prefix; price the re-write before calling it a saving.
-
+Das Beispiel ergibt 0,0024 USD mit erfundenen Beispielpreisen. Ersetze Preise
+und Quelle durch deinen datierten Tarif. Frische Eingabe, Cache-Lesen,
+Cache-Schreiben und Ausgabe müssen getrennte Nutzungsklassen sein.
+Mit `ats cost --example` funktioniert das Beispiel auch nach der Installation.
+ATS normalisiert Anbieterformate nicht automatisch und nennt die Rechnung eine
+Schätzung. Eine kleinere Logausgabe ist kein Beleg für eine entsprechend
+kleinere Anbieterrechnung.
 
 </details>
 
-## Verify the checkout
+## Was aus dem alten Paket verschwindet
 
-```bash
-uv sync --extra dev
-uv run pytest -q
-uv run ruff check scripts integration tests
-bash scripts/neutral_install_smoke.sh
-agent-token-saver doctor --profile teams --json
-```
+Die Python-Implementierungen, Shell-Helfer, Providervermittlung und überlappenden
+Hookprofile sind aus dem gepflegten Quellbaum entfernt. Auch die alten Testläufer
+werden nicht mehr als aktuelle Anleitung mitgeliefert. Der Ersatz ist in der
+[Migrationsübersicht](docs/MIGRATION.md) aufgeführt. Historische Benchmarks bleiben
+als Daten erhalten; sie tragen keine Spargarantie für den neuen Kern.
 
-`core-ready` means the portable core works while an optional tool is missing.
-`full` means every tool required by the selected profile is detected.
+Persönlich installierte alte Hooks werden durch einen Checkout-Umbau nicht
+entfernt. ATS verändert keine Host-Konfiguration und keine Agentenfreigaben.
 
-## Safety and honest limits
+## Weiterlernen
 
-- Hooks are fail-open and preserve host approval, sandbox and Stop ownership.
-- The installer merges recognized config sections and creates backups.
-- Optional tools remain optional; no always-on broad tool catalog.
-- Savings depend on workload. Quality gates come before token counts.
-- One controller owns scope and the final answer. Default team cap: three
-  independent workers with 300–700-token task capsules.
+- [Anleitung mit Entscheidungsfällen](docs/GUIDE.md)
+- [RTK: Gewinne, Gegenproben und Grenzen](docs/RTK.md)
+- [Konzept und Erkenntnisse aus früheren Benchmarks](docs/CONCEPT.md)
+- [20 SI-Atlas-Skills mit konkreter Anwendung](docs/SKILLS.md)
+- [Zusätzliche Benchmark-Prüfung](docs/BENCHMARK_REVIEW.md)
+- [Speed-Skills und Superloop: übernommene und verworfene Regeln](docs/SPEED.md)
+- [Mitwirken und eigene Messungen](CONTRIBUTING.md)
 
-## Documentation
-
-- [Playbook — the universal path](docs/PLAYBOOK.md): which tool at which phase,
-  `ats-verify` as the oracle wrapper, current-docs lookup instead of memory,
-  and where installed tool versions differ from what the docs pin
-- [Tooling and wiring](docs/TOOLING_AND_WIRING.md)
-- [Hooks and agents](docs/HOOKS_AND_AGENTS.md)
-- [AgentMaster protocol](docs/AGENTMASTER_PROTOCOL.md)
-- [Full measurement method](docs/FULL_CONTEXT_MEASUREMENT.md)
-- [Subagent context protocol](docs/SUBAGENT_CONTEXT_PROTOCOL.md)
-- [Worker control plane](docs/SWARM_CONTROL_PLANE.md)
-- [All benchmark artifacts](data/benchmarks/)
-- [Changelog](CHANGELOG.md)
-- [Security policy](SECURITY.md)
-
-License: MIT.
+Lizenz: MIT.

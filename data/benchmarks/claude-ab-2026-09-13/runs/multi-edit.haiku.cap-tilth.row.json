@@ -1,0 +1,47 @@
+{
+  "arm": "cap-tilth",
+  "model": "haiku",
+  "return_code": 0,
+  "timed_out": false,
+  "elapsed_ms": 31772,
+  "num_turns": 15,
+  "transcript_turns": 20,
+  "usage": {
+    "input_tokens": 469254,
+    "cached_input_tokens": 403539,
+    "uncached_input_tokens": 65715,
+    "output_tokens": 24497,
+    "total_tokens": 493751,
+    "fresh_input_tokens": 178,
+    "cache_read_input_tokens": 403539,
+    "cache_creation_input_tokens": 65537,
+    "thinking_tokens": 4356
+  },
+  "economics_usage": {
+    "input_tokens": 178,
+    "cache_read_input_tokens": 403539,
+    "cache_creation_input_tokens": 65537,
+    "output_tokens": 24497
+  },
+  "usage_source": "transcript",
+  "model_usage_match": false,
+  "total_cost_usd": 0.0403887,
+  "terminal_reason": "completed",
+  "permission_denials": 0,
+  "answer": "ATS_EDIT_OK",
+  "commands": [],
+  "rtk_observed": false,
+  "verify_ok": true,
+  "accepted": true,
+  "oracle": {
+    "exact_answer": true,
+    "command_terms": true,
+    "fixture_state": true,
+    "provider_usage": true,
+    "transcript_found": true
+  },
+  "transcript_source": "~/.claude/projects/-private-var-folders-bm-0dt5fcdn56vg7pnkkzptmlkh0000gn-T-ats-claude-ab-e0bj5d75-fixture/7c657dfb-480b-4825-96e6-c35e5f14c34d.jsonl",
+  "parse_error": "",
+  "stderr_tail": "",
+  "raw_result": "runs/multi-edit.haiku.cap-tilth.result.json"
+}

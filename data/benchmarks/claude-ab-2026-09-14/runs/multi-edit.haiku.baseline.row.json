@@ -1,0 +1,51 @@
+{
+  "arm": "baseline",
+  "model": "haiku",
+  "return_code": 0,
+  "timed_out": false,
+  "elapsed_ms": 60731,
+  "num_turns": 18,
+  "transcript_turns": 25,
+  "usage": {
+    "input_tokens": 622418,
+    "cached_input_tokens": 559138,
+    "uncached_input_tokens": 63280,
+    "output_tokens": 22247,
+    "total_tokens": 644665,
+    "fresh_input_tokens": 206,
+    "cache_read_input_tokens": 559138,
+    "cache_creation_input_tokens": 63074,
+    "thinking_tokens": 4118
+  },
+  "economics_usage": {
+    "input_tokens": 206,
+    "cache_read_input_tokens": 559138,
+    "cache_creation_input_tokens": 63074,
+    "output_tokens": 22247
+  },
+  "usage_source": "transcript",
+  "model_usage_match": false,
+  "total_cost_usd": 0.062170500000000004,
+  "terminal_reason": "completed",
+  "permission_denials": 0,
+  "answer": "ATS_EDIT_OK",
+  "commands": [
+    "grep -r \"compute_score_v1\" /private/var/folders/bm/0dt5fcdn56vg7pnkkzptmlkh0000gn/T/ats-claude-ab-elfcbh34/fixture/src",
+    "grep -r \"compute_score_v1\" /private/var/folders/bm/0dt5fcdn56vg7pnkkzptmlkh0000gn/T/ats-claude-ab-elfcbh34/fixture/src",
+    "grep -r \"compute_score\" /private/var/folders/bm/0dt5fcdn56vg7pnkkzptmlkh0000gn/T/ats-claude-ab-elfcbh34/fixture/src"
+  ],
+  "rtk_observed": false,
+  "verify_ok": true,
+  "accepted": true,
+  "oracle": {
+    "exact_answer": true,
+    "command_terms": true,
+    "fixture_state": true,
+    "provider_usage": true,
+    "transcript_found": true
+  },
+  "transcript_source": "~/.claude/projects/-private-var-folders-bm-0dt5fcdn56vg7pnkkzptmlkh0000gn-T-ats-claude-ab-elfcbh34-fixture/0fc3d5be-f477-4f26-8d19-e092db3ded2f.jsonl",
+  "parse_error": "",
+  "stderr_tail": "",
+  "raw_result": "runs/multi-edit.haiku.baseline.result.json"
+}

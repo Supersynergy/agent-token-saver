@@ -1,0 +1,335 @@
+{
+  "schema_version": 2,
+  "date": "2026-09-14 21:53:21 CEST",
+  "claude_version": "2.1.270 (Claude Code)",
+  "models": [
+    "haiku"
+  ],
+  "arms": [
+    "baseline",
+    "cap-budget",
+    "cap-graperoot"
+  ],
+  "reps": 1,
+  "order": "alternate",
+  "adaptive": false,
+  "setting_sources": "",
+  "fixture_head": "0521454cebff2bd4156927c569f247a269730ca3",
+  "budget_exhausted": false,
+  "total_cost_usd": 0.158299,
+  "tasks": [
+    {
+      "name": "multi-edit",
+      "model": "haiku",
+      "prompt": "In this repository, the function `compute_score_v1` is defined once in src/lib_core.py and called by several modules under src/. Rename it to `compute_score` everywhere — the definition and all call sites — without changing behavior. When finished reply exactly ATS_EDIT_OK and nothing else.",
+      "expected": "ATS_EDIT_OK",
+      "arms": {
+        "baseline": {
+          "arm": "baseline",
+          "model": "haiku",
+          "return_code": 0,
+          "timed_out": false,
+          "elapsed_ms": 60731,
+          "num_turns": 18,
+          "transcript_turns": 25,
+          "usage": {
+            "input_tokens": 622418,
+            "cached_input_tokens": 559138,
+            "uncached_input_tokens": 63280,
+            "output_tokens": 22247,
+            "total_tokens": 644665,
+            "fresh_input_tokens": 206,
+            "cache_read_input_tokens": 559138,
+            "cache_creation_input_tokens": 63074,
+            "thinking_tokens": 4118
+          },
+          "economics_usage": {
+            "input_tokens": 206,
+            "cache_read_input_tokens": 559138,
+            "cache_creation_input_tokens": 63074,
+            "output_tokens": 22247
+          },
+          "usage_source": "transcript",
+          "model_usage_match": false,
+          "total_cost_usd": 0.062170500000000004,
+          "terminal_reason": "completed",
+          "permission_denials": 0,
+          "answer": "ATS_EDIT_OK",
+          "commands": [
+            "grep -r \"compute_score_v1\" /private/var/folders/bm/0dt5fcdn56vg7pnkkzptmlkh0000gn/T/ats-claude-ab-elfcbh34/fixture/src",
+            "grep -r \"compute_score_v1\" /private/var/folders/bm/0dt5fcdn56vg7pnkkzptmlkh0000gn/T/ats-claude-ab-elfcbh34/fixture/src",
+            "grep -r \"compute_score\" /private/var/folders/bm/0dt5fcdn56vg7pnkkzptmlkh0000gn/T/ats-claude-ab-elfcbh34/fixture/src"
+          ],
+          "rtk_observed": false,
+          "verify_ok": true,
+          "accepted": true,
+          "oracle": {
+            "exact_answer": true,
+            "command_terms": true,
+            "fixture_state": true,
+            "provider_usage": true,
+            "transcript_found": true
+          },
+          "transcript_source": "~/.claude/projects/-private-var-folders-bm-0dt5fcdn56vg7pnkkzptmlkh0000gn-T-ats-claude-ab-elfcbh34-fixture/0fc3d5be-f477-4f26-8d19-e092db3ded2f.jsonl",
+          "parse_error": "",
+          "stderr_tail": "",
+          "raw_result": "runs/multi-edit.haiku.baseline.result.json"
+        },
+        "cap-budget": {
+          "arm": "cap-budget",
+          "model": "haiku",
+          "return_code": 0,
+          "timed_out": false,
+          "elapsed_ms": 49034,
+          "num_turns": 15,
+          "transcript_turns": 20,
+          "usage": {
+            "input_tokens": 465738,
+            "cached_input_tokens": 401628,
+            "uncached_input_tokens": 64110,
+            "output_tokens": 24394,
+            "total_tokens": 490132,
+            "fresh_input_tokens": 178,
+            "cache_read_input_tokens": 401628,
+            "cache_creation_input_tokens": 63932,
+            "thinking_tokens": 4496
+          },
+          "economics_usage": {
+            "input_tokens": 178,
+            "cache_read_input_tokens": 401628,
+            "cache_creation_input_tokens": 63932,
+            "output_tokens": 24394
+          },
+          "usage_source": "transcript",
+          "model_usage_match": false,
+          "total_cost_usd": 0.0398387,
+          "terminal_reason": "completed",
+          "permission_denials": 0,
+          "answer": "ATS_EDIT_OK",
+          "commands": [],
+          "rtk_observed": false,
+          "verify_ok": true,
+          "accepted": true,
+          "oracle": {
+            "exact_answer": true,
+            "command_terms": true,
+            "fixture_state": true,
+            "provider_usage": true,
+            "transcript_found": true
+          },
+          "transcript_source": "~/.claude/projects/-private-var-folders-bm-0dt5fcdn56vg7pnkkzptmlkh0000gn-T-ats-claude-ab-elfcbh34-fixture/82d520ca-4d65-43ca-890a-8516db51ba15.jsonl",
+          "parse_error": "",
+          "stderr_tail": "",
+          "raw_result": "runs/multi-edit.haiku.cap-budget.result.json"
+        },
+        "cap-graperoot": {
+          "arm": "cap-graperoot",
+          "model": "haiku",
+          "return_code": 0,
+          "timed_out": false,
+          "elapsed_ms": 59520,
+          "num_turns": 18,
+          "transcript_turns": 25,
+          "usage": {
+            "input_tokens": 631056,
+            "cached_input_tokens": 597135,
+            "uncached_input_tokens": 33921,
+            "output_tokens": 14957,
+            "total_tokens": 646013,
+            "fresh_input_tokens": 204,
+            "cache_read_input_tokens": 597135,
+            "cache_creation_input_tokens": 33717,
+            "thinking_tokens": 2464
+          },
+          "economics_usage": {
+            "input_tokens": 204,
+            "cache_read_input_tokens": 597135,
+            "cache_creation_input_tokens": 33717,
+            "output_tokens": 14957
+          },
+          "usage_source": "transcript",
+          "model_usage_match": false,
+          "total_cost_usd": 0.0562893,
+          "terminal_reason": "completed",
+          "permission_denials": 0,
+          "answer": "ATS_EDIT_OK",
+          "commands": [
+            "grep -r \"compute_score_v1\" /private/var/folders/bm/0dt5fcdn56vg7pnkkzptmlkh0000gn/T/ats-claude-ab-elfcbh34/fixture/",
+            "grep -r \"compute_score_v1\" /private/var/folders/bm/0dt5fcdn56vg7pnkkzptmlkh0000gn/T/ats-claude-ab-elfcbh34/fixture/"
+          ],
+          "rtk_observed": false,
+          "verify_ok": true,
+          "accepted": true,
+          "oracle": {
+            "exact_answer": true,
+            "command_terms": true,
+            "fixture_state": true,
+            "provider_usage": true,
+            "transcript_found": true
+          },
+          "transcript_source": "~/.claude/projects/-private-var-folders-bm-0dt5fcdn56vg7pnkkzptmlkh0000gn-T-ats-claude-ab-elfcbh34-fixture/973bff20-287c-4920-a70b-51ea455a294d.jsonl",
+          "parse_error": "",
+          "stderr_tail": "",
+          "raw_result": "runs/multi-edit.haiku.cap-graperoot.result.json"
+        }
+      },
+      "comparisons": {
+        "cap-budget": {
+          "accepted": true,
+          "provider_delta": {
+            "input_tokens": -156680,
+            "uncached_input_tokens": 830,
+            "output_tokens": 2147,
+            "total_tokens": -154533,
+            "cost_usd": -0.022332,
+            "input_saved_percent": 25.17,
+            "total_saved_percent": 23.97
+          },
+          "weighted_delta": {
+            "baseline_weighted_input_tokens": 134962.3,
+            "candidate_weighted_input_tokens": 120255.8,
+            "baseline_weighted_total_tokens": 246197.3,
+            "candidate_weighted_total_tokens": 242225.8,
+            "baseline_cache_hit_rate_percent": 89.83,
+            "candidate_cache_hit_rate_percent": 86.23,
+            "cache_hit_rate_delta": -3.6,
+            "input_saved_percent": 10.9,
+            "total_saved_percent": 1.61,
+            "profile": {
+              "name": "anthropic",
+              "cache_read_ratio": 0.1,
+              "cache_write_ratio": 1.25,
+              "output_ratio": 5.0,
+              "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+              "verified": "2026-08-25",
+              "note": "5-minute cache write. Ratios identical across active Claude models."
+            },
+            "basis": "Weighted numbers are a list-ratio estimate against a no-cache counterfactual, not an invoice. Raw provider counters stay authoritative."
+          }
+        },
+        "cap-graperoot": {
+          "accepted": true,
+          "provider_delta": {
+            "input_tokens": 8638,
+            "uncached_input_tokens": -29359,
+            "output_tokens": -7290,
+            "total_tokens": 1348,
+            "cost_usd": -0.005881,
+            "input_saved_percent": -1.39,
+            "total_saved_percent": -0.21
+          },
+          "weighted_delta": {
+            "baseline_weighted_input_tokens": 134962.3,
+            "candidate_weighted_input_tokens": 102063.75,
+            "baseline_weighted_total_tokens": 246197.3,
+            "candidate_weighted_total_tokens": 176848.75,
+            "baseline_cache_hit_rate_percent": 89.83,
+            "candidate_cache_hit_rate_percent": 94.62,
+            "cache_hit_rate_delta": 4.79,
+            "input_saved_percent": 24.38,
+            "total_saved_percent": 28.17,
+            "profile": {
+              "name": "anthropic",
+              "cache_read_ratio": 0.1,
+              "cache_write_ratio": 1.25,
+              "output_ratio": 5.0,
+              "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+              "verified": "2026-08-25",
+              "note": "5-minute cache write. Ratios identical across active Claude models."
+            },
+            "basis": "Weighted numbers are a list-ratio estimate against a no-cache counterfactual, not an invoice. Raw provider counters stay authoritative."
+          }
+        }
+      }
+    }
+  ],
+  "aggregate": {
+    "baseline": {
+      "input_tokens": 622418,
+      "cached_input_tokens": 559138,
+      "uncached_input_tokens": 63280,
+      "output_tokens": 22247,
+      "total_tokens": 644665,
+      "fresh_input_tokens": 206,
+      "cache_creation_input_tokens": 63074
+    },
+    "baseline_cost_usd": 0.062171,
+    "arms": {
+      "cap-budget": {
+        "accepted": true,
+        "usage": {
+          "input_tokens": 465738,
+          "cached_input_tokens": 401628,
+          "uncached_input_tokens": 64110,
+          "output_tokens": 24394,
+          "total_tokens": 490132,
+          "fresh_input_tokens": 178,
+          "cache_creation_input_tokens": 63932
+        },
+        "cost_usd": 0.039839,
+        "weighted": {
+          "baseline_weighted_input_tokens": 134962.3,
+          "candidate_weighted_input_tokens": 120255.8,
+          "baseline_weighted_total_tokens": 246197.3,
+          "candidate_weighted_total_tokens": 242225.8,
+          "baseline_cache_hit_rate_percent": 89.83,
+          "candidate_cache_hit_rate_percent": 86.23,
+          "cache_hit_rate_delta": -3.6,
+          "input_saved_percent": 10.9,
+          "total_saved_percent": 1.61,
+          "profile": {
+            "name": "anthropic",
+            "cache_read_ratio": 0.1,
+            "cache_write_ratio": 1.25,
+            "output_ratio": 5.0,
+            "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+            "verified": "2026-08-25",
+            "note": "5-minute cache write. Ratios identical across active Claude models."
+          },
+          "basis": "Weighted numbers are a list-ratio estimate against a no-cache counterfactual, not an invoice. Raw provider counters stay authoritative."
+        },
+        "input_saved_percent": 25.17,
+        "total_saved_percent": 23.97,
+        "cost_saved_percent": 35.92
+      },
+      "cap-graperoot": {
+        "accepted": true,
+        "usage": {
+          "input_tokens": 631056,
+          "cached_input_tokens": 597135,
+          "uncached_input_tokens": 33921,
+          "output_tokens": 14957,
+          "total_tokens": 646013,
+          "fresh_input_tokens": 204,
+          "cache_creation_input_tokens": 33717
+        },
+        "cost_usd": 0.056289,
+        "weighted": {
+          "baseline_weighted_input_tokens": 134962.3,
+          "candidate_weighted_input_tokens": 102063.75,
+          "baseline_weighted_total_tokens": 246197.3,
+          "candidate_weighted_total_tokens": 176848.75,
+          "baseline_cache_hit_rate_percent": 89.83,
+          "candidate_cache_hit_rate_percent": 94.62,
+          "cache_hit_rate_delta": 4.79,
+          "input_saved_percent": 24.38,
+          "total_saved_percent": 28.17,
+          "profile": {
+            "name": "anthropic",
+            "cache_read_ratio": 0.1,
+            "cache_write_ratio": 1.25,
+            "output_ratio": 5.0,
+            "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+            "verified": "2026-08-25",
+            "note": "5-minute cache write. Ratios identical across active Claude models."
+          },
+          "basis": "Weighted numbers are a list-ratio estimate against a no-cache counterfactual, not an invoice. Raw provider counters stay authoritative."
+        },
+        "input_saved_percent": -1.39,
+        "total_saved_percent": -0.21,
+        "cost_saved_percent": 9.46
+      }
+    },
+    "provider_savings_claim_valid": true
+  }
+}

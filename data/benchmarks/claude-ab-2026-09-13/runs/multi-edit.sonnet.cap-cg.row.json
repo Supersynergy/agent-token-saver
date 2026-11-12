@@ -1,0 +1,50 @@
+{
+  "arm": "cap-cg",
+  "model": "sonnet",
+  "return_code": 0,
+  "timed_out": false,
+  "elapsed_ms": 22764,
+  "num_turns": 3,
+  "transcript_turns": 5,
+  "usage": {
+    "input_tokens": 153915,
+    "cached_input_tokens": 139664,
+    "uncached_input_tokens": 14251,
+    "output_tokens": 946,
+    "total_tokens": 154861,
+    "fresh_input_tokens": 10,
+    "cache_read_input_tokens": 139664,
+    "cache_creation_input_tokens": 14241,
+    "thinking_tokens": 468
+  },
+  "economics_usage": {
+    "input_tokens": 10,
+    "cache_read_input_tokens": 139664,
+    "cache_creation_input_tokens": 14241,
+    "output_tokens": 946
+  },
+  "usage_source": "transcript",
+  "model_usage_match": false,
+  "total_cost_usd": 0.052703999999999994,
+  "terminal_reason": "completed",
+  "permission_denials": 0,
+  "answer": "All references renamed cleanly with no leftovers.\n\nATS_EDIT_OK",
+  "commands": [
+    "grep -rn \"compute_score_v1\" --include=\"*.py\" .",
+    "grep -rl \"compute_score_v1\" --include=\"*.py\" . | xargs sed -i '' 's/compute_score_v1/compute_score/g'\ngrep -rn \"compute_score_v1\\|compute_score\\b\" --include=\"*.py\" . "
+  ],
+  "rtk_observed": false,
+  "verify_ok": true,
+  "accepted": false,
+  "oracle": {
+    "exact_answer": false,
+    "command_terms": true,
+    "fixture_state": true,
+    "provider_usage": true,
+    "transcript_found": true
+  },
+  "transcript_source": "~/.claude/projects/-private-var-folders-bm-0dt5fcdn56vg7pnkkzptmlkh0000gn-T-ats-claude-ab-ike977qn-fixture/dc98da7d-178f-47cb-b9b6-beeb50201a04.jsonl",
+  "parse_error": "",
+  "stderr_tail": "",
+  "raw_result": "runs/multi-edit.sonnet.cap-cg.result.json"
+}

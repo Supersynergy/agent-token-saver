@@ -1,0 +1,22 @@
+{
+  "name": "agent-token-saver",
+  "version": "5.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Run checks once, keep full evidence, and test whether output compression actually helps. TypeScript/Bun.",
+  "scripts": {
+    "check": "tsc --noEmit && bun test ./test",
+    "ats": "bun src/cli.ts",
+    "bench": "bun src/cli.ts bench",
+    "install:local": "bun install.ts",
+    "release:pack": "bun tools/release.ts pack"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.4",
+    "typescript": "7.0.2"
+  },
+  "bin": {
+    "ats": "./src/cli.ts",
+    "agent-token-saver": "./src/cli.ts"
+  }
+}

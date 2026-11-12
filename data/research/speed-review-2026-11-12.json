@@ -1,0 +1,37 @@
+{
+  "as_of": "2026-11-12",
+  "sources": [
+    {
+      "id": "superloop",
+      "source_sha256": "ffa3132f4776dd42450d440bb874701da67b06ac7d47359840b774981ffcefef",
+      "scope": "Local research source reviewed on 2026-11-12; full source not bundled; no generally transferable speed or price claim."
+    },
+    {
+      "id": "speedtuning",
+      "source_sha256": "4accb28a8d352def73c97f58faddc4c5cc6baedd71c3c06a67581da2227a30de",
+      "scope": "Local research source reviewed on 2026-11-12; full source not bundled; no generally transferable speed or price claim."
+    },
+    {
+      "id": "speedplaybook",
+      "source_sha256": "cab936d0c54f65ff88a6d6747fabbb61a3ab89d1a5139be887506fe3d1a272bc",
+      "scope": "Local research source reviewed on 2026-11-12; full source not bundled; no generally transferable speed or price claim."
+    },
+    {
+      "id": "cache-turn-study",
+      "source_sha256": "d663163dfde551e11ddc84b3150ad90baa369fe5daa89c20cbd6f26b6d1dc1de",
+      "scope": "Local research source reviewed on 2026-11-12; full source not bundled; no generally transferable speed or price claim."
+    },
+    {
+      "id": "harness-method",
+      "source_sha256": "c6ea2ff5819912b2a3b9a3ae3f74bcba5801a5b539e6fccd456531dfece45512",
+      "scope": "Local research source reviewed on 2026-11-12; full source not bundled; no generally transferable speed or price claim."
+    },
+    {
+      "id": "harness-measurements",
+      "source_sha256": "875083080301a61db3f30a126ca3024dcc72ec15b9167581e07033aea91d7aa8",
+      "scope": "Local research source reviewed on 2026-11-12; full source not bundled; no generally transferable speed or price claim."
+    }
+  ],
+  "removed_trace_files": 72,
+  "removed_trace_bytes": 9159302
+}

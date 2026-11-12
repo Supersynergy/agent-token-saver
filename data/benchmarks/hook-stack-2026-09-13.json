@@ -1,0 +1,707 @@
+{
+  "date": "2026-09-13 22:00:43 CEST",
+  "settings": "~/.claude/settings.json",
+  "runs_per_hook": 4,
+  "timeout_s": 10,
+  "fake_session": "ats-bench-hooks-1789329583",
+  "event_totals": {
+    "PostToolUse": {
+      "hooks": 4,
+      "chain_ms": 241.0,
+      "chain_stdout_bytes": 0
+    },
+    "PreToolUse": {
+      "hooks": 7,
+      "chain_ms": 253.0,
+      "chain_stdout_bytes": 339
+    },
+    "SessionEnd": {
+      "hooks": 3,
+      "chain_ms": 177.4,
+      "chain_stdout_bytes": 0
+    },
+    "SessionStart": {
+      "hooks": 7,
+      "chain_ms": 4827.5,
+      "chain_stdout_bytes": 79
+    },
+    "Stop": {
+      "hooks": 4,
+      "chain_ms": 233.8,
+      "chain_stdout_bytes": 4
+    },
+    "UserPromptSubmit": {
+      "hooks": 6,
+      "chain_ms": 379.7,
+      "chain_stdout_bytes": 0
+    }
+  },
+  "hooks": [
+    {
+      "event": "PostToolUse",
+      "command": "/opt/homebrew/bin/python3 $HOME/.ultimate-token-saver/bin/token-tracker.py",
+      "payload_case": "bash_ok",
+      "p50_ms": 32.7,
+      "p95_ms": 34.2,
+      "stdout_bytes": 0,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "PostToolUse",
+      "command": "/bin/bash $HOME/projects/cmux-vault/bin/claude-cmux-title",
+      "payload_case": "bash_ok",
+      "p50_ms": 102.1,
+      "p95_ms": 126.2,
+      "stdout_bytes": 0,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "PostToolUse",
+      "command": "/bin/bash $HOME/.claude/hooks/auto-fmt.sh",
+      "payload_case": "bash_ok",
+      "p50_ms": 35.8,
+      "p95_ms": 37.5,
+      "stdout_bytes": 0,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "PostToolUse",
+      "command": "$HOME/.pyenv/versions/3.14.4/bin/python3 $HOME/.local/bin/si observe",
+      "payload_case": "bash_ok",
+      "p50_ms": 62.1,
+      "p95_ms": 69.3,
+      "stdout_bytes": 0,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "PreToolUse",
+      "command": "rtk hook claude",
+      "payload_case": "bash_ls",
+      "p50_ms": 30.8,
+      "p95_ms": 31.8,
+      "stdout_bytes": 169,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "PreToolUse",
+      "command": "/bin/bash $HOME/.claude/hooks/pretooluse-pii-guard.sh",
+      "payload_case": "bash_ls",
+      "p50_ms": 55.5,
+      "p95_ms": 57.9,
+      "stdout_bytes": 0,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "PreToolUse",
+      "command": "/bin/bash $HOME/.claude/hooks/secret-guard.sh",
+      "payload_case": "bash_ls",
+      "p50_ms": 32.4,
+      "p95_ms": 33.8,
+      "stdout_bytes": 0,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "PreToolUse",
+      "command": "/bin/bash $HOME/.claude/hooks/protect-prod.sh",
+      "payload_case": "bash_ls",
+      "p50_ms": 32.8,
+      "p95_ms": 33.2,
+      "stdout_bytes": 0,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "PreToolUse",
+      "command": "/opt/homebrew/bin/shellfirm check --stdin --format json --exit-code",
+      "payload_case": "bash_ls",
+      "p50_ms": 58.0,
+      "p95_ms": 79.2,
+      "stdout_bytes": 170,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        64
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "PreToolUse",
+      "command": "/bin/bash $HOME/.claude/hooks/superweb-default.sh",
+      "payload_case": "bash_ls",
+      "p50_ms": 15.1,
+      "p95_ms": 18.3,
+      "stdout_bytes": 0,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "PreToolUse",
+      "command": "$HOME/.local/bin/python3.14 $HOME/.agent-token-saver/hooks/agent-worker-capsule.py",
+      "payload_case": "bash_ls",
+      "p50_ms": 30.6,
+      "p95_ms": 31.2,
+      "stdout_bytes": 0,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "SessionEnd",
+      "command": "/bin/bash $HOME/projects/cmux-vault/bin/claude-cmux-title stop",
+      "payload_case": "clear",
+      "p50_ms": 102.1,
+      "p95_ms": 108.5,
+      "stdout_bytes": 0,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "SessionEnd",
+      "command": "/bin/bash $HOME/.claude/hooks/session-diary.sh",
+      "payload_case": "clear",
+      "p50_ms": 42.5,
+      "p95_ms": 45.5,
+      "stdout_bytes": 0,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "SessionEnd",
+      "command": "/bin/bash $HOME/.claude/hooks/session-distill-hook.sh",
+      "payload_case": "clear",
+      "p50_ms": 25.8,
+      "p95_ms": 27.8,
+      "stdout_bytes": 0,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "SessionStart",
+      "command": "/bin/bash $HOME/projects/cmux-vault/bin/claude-cmux-title",
+      "payload_case": "startup",
+      "p50_ms": 107.0,
+      "p95_ms": 108.2,
+      "stdout_bytes": 0,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "SessionStart",
+      "command": "/bin/bash $HOME/.claude/hooks/rtk-trust-check.sh",
+      "payload_case": "startup",
+      "p50_ms": 28.6,
+      "p95_ms": 37.3,
+      "stdout_bytes": 0,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "SessionStart",
+      "command": "/bin/bash $HOME/.claude/hooks/session-resume-greet.sh",
+      "payload_case": "startup",
+      "p50_ms": 347.1,
+      "p95_ms": 514.3,
+      "stdout_bytes": 0,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "SessionStart",
+      "command": "/bin/bash $HOME/.claude/hooks/synapse/session_start.sh",
+      "payload_case": "startup",
+      "p50_ms": 4108.4,
+      "p95_ms": 4145.2,
+      "stdout_bytes": 0,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "SessionStart",
+      "command": "/opt/homebrew/bin/python3 $HOME/.claude/cts/skills/claude-restore/bin/claude-session-track",
+      "payload_case": "startup",
+      "p50_ms": 36.4,
+      "p95_ms": 38.7,
+      "stdout_bytes": 0,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "SessionStart",
+      "command": "bd prime --hook-json",
+      "payload_case": "startup",
+      "p50_ms": 80.9,
+      "p95_ms": 91.7,
+      "stdout_bytes": 79,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "SessionStart",
+      "command": "\"$HOME/.claude/hooks/context-mode-cache-heal.mjs\"",
+      "payload_case": "startup",
+      "p50_ms": 41.8,
+      "p95_ms": 47.3,
+      "stdout_bytes": 0,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "Stop",
+      "command": "/bin/bash $HOME/projects/cmux-vault/bin/claude-cmux-title stop",
+      "payload_case": "first_stop",
+      "p50_ms": 138.1,
+      "p95_ms": 177.7,
+      "stdout_bytes": 0,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "Stop",
+      "command": "/bin/bash $HOME/.claude/hooks/synapse/stop_extract.sh",
+      "payload_case": "first_stop",
+      "p50_ms": 42.2,
+      "p95_ms": 45.0,
+      "stdout_bytes": 0,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "Stop",
+      "command": "$HOME/.claude/hooks/stop-verify-gate.py",
+      "payload_case": "first_stop",
+      "p50_ms": 46.3,
+      "p95_ms": 59.2,
+      "stdout_bytes": 2,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "Stop",
+      "command": "$HOME/.local/bin/python3.14 $HOME/.agent-token-saver/hooks/token-session-guard.py",
+      "payload_case": "first_stop",
+      "p50_ms": 37.7,
+      "p95_ms": 48.2,
+      "stdout_bytes": 2,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "UserPromptSubmit",
+      "command": "/bin/bash $HOME/projects/cmux-vault/bin/claude-cmux-title",
+      "payload_case": "trivial",
+      "p50_ms": 94.1,
+      "p95_ms": 106.7,
+      "stdout_bytes": 0,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "UserPromptSubmit",
+      "command": "/bin/bash $HOME/projects/cmux-vault/bin/claude-cmux-title",
+      "payload_case": "saver_route",
+      "p50_ms": 96.5,
+      "p95_ms": 97.7,
+      "stdout_bytes": 0,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "UserPromptSubmit",
+      "command": "/bin/bash $HOME/.claude/hooks/synapse/prompt_submit.sh",
+      "payload_case": "trivial",
+      "p50_ms": 67.1,
+      "p95_ms": 70.5,
+      "stdout_bytes": 0,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "UserPromptSubmit",
+      "command": "/bin/bash $HOME/.claude/hooks/synapse/prompt_submit.sh",
+      "payload_case": "saver_route",
+      "p50_ms": 4078.4,
+      "p95_ms": 4085.8,
+      "stdout_bytes": 0,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "UserPromptSubmit",
+      "command": "/bin/bash $HOME/.claude/hooks/session-diary.sh",
+      "payload_case": "trivial",
+      "p50_ms": 42.5,
+      "p95_ms": 47.7,
+      "stdout_bytes": 0,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "UserPromptSubmit",
+      "command": "/bin/bash $HOME/.claude/hooks/session-diary.sh",
+      "payload_case": "saver_route",
+      "p50_ms": 43.0,
+      "p95_ms": 43.5,
+      "stdout_bytes": 0,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "UserPromptSubmit",
+      "command": "$HOME/BASE/projects/base-control-plane/base.py hook",
+      "payload_case": "trivial",
+      "p50_ms": 81.9,
+      "p95_ms": 91.6,
+      "stdout_bytes": 0,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "UserPromptSubmit",
+      "command": "$HOME/BASE/projects/base-control-plane/base.py hook",
+      "payload_case": "saver_route",
+      "p50_ms": 96.2,
+      "p95_ms": 115.8,
+      "stdout_bytes": 0,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "UserPromptSubmit",
+      "command": "codegraph prompt-hook",
+      "payload_case": "trivial",
+      "p50_ms": 63.3,
+      "p95_ms": 78.7,
+      "stdout_bytes": 0,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "UserPromptSubmit",
+      "command": "codegraph prompt-hook",
+      "payload_case": "saver_route",
+      "p50_ms": 64.1,
+      "p95_ms": 74.2,
+      "stdout_bytes": 0,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "UserPromptSubmit",
+      "command": "$HOME/.local/bin/python3.14 $HOME/.agent-token-saver/hooks/token-stack-prompt.py",
+      "payload_case": "trivial",
+      "p50_ms": 30.6,
+      "p95_ms": 30.8,
+      "stdout_bytes": 0,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": ""
+    },
+    {
+      "event": "UserPromptSubmit",
+      "command": "$HOME/.local/bin/python3.14 $HOME/.agent-token-saver/hooks/token-stack-prompt.py",
+      "payload_case": "saver_route",
+      "p50_ms": 32.1,
+      "p95_ms": 34.5,
+      "stdout_bytes": 509,
+      "exit_codes": [
+        0
+      ],
+      "probe_exits": [
+        0,
+        0
+      ],
+      "fail_open": true,
+      "timed_out": false,
+      "note": "non-json stdout (goes to transcript/context)"
+    }
+  ]
+}
