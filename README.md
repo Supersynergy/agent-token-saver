@@ -223,15 +223,18 @@ still read an explicitly supplied skill path, subject to that role's rules.
 
 ### What you need, per host
 
-| Need | Codex | Claude Code | Hermes | GG Coder |
-|---|---|---|---|---|
-| Python 3.11+ on PATH under any name (`python3.12` counts) | required | required | required | required |
-| `git` | one-line bootstrap only | same | same | same |
-| RTK | optional, agent-guided | optional, **native hook** | optional | optional |
-| skill router | optional | optional | optional | optional |
-| skills to route (any `SKILL.md` tree) | for the router to matter | same | same | same |
-| a `SOUL.md` | — | — | for automatic policy | — |
-| Bun | only for `llmadapter` | same | same | same |
+Shared requirements:
+
+- Python 3.11+ on `PATH` (`python3.12` and other versioned names are accepted).
+- `git` for the one-line bootstrap. RTK and the skill router are optional.
+- A `SKILL.md` collection if you want skill routing; Bun only for `llmadapter`.
+
+| Host | Integration notes |
+| --- | --- |
+| Codex | RTK is optional and agent-guided. |
+| Claude Code | Optional RTK integration uses a native hook. |
+| Hermes | Automatic policy uses a `SOUL.md` file. |
+| GG Coder | No additional host-specific prerequisite in this matrix. |
 
 The doctor prints the install line for every optional layer it cannot find,
 and says what each one needs to be useful.
