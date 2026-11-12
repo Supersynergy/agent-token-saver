@@ -1,6 +1,6 @@
 # agent-token-saver
 
-![agent-token-saver — less noise, better judgment](docs/assets/social-preview.svg)
+![Agent Token Saver](docs/assets/cover-awesome.png)
 
 **Reduce repeated context and noisy command output before it reaches your coding agent.**
 
