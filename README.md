@@ -70,14 +70,29 @@ its approval rules and its quality gates stay exactly as they are.
 
 ## Why people use it
 
-| USP | What it means in practice |
-|---|---|
-| **Automatic, but reversible** | Lean prompt and Stop hooks reduce routine waste; hooks are fail-open and preserve host control. |
-| **Measured honestly** | Fixture estimates, provider counters and team projections are labeled separately. Failed task oracles invalidate a saving. |
-| **Works across agents** | One portable core supports Codex CLI, Claude Code, Hermes, GG Coder and generic CLI/JSON hosts. |
-| **Low fixed overhead** | CLI-first routing avoids loading a broad MCP schema to discover one useful tool. |
-| **Team-aware** | Workers receive small task capsules instead of the full parent transcript; one controller keeps the final decision. |
-| **Safe to adopt** | Dry-run, file hashes, merged hook JSON and backups. Optional third-party tools are detected, never silently installed. |
+<details>
+<summary><strong>📋 Show 6 entries</strong></summary>
+
+- **Automatic, but reversible**<br>
+  What it means in practice: Lean prompt and Stop hooks reduce routine waste; hooks are fail-open and preserve host control.
+
+- **Measured honestly**<br>
+  What it means in practice: Fixture estimates, provider counters and team projections are labeled separately. Failed task oracles invalidate a saving.
+
+- **Works across agents**<br>
+  What it means in practice: One portable core supports Codex CLI, Claude Code, Hermes, GG Coder and generic CLI/JSON hosts.
+
+- **Low fixed overhead**<br>
+  What it means in practice: CLI-first routing avoids loading a broad MCP schema to discover one useful tool.
+
+- **Team-aware**<br>
+  What it means in practice: Workers receive small task capsules instead of the full parent transcript; one controller keeps the final decision.
+
+- **Safe to adopt**<br>
+  What it means in practice: Dry-run, file hashes, merged hook JSON and backups. Optional third-party tools are detected, never silently installed.
+
+</details>
+
 
 ## What happens after installation
 
@@ -98,12 +113,31 @@ Provider counters are authoritative; local payload numbers are transparent
 Fresh home directory per run, same model, task and fixture; baseline disabled
 the hooks:
 
-| Task | Baseline total | Lean total | Change |
-|---|---:|---:|---:|
-| Process table | 29,359 | 38,800 | **32.16% more** |
-| Large Git diff | 44,629 | 25,886 | **42.00% less** |
-| Git history | 38,500 | 25,678 | **33.30% less** |
-| **Aggregate** | **112,488** | **90,364** | **19.67% less** |
+<details>
+<summary><strong>📋 Show 4 entries</strong></summary>
+
+- **Process table**<br>
+  Baseline total: 29,359<br>
+  Lean total: 38,800<br>
+  Change: **32.16% more**
+
+- **Large Git diff**<br>
+  Baseline total: 44,629<br>
+  Lean total: 25,886<br>
+  Change: **42.00% less**
+
+- **Git history**<br>
+  Baseline total: 38,500<br>
+  Lean total: 25,678<br>
+  Change: **33.30% less**
+
+- **Aggregate**<br>
+  Baseline total: **112,488**<br>
+  Lean total: **90,364**<br>
+  Change: **19.67% less**
+
+</details>
+
 
 All three task oracles passed. One task got worse, which is why this README
 avoids universal-savings claims. One run per arm; repeat ABBA runs before
@@ -125,11 +159,23 @@ input and into cache hits, which a provider bills at a fraction of the rate.
 Summing tokens unweighted therefore reports a regression where the invoice
 shows a saving:
 
-| Run | Raw token change | At list ratios (cached 10%, output 8x) |
-|---|---:|---:|
-| 1 | +11.4% | −18.8% |
-| 2 | +0.9% | −20.1% |
-| 3 | −4.4% | −7.8% |
+<details>
+<summary><strong>📋 Show 3 entries</strong></summary>
+
+- **1**<br>
+  Raw token change: +11.4%<br>
+  At list ratios (cached 10%, output 8x): −18.8%
+
+- **2**<br>
+  Raw token change: +0.9%<br>
+  At list ratios (cached 10%, output 8x): −20.1%
+
+- **3**<br>
+  Raw token change: −4.4%<br>
+  At list ratios (cached 10%, output 8x): −7.8%
+
+</details>
+
 
 The weighted column is negative in all three runs (mean −15.6%); the raw
 column straddles zero (mean +2.6%). These are public list ratios, not an
@@ -139,11 +185,23 @@ invoice.
 input on the two noisy tasks barely moved under the compact policy while the
 baseline swung wildly:
 
-| Task | Lean spread | Baseline spread |
-|---|---:|---:|
-| process-table | 100 | 7,159 |
-| large-git-diff | 466 | 9,989 |
-| git-history | 203 | 40 |
+<details>
+<summary><strong>📋 Show 3 entries</strong></summary>
+
+- **process-table**<br>
+  Lean spread: 100<br>
+  Baseline spread: 7,159
+
+- **large-git-diff**<br>
+  Lean spread: 466<br>
+  Baseline spread: 9,989
+
+- **git-history**<br>
+  Lean spread: 203<br>
+  Baseline spread: 40
+
+</details>
+
 
 The lean figures even span two different policy wordings, which is part of the
 point: bounding noisy output early makes the run reproducible, and a
@@ -185,22 +243,55 @@ analysis. Artifacts: [Tilth vs. Gmax](data/benchmarks/tilth-vs-gmax-2026-07-27.m
 
 Start with `lean`. Change profiles only for a concrete need.
 
-| Profile | Best for | Visible surface |
-|---|---|---|
-| `minimal` | portable CLI and ledger | no visible skill or prompt hook |
-| `lean` | normal daily coding | compact host default, prompt gate, Stop guard, optional projection CLIs |
-| `teams` | independent parallel lanes | Lean plus bounded worker-capsule contract |
-| `heavy` | one explicit deep session | Lean plus graph and large-context tools |
+<details>
+<summary><strong>📋 Show 4 entries</strong></summary>
+
+- **`minimal`**<br>
+  Best for: portable CLI and ledger<br>
+  Visible surface: no visible skill or prompt hook
+
+- **`lean`**<br>
+  Best for: normal daily coding<br>
+  Visible surface: compact host default, prompt gate, Stop guard, optional projection CLIs
+
+- **`teams`**<br>
+  Best for: independent parallel lanes<br>
+  Visible surface: Lean plus bounded worker-capsule contract
+
+- **`heavy`**<br>
+  Best for: one explicit deep session<br>
+  Visible surface: Lean plus graph and large-context tools
+
+</details>
+
 
 ## Supported hosts
 
-| Host | Integration | Active from the first prompt? |
-|---|---|---|
-| Codex CLI | compact global default, prompt gate and Stop guard | yes |
-| Claude Code | compact global default, prompt gate, Stop guard, RTK when present, worker capsule | yes |
-| Hermes | compact default in an existing `SOUL.md` plus installed Agent Skill | only with a `SOUL.md`; otherwise the skill loads when named |
-| GG Coder | compact home `AGENTS.md` default plus installed Markdown skill | policy yes; skill when the agent invokes it |
-| Other agents | repo-local `SKILL.md` plus CLI/JSON | when named |
+<details>
+<summary><strong>📋 Show 5 entries</strong></summary>
+
+- **Codex CLI**<br>
+  Integration: compact global default, prompt gate and Stop guard<br>
+  Active from the first prompt?: yes
+
+- **Claude Code**<br>
+  Integration: compact global default, prompt gate, Stop guard, RTK when present, worker capsule<br>
+  Active from the first prompt?: yes
+
+- **Hermes**<br>
+  Integration: compact default in an existing `SOUL.md` plus installed Agent Skill<br>
+  Active from the first prompt?: only with a `SOUL.md`; otherwise the skill loads when named
+
+- **GG Coder**<br>
+  Integration: compact home `AGENTS.md` default plus installed Markdown skill<br>
+  Active from the first prompt?: policy yes; skill when the agent invokes it
+
+- **Other agents**<br>
+  Integration: repo-local `SKILL.md` plus CLI/JSON<br>
+  Active from the first prompt?: when named
+
+</details>
+
 
 The installer merges into existing host files and never creates a new Hermes
 `SOUL.md`. Files on disk are not proof of active wiring; the doctor checks
@@ -229,12 +320,23 @@ Shared requirements:
 - `git` for the one-line bootstrap. RTK and the skill router are optional.
 - A `SKILL.md` collection if you want skill routing; Bun only for `llmadapter`.
 
-| Host | Integration notes |
-| --- | --- |
-| Codex | RTK is optional and agent-guided. |
-| Claude Code | Optional RTK integration uses a native hook. |
-| Hermes | Automatic policy uses a `SOUL.md` file. |
-| GG Coder | No additional host-specific prerequisite in this matrix. |
+<details>
+<summary><strong>📋 Show 4 entries</strong></summary>
+
+- **Codex**<br>
+  Integration notes: RTK is optional and agent-guided.
+
+- **Claude Code**<br>
+  Integration notes: Optional RTK integration uses a native hook.
+
+- **Hermes**<br>
+  Integration notes: Automatic policy uses a `SOUL.md` file.
+
+- **GG Coder**<br>
+  Integration notes: No additional host-specific prerequisite in this matrix.
+
+</details>
+
 
 The doctor prints the install line for every optional layer it cannot find,
 and says what each one needs to be useful.
