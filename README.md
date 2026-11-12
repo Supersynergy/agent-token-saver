@@ -2,8 +2,7 @@
 
 ![agent-token-saver — less noise, better judgment](docs/assets/social-preview.svg)
 
-**Your coding agent burns most of its tokens on junk it never asked for.
-This strips the junk before the model sees it.**
+**Reduce repeated context and noisy command output before it reaches your coding agent.**
 
 [![MIT](https://img.shields.io/badge/license-MIT-1c7c54.svg)](LICENSE)
 [![CI](https://github.com/Supersynergy/agent-token-saver/actions/workflows/ci.yml/badge.svg)](https://github.com/Supersynergy/agent-token-saver/actions/workflows/ci.yml)
@@ -18,6 +17,8 @@ Uninstall is deleting the installed files.
 
 **Measured:** a real Codex A/B on identical tasks used **19.67% fewer**
 provider-reported tokens. [Benchmarks →](#benchmarks)
+
+[🚀 Try it](#try-it-in-60-seconds) · [⚙️ Profiles](#choose-a-profile) · [🤖 Hosts](#supported-hosts) · [📊 Benchmarks](#benchmarks) · [🔒 Limits](#safety-and-honest-limits)
 
 ## Try it in 60 seconds
 
@@ -261,6 +262,9 @@ Full contract, lane table, extensions:
 
 ## Measure your own result
 
+<details>
+<summary>📏 Measurement commands and methodology</summary>
+
 ```bash
 agent-token-ledger \
   --usage parent=run.jsonl \
@@ -346,6 +350,9 @@ Two failure modes cost more than they look, both vendor-documented:
   the prefix [from the first changed token onward](https://developers.openai.com/api/docs/guides/prompt-caching).
   Lazy-loading definitions to save their tokens can therefore cost a whole
   cached prefix; price the re-write before calling it a saving.
+
+
+</details>
 
 ## Verify the checkout
 
