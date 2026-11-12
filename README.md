@@ -1,59 +1,42 @@
-# agent-token-saver
+# Agent Token Saver
 
-<img src="docs/assets/social-preview.png" alt="Agent Token Saver 5.1 — TypeScript and Bun" width="256" align="right">
+Give your coding agent the lines it needs from a build or test run. ATS saves the full stdout and stderr locally, preserves the exit code, and lets you search the log when the next question comes up.
 
-**Run a check once. Keep the full evidence. Read only what you need.**
-TypeScript/Bun tools for coding agents, with no runtime packages or API keys.
+[Quick start](#quick-start) · [Command reference](docs/QUICKSTART.en.md) · [Benchmark results](docs/BENCHMARK_REVIEW.md)
 
-[![CI](https://github.com/Supersynergy/agent-token-saver/actions/workflows/ci.yml/badge.svg)](https://github.com/Supersynergy/agent-token-saver/actions/workflows/ci.yml)
-[![MIT](https://img.shields.io/badge/license-MIT-08b8a8)](LICENSE)
-[![Bun](https://img.shields.io/badge/Bun-1.4.4%20tested-111111)](https://bun.sh)
+<a href="docs/RTK.md"><picture>
+  <source media="(max-width: 600px)" srcset="docs/assets/rtk-mobile.png">
+  <img src="docs/assets/rtk-example.png" alt="Two synthetic RTK tasks. The TypeScript log shrank from 7,630 to 230 bytes and kept the required filenames and error codes. The path list shrank from 6,720 to 220 bytes but lost exact paths, so ATS kept the original.">
+</picture></a>
 
-```bash
-git clone --branch v5.1.1 --depth 1 https://github.com/Supersynergy/agent-token-saver.git
+## Quick start
+
+With [Bun](https://bun.sh) installed, try the CLI from a checkout.
+
+```sh
+git clone -b v5.1.1 https://github.com/Supersynergy/agent-token-saver
 cd agent-token-saver
-bun install.ts --apply
+bun run ats guide
 ```
 
-Requires [Bun](https://bun.sh/docs/installation) and `~/.local/bin` on PATH.
-For a preview, omit `--apply`. Without installing, use `bun run ats` instead of `ats`.
+To use `ats` in your own projects, run `bun install.ts --apply` and put `~/.local/bin` on your PATH. The installer prints a recovery ID. Omit `--apply` to preview the changes.
 
-```bash
-ats verify -- bun test                        # one run; original exit; full local logs
-ats project build.log --match TS2322          # find an earlier error without rerunning
-ats guide speed                              # choose the next useful step
+## Find an error after the check finishes
+
+```sh
+ats verify -- bun test
 ```
 
-[Guide](docs/GUIDE.md) · [All commands](docs/QUICKSTART.en.md) · [RTK results](docs/RTK.md) · [Benchmarks](docs/BENCHMARK_REVIEW.md) · [Migration](docs/MIGRATION.md) · [Release](docs/RELEASE-5.1.1.md)
+Use the log path from the result to find an earlier diagnostic, even when it fell outside the final lines shown to your agent.
 
-<details>
-<summary>What the evidence says</summary>
+```sh
+ats project path/to/stderr.log --match TS2322
+```
 
-In eight synthetic RTK tasks, one candidate became smaller while preserving its
-required literals. Three saved no bytes; four lost required evidence and fell
-back to raw output. This is neither a general RTK failure rate nor a provider
-savings claim. [Method and limits](docs/RTK.md).
+## When does filtering pay off?
 
-The [20-skill design review](docs/SKILLS.md) and [Speed/Superloop review](docs/SPEED.md)
-explain which principles survived the evidence. No automatic hooks, provider
-routing, worker launches or background services are installed.
+Of eight synthetic RTK tasks, one produced a smaller answer with every required detail. Three saved zero bytes. Four dropped evidence the task required. The figure above shows why ATS checks what survived before accepting a shorter view. [Read the eight cases](docs/RTK.md).
 
-</details>
+[Speed and Superloop](docs/SPEED.md) · [20 skill principles](docs/SKILLS.md) · [Usage and rollback](docs/GUIDE.md) · [Migrate from v4](docs/MIGRATION.md)
 
-<details>
-<summary>JSON, costs, rollback and safety</summary>
-
-Use `ats --json ...` for scripts. A failing check keeps its original exit code;
-timeout is 124 and an unavailable executable is 127. Tail views can miss earlier
-errors. Raw stdout/stderr remain local and can contain anything the command prints.
-
-`ats cost --example` uses synthetic prices. Supply your own dated tariff and
-disjoint usage classes; the answer is an estimate, not an invoice.
-
-The installer prints a recovery ID. From the checkout, run
-`bun run ats rollback --id ID --apply` to restore prior starters. Later edits and
-newer generations block rollback. Existing v4 host hooks need their own migration.
-
-</details>
-
-[Contribute](CONTRIBUTING.md) · [Security](SECURITY.md) · [MIT license](LICENSE)
+[Release](https://github.com/Supersynergy/agent-token-saver/releases/latest) · [Contributing](.github/CONTRIBUTING.md) · [Security](.github/SECURITY.md) · [MIT license](LICENSE)
