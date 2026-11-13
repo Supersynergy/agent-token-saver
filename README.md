@@ -1,13 +1,14 @@
+<a href="docs/RTK.md"><picture>
+  <source media="(max-width: 600px)" srcset="docs/assets/rtk-mobile.png">
+  <img src="docs/assets/rtk-example.png" alt="Two synthetic RTK tasks. The TypeScript log shrank from 7,630 to 230 bytes and kept the required filenames and error codes. The path list shrank from 6,720 to 220 bytes but lost exact paths, so ATS kept the original.">
+</picture></a>
+
 # Agent Token Saver
 
 Give your coding agent the lines it needs from a build or test run. ATS saves the full stdout and stderr locally, preserves the exit code, and lets you search the log when the next question comes up.
 
 [Quick start](#quick-start) · [Command reference](docs/QUICKSTART.en.md) · [Benchmark results](docs/BENCHMARK_REVIEW.md)
 
-<a href="docs/RTK.md"><picture>
-  <source media="(max-width: 600px)" srcset="docs/assets/rtk-mobile.png">
-  <img src="docs/assets/rtk-example.png" alt="Two synthetic RTK tasks. The TypeScript log shrank from 7,630 to 230 bytes and kept the required filenames and error codes. The path list shrank from 6,720 to 220 bytes but lost exact paths, so ATS kept the original.">
-</picture></a>
 
 ## Quick start
 
